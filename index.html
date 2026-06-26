@@ -1039,7 +1039,7 @@ document.addEventListener('DOMContentLoaded', () => {
     .then(r => r.json())
     .then(json => {
       Object.entries(json).forEach(([date, d]) => {
-        if (d.hourly && d.hourly.length) RAW[date] = d.hourly;
+        if (d.hourly && d.hourly.length && d.hourly.some(r => r[1] > 0)) RAW[date] = d.hourly;
         if (d.tGross || d.revenue) {
           DAILY_TARGETS[date] = {
             event: d.event || '',
