@@ -71,8 +71,9 @@
   .kpi.k-cost::before{background:var(--accent);} .kpi.k-cpa::before{background:var(--purple);}
   .kpi .lab{font-size:11.5px;color:var(--text-2);font-weight:600;margin-bottom:8px;}
   .kpi .val{font-size:22px;font-weight:800;letter-spacing:-.02em;}
-  .kpi .delta{font-size:12px;font-weight:700;margin-top:6px;display:flex;align-items:center;gap:6px;}
-  .kpi .delta .dlab{color:var(--text-3);font-weight:600;display:inline-block;min-width:30px;}
+  .kpi .delta{font-size:12px;font-weight:700;margin-top:7px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .kpi .delta .dlab{color:var(--text-3);font-weight:600;}
+  .kpi .delta .dsep{color:var(--border-bright);font-weight:400;}
   .up{color:var(--green);} .down{color:var(--red);} .flat{color:var(--text-3);}
   .card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);
     padding:20px;margin-bottom:22px;box-shadow:0 1px 3px rgba(15,23,42,0.04);}
@@ -216,15 +217,15 @@ function yoyRange(){                         // 전년 동기(YoY)
   return r.length?{rows:r,ys,ye}:null;
 }
 
-function deltaLine(curV,cmpV,inv,ppt,label,title){
+function deltaSeg(curV,cmpV,inv,ppt,label,title){
   if(cmpV==null||curV==null||(!ppt&&cmpV===0))
-    return `<div class="delta flat" title="${title}"><span class="dlab">${label}</span> <span class="muted">–</span></div>`;
+    return `<span class="flat" title="${title}"><span class="dlab">${label}</span> <span class="muted">–</span></span>`;
   let val,txt;
   if(ppt){ val=curV-cmpV; txt=(val>0?'+':'')+val.toFixed(0)+'%p'; }
   else { val=(curV-cmpV)/cmpV*100; txt=(val>0?'+':'')+val.toFixed(0)+'%'; }
   const good=inv?val<0:val>0; const cls=Math.abs(val)<0.5?'flat':(good?'up':'down');
   const ar=val>0?'▲':val<0?'▼':'–';
-  return `<div class="delta ${cls}" title="${title}"><span class="dlab">${label}</span> ${ar}${txt}</div>`;
+  return `<span class="${cls}" title="${title}"><span class="dlab">${label}</span> ${ar}${txt}</span>`;
 }
 function renderKPIs(){
   const cur=derive(inRange().reduce(add,emptyAgg()));
@@ -248,8 +249,7 @@ function renderKPIs(){
   document.getElementById('kpis').innerHTML=defs.map(d=>{
     const cv=d.get(cur), yvl=yoy?d.get(yoy):null, pvl=prev?d.get(prev):null;
     return `<div class="kpi ${d.cls}"><div class="lab">${d.lab}</div><div class="val">${d.f(cv)}</div>
-      ${deltaLine(cv,yvl,d.inv,d.ppt,'YoY',yoyT)}
-      ${deltaLine(cv,pvl,d.inv,d.ppt,'직전',prevT)}</div>`;
+      <div class="delta">${deltaSeg(cv,yvl,d.inv,d.ppt,'YoY',yoyT)}<span class="dsep">|</span>${deltaSeg(cv,pvl,d.inv,d.ppt,'직전',prevT)}</div></div>`;
   }).join('');
 }
 
