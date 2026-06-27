@@ -127,6 +127,7 @@
     <span class="selsum" id="selsum"></span>
   </div>
 
+  <div id="cmpNote" style="font-size:11.5px;color:var(--text-3);margin:-4px 2px 12px;"></div>
   <div class="kpis" id="kpis"></div>
 
   <div class="card">
@@ -210,6 +211,14 @@ function renderKPIs(){
   const cur=derive(inRange().reduce(add,emptyAgg()));
   const pv=prevRange(); const prev=pv?derive(pv.reduce(add,emptyAgg())):null;
   const dP=(c,p)=>(p==null||p===0)?null:(c-p)/p*100;
+  // 비교 기준(직전 동일기간) 날짜 표기
+  const len=dayspan(state.start,state.end);
+  const pe=addDays(state.start,-1), ps=addDays(pe,-(len-1));
+  const cmpTxt=prev?`${ps} ~ ${pe} (${len}일)`:'데이터 없음';
+  const cn=document.getElementById('cmpNote');
+  if(cn) cn.innerHTML = prev
+    ? `증감률(▲▼)은 <b style="color:var(--text-2)">직전 동일기간 ${cmpTxt}</b> 대비입니다`
+    : `증감률 비교 기준(직전 ${len}일)에 데이터가 없어 일부 카드는 증감 미표시`;
   const cards=[
     {cls:'k-cost',lab:'광고비',val:WC(cur.c),dl:prev?dP(cur.c,prev.c):null,inv:true},
     {cls:'k-rev', lab:'매출(보고)',val:WC(cur.rv),dl:prev?dP(cur.rv,prev.rv):null},
@@ -226,7 +235,7 @@ function renderKPIs(){
       const good=c.inv?c.dl<0:c.dl>0; const cls=Math.abs(c.dl)<0.5?'flat':(good?'up':'down');
       const ar=c.dl>0?'▲':c.dl<0?'▼':'–';
       const tx=c.ppt?((c.dl>0?'+':'')+c.dl.toFixed(0)+'%p'):((c.dl>0?'+':'')+c.dl.toFixed(0)+'%');
-      dl=`<div class="delta ${cls}">${ar} ${tx} <span class="muted" style="font-weight:500">vs 직전</span></div>`;
+      dl=`<div class="delta ${cls}" title="직전 ${ps} ~ ${pe} 대비">${ar} ${tx} <span class="muted" style="font-weight:500">vs 직전</span></div>`;
     }
     return `<div class="kpi ${c.cls}"><div class="lab">${c.lab}</div><div class="val">${c.val}</div>${dl}</div>`;
   }).join('');
