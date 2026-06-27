@@ -8,27 +8,27 @@
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&display=swap');
   :root{
-    --bg-base:#0a0e1a; --bg-card:#111827; --bg-card2:#161f33; --bg-hover:#1c2a45;
-    --border:#1e2d47; --border-bright:#2d4160;
-    --accent:#3b82f6; --accent-glow:rgba(59,130,246,0.25); --accent2:#6366f1;
-    --green:#10b981; --green-dim:rgba(16,185,129,0.15);
-    --red:#ef4444; --red-dim:rgba(239,68,68,0.18);
-    --yellow:#f59e0b; --yellow-dim:rgba(245,158,11,0.15);
-    --purple:#8b5cf6; --pink:#ec4899;
-    --text-1:#f1f5f9; --text-2:#94a3b8; --text-3:#64748b;
+    --bg-base:#f4f6fb; --bg-card:#ffffff; --bg-card2:#f4f7fc; --bg-hover:#eef3fb;
+    --border:#e4e9f2; --border-bright:#cdd7e6;
+    --accent:#2563eb; --accent-glow:rgba(37,99,235,0.18); --accent2:#6366f1;
+    --green:#059669; --green-dim:rgba(5,150,105,0.12);
+    --red:#dc2626; --red-dim:rgba(220,38,38,0.10);
+    --yellow:#d97706; --yellow-dim:rgba(217,119,6,0.12);
+    --purple:#7c3aed; --pink:#db2777;
+    --text-1:#0f172a; --text-2:#475569; --text-3:#94a3b8;
     --radius:14px; --radius-sm:9px;
   }
   *{margin:0;padding:0;box-sizing:border-box;}
   body{font-family:'Pretendard',-apple-system,sans-serif;background:var(--bg-base);
     color:var(--text-1);min-height:100vh;font-size:14px;line-height:1.5;
-    background-image:radial-gradient(900px 400px at 80% -10%,rgba(59,130,246,0.08),transparent),
-                     radial-gradient(700px 350px at 0% 0%,rgba(139,92,246,0.06),transparent);}
+    background-image:radial-gradient(900px 400px at 80% -10%,rgba(37,99,235,0.06),transparent),
+                     radial-gradient(700px 350px at 0% 0%,rgba(124,58,237,0.05),transparent);}
   .wrap{max-width:1320px;margin:0 auto;padding:0 24px 60px;}
   /* header */
   .header{display:flex;align-items:center;justify-content:space-between;
     padding:18px 24px;border-bottom:1px solid var(--border);
-    background:linear-gradient(90deg,#0a0e1a,#0e1628);position:sticky;top:0;z-index:100;
-    backdrop-filter:blur(12px);margin-bottom:22px;}
+    background:rgba(255,255,255,0.85);position:sticky;top:0;z-index:100;
+    backdrop-filter:blur(12px);margin-bottom:22px;box-shadow:0 1px 0 rgba(15,23,42,0.04);}
   .h-left{display:flex;align-items:center;gap:14px;}
   .logo{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;
     background:linear-gradient(135deg,var(--accent),var(--accent2));font-weight:800;color:#fff;
@@ -60,8 +60,8 @@
   /* kpi */
   .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px;}
   .kpi{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);
-    padding:16px 18px;position:relative;overflow:hidden;transition:.2s;}
-  .kpi:hover{border-color:var(--border-bright);transform:translateY(-2px);}
+    padding:16px 18px;position:relative;overflow:hidden;transition:.2s;box-shadow:0 1px 3px rgba(15,23,42,0.04);}
+  .kpi:hover{border-color:var(--border-bright);transform:translateY(-2px);box-shadow:0 6px 18px rgba(15,23,42,0.08);}
   .kpi::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent);opacity:.7;}
   .kpi.k-rev::before{background:var(--green);} .kpi.k-roas::before{background:var(--yellow);}
   .kpi.k-cost::before{background:var(--accent);} .kpi.k-cpa::before{background:var(--purple);}
@@ -72,7 +72,7 @@
   .up{color:var(--green);} .down{color:var(--red);} .flat{color:var(--text-3);}
   /* cards */
   .card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);
-    padding:20px;margin-bottom:22px;}
+    padding:20px;margin-bottom:22px;box-shadow:0 1px 3px rgba(15,23,42,0.04);}
   .card-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:12px;flex-wrap:wrap;}
   .card-t{font-size:15px;font-weight:700;display:flex;align-items:center;gap:9px;}
   .card-t .bar{width:4px;height:16px;border-radius:2px;background:var(--accent);}
@@ -271,7 +271,7 @@ function renderTrend(){
       {label:'광고비', data:arr.map(d=>d.cost), backgroundColor:'rgba(59,130,246,0.55)', borderRadius:4, yAxisID:'y', order:2},
       {label:'전환매출', data:arr.map(d=>d.revenue), type:'line', borderColor:'#10b981', backgroundColor:'rgba(16,185,129,0.08)',
         borderWidth:2.5, tension:.35, fill:true, pointRadius:0, yAxisID:'y', order:1},
-      {label:'ROAS(%)', data:arr.map(d=>d.cost>0?d.revenue/d.cost*100:null), type:'line', borderColor:'#f59e0b',
+      {label:'ROAS(%)', data:arr.map(d=>d.cost>0?d.revenue/d.cost*100:null), type:'line', borderColor:'#d97706',
         borderWidth:2, borderDash:[5,4], tension:.35, pointRadius:0, yAxisID:'y1', order:0},
     ]}};
   } else {
@@ -282,7 +282,7 @@ function renderTrend(){
     ]}};
   }
   cfg.options = {responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
-    plugins:{legend:{labels:{color:'#94a3b8',usePointStyle:true,pointStyleWidth:10,font:{size:12}}},
+    plugins:{legend:{labels:{color:'#475569',usePointStyle:true,pointStyleWidth:10,font:{size:12}}},
       tooltip:{callbacks:{label:c=>{
         const v=c.parsed.y; if(v==null)return c.dataset.label+': —';
         if(c.dataset.label==='ROAS(%)')return ' ROAS: '+v.toFixed(0)+'%';
@@ -290,10 +290,10 @@ function renderTrend(){
         return ' '+c.dataset.label+': '+F.num(v);
       }}}},
     scales:{
-      x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#64748b',font:{size:10},maxRotation:0,autoSkip:true,maxTicksLimit:12}},
-      y:{position:'left',grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#64748b',font:{size:10},
+      x:{grid:{color:'rgba(15,23,42,0.07)'},ticks:{color:'#64748b',font:{size:10},maxRotation:0,autoSkip:true,maxTicksLimit:12}},
+      y:{position:'left',grid:{color:'rgba(15,23,42,0.07)'},ticks:{color:'#64748b',font:{size:10},
         callback:v=>state.metric==='money'?(v/100000000).toFixed(1)+'억':F.num(v)}},
-      ...(state.metric==='money'?{y1:{position:'right',grid:{drawOnChartArea:false},ticks:{color:'#f59e0b',font:{size:10},callback:v=>v+'%'}}}:{})
+      ...(state.metric==='money'?{y1:{position:'right',grid:{drawOnChartArea:false},ticks:{color:'#d97706',font:{size:10},callback:v=>v+'%'}}}:{})
     }};
   trendChart = new Chart(ctx, cfg);
 }
@@ -306,10 +306,10 @@ function renderChannelChart(){
     {label:'광고비',data:chs.map(c=>c.cost),backgroundColor:'rgba(59,130,246,0.75)',borderRadius:4},
     {label:'전환매출',data:chs.map(c=>c.revenue),backgroundColor:'rgba(16,185,129,0.7)',borderRadius:4},
   ]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
-    plugins:{legend:{labels:{color:'#94a3b8',usePointStyle:true,pointStyleWidth:10,font:{size:12}}},
+    plugins:{legend:{labels:{color:'#475569',usePointStyle:true,pointStyleWidth:10,font:{size:12}}},
       tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+F.won(c.parsed.x)}}},
-    scales:{x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#64748b',font:{size:10},callback:v=>(v/100000000).toFixed(0)+'억'}},
-      y:{grid:{display:false},ticks:{color:'#94a3b8',font:{size:11}}}}}});
+    scales:{x:{grid:{color:'rgba(15,23,42,0.07)'},ticks:{color:'#64748b',font:{size:10},callback:v=>(v/100000000).toFixed(0)+'억'}},
+      y:{grid:{display:false},ticks:{color:'#475569',font:{size:11}}}}}});
 }
 
 function th(label,key,sortState){
