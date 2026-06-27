@@ -308,8 +308,12 @@ function renderCampTbl(){
   document.getElementById('campTbl').innerHTML=head+'<tbody>'+(body||`<tr><td colspan=9 class=muted style="text-align:center;padding:24px">결과 없음</td></tr>`)+'</tbody>';
 }
 
-function renderAll(){ renderKPIs(); renderTrend(); renderMediaChart(); renderMediaTbl(); renderCampTbl();
-  const d=document.getElementById('mediaSub'); if(d)d.textContent=`${state.start} ~ ${state.end}`; }
+function safe(name,fn){ try{ fn(); }catch(e){ console.error('['+name+'] 렌더 오류:',e); } }
+function renderAll(){
+  safe('KPI',renderKPIs); safe('Trend',renderTrend); safe('MediaChart',renderMediaChart);
+  safe('MediaTbl',renderMediaTbl); safe('CampTbl',renderCampTbl);
+  const d=document.getElementById('mediaSub'); if(d)d.textContent=`${state.start} ~ ${state.end}`;
+}
 
 // 기간 적용
 function applyPreset(n){ state.preset=n; state.end=maxDate; state.start=addDays(maxDate,-(n-1));
