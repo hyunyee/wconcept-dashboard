@@ -71,7 +71,8 @@
   .kpi.k-cost::before{background:var(--accent);} .kpi.k-cpa::before{background:var(--purple);}
   .kpi .lab{font-size:11.5px;color:var(--text-2);font-weight:600;margin-bottom:8px;}
   .kpi .val{font-size:22px;font-weight:800;letter-spacing:-.02em;}
-  .kpi .delta{font-size:11.5px;font-weight:700;margin-top:7px;display:inline-flex;align-items:center;gap:3px;}
+  .kpi .delta{font-size:12px;font-weight:700;margin-top:6px;display:flex;align-items:center;gap:6px;}
+  .kpi .delta .dlab{color:var(--text-3);font-weight:600;display:inline-block;min-width:30px;}
   .up{color:var(--green);} .down{color:var(--red);} .flat{color:var(--text-3);}
   .card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);
     padding:20px;margin-bottom:22px;box-shadow:0 1px 3px rgba(15,23,42,0.04);}
@@ -217,13 +218,13 @@ function yoyRange(){                         // 전년 동기(YoY)
 
 function deltaLine(curV,cmpV,inv,ppt,label,title){
   if(cmpV==null||curV==null||(!ppt&&cmpV===0))
-    return `<div class="delta flat" title="${title}">– <span class="muted" style="font-weight:500">${label}</span></div>`;
+    return `<div class="delta flat" title="${title}"><span class="dlab">${label}</span> <span class="muted">–</span></div>`;
   let val,txt;
   if(ppt){ val=curV-cmpV; txt=(val>0?'+':'')+val.toFixed(0)+'%p'; }
   else { val=(curV-cmpV)/cmpV*100; txt=(val>0?'+':'')+val.toFixed(0)+'%'; }
   const good=inv?val<0:val>0; const cls=Math.abs(val)<0.5?'flat':(good?'up':'down');
   const ar=val>0?'▲':val<0?'▼':'–';
-  return `<div class="delta ${cls}" title="${title}">${ar} ${txt} <span class="muted" style="font-weight:500">${label}</span></div>`;
+  return `<div class="delta ${cls}" title="${title}"><span class="dlab">${label}</span> ${ar}${txt}</div>`;
 }
 function renderKPIs(){
   const cur=derive(inRange().reduce(add,emptyAgg()));
@@ -248,7 +249,7 @@ function renderKPIs(){
     const cv=d.get(cur), yvl=yoy?d.get(yoy):null, pvl=prev?d.get(prev):null;
     return `<div class="kpi ${d.cls}"><div class="lab">${d.lab}</div><div class="val">${d.f(cv)}</div>
       ${deltaLine(cv,yvl,d.inv,d.ppt,'YoY',yoyT)}
-      ${deltaLine(cv,pvl,d.inv,d.ppt,'vs 직전',prevT)}</div>`;
+      ${deltaLine(cv,pvl,d.inv,d.ppt,'직전',prevT)}</div>`;
   }).join('');
 }
 
