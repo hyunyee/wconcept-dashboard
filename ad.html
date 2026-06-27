@@ -83,7 +83,6 @@
   .card-sub{font-size:11px;color:var(--text-3);font-weight:500;}
   .chart-box{position:relative;height:330px;}
   .grid2{display:grid;grid-template-columns:1.15fr 1fr;gap:22px;align-items:start;}
-  .tbl-wrap thead th{position:sticky;top:0;background:var(--bg-card);z-index:2;}
   @media(max-width:1000px){.grid2{grid-template-columns:1fr;}.kpis{grid-template-columns:repeat(2,1fr);}}
   .tbl-wrap{overflow-x:auto;}
   table{width:100%;border-collapse:collapse;font-size:13px;white-space:nowrap;}
@@ -159,7 +158,8 @@
     <div class="card">
       <div class="card-h"><div class="card-t"><span class="bar"></span>매체 성과</div>
         <span class="card-sub">클릭 시 정렬</span></div>
-      <div class="tbl-wrap" style="max-height:360px;overflow-y:auto;"><table id="mediaTbl"></table></div>
+      <div class="tbl-wrap"><table id="mediaTbl"></table></div>
+      <div class="morebtn" id="mediaMore"></div>
     </div>
   </div>
 
@@ -192,7 +192,7 @@ const M=['c','im','ck','ins','su','od','rv','fo'];
 let DATA, minDate, maxDate, selMin;
 let state={ start:null, end:null, preset:7, metric:'money',
   f:{s:'전체',g:'전체',t:'전체',o1:'전체',o2:'전체'},
-  campSort:{key:'c',dir:-1}, mediaSort:{key:'c',dir:-1}, search:'', campExpanded:false };
+  campSort:{key:'c',dir:-1}, mediaSort:{key:'c',dir:-1}, search:'', campExpanded:false, mediaExpanded:false };
 let trendChart, mediaChart;
 
 // 날짜 유틸 (문자열 yyyy-mm-dd 비교 = 시간순)
@@ -318,12 +318,18 @@ function renderMediaTbl(){
   const s=state.mediaSort; let ms=mediaAgg();
   ms.sort((a,b)=>{const x=a[s.key]??-1,y=b[s.key]??-1;return(x<y?-1:x>y?1:0)*s.dir;});
   const maxRev=Math.max(...ms.map(m=>m.rv),1);
+  const total=ms.length; const limit=state.mediaExpanded?total:12;
   const head=`<thead><tr>${th('매체','media',s)}${th('광고비','c',s)}${th('매출','rv',s)}${th('ROAS','roas',s)}${th('설치','ins',s)}${th('가입','su',s)}${th('첫구매','fo',s)}${th('가입CPA','cpaSu',s)}</tr></thead>`;
-  const body=ms.map(m=>`<tr><td><b>${m.media}</b></td><td>${WC(m.c)}</td>
+  const body=ms.slice(0,limit).map(m=>`<tr><td><b>${m.media}</b></td><td>${WC(m.c)}</td>
     <td>${WC(m.rv)} <span class="barmini"><i style="width:${(m.rv/maxRev*100).toFixed(0)}%;background:var(--green)"></i></span></td>
     ${roasCell(m.roas)}<td>${F.num(m.ins)}</td><td>${F.num(m.su)}</td><td>${F.num(m.fo)}</td>
     <td>${m.cpaSu==null?'<span class=muted>—</span>':F.won(m.cpaSu)}</td></tr>`).join('');
   document.getElementById('mediaTbl').innerHTML=head+'<tbody>'+(body||'<tr><td colspan=8 class=muted style="text-align:center;padding:20px">데이터 없음</td></tr>')+'</tbody>';
+  const more=document.getElementById('mediaMore');
+  if(total>12){
+    more.innerHTML=state.mediaExpanded?`<button id="mediaToggle">접기 ▲</button>`:`<button id="mediaToggle">더보기 (${total-12}개 더) ▼</button>`;
+    document.getElementById('mediaToggle').onclick=()=>{state.mediaExpanded=!state.mediaExpanded;renderMediaTbl();};
+  } else more.innerHTML='';
 }
 
 const gColors={DA:'#7c3aed',SA:'#2563eb'};
