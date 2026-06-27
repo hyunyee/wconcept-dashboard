@@ -212,6 +212,15 @@
       <div class="donut-card"><div class="donut-t">목표2</div><div class="donut-box"><canvas id="dn_o2"></canvas></div></div>
     </div>
   </div>
+
+  <div class="card">
+    <div class="card-h"><div class="card-t"><span class="bar"></span>DA / SA 매체별 광고비 비중</div>
+      <span class="card-sub">작은 매체는 ‘기타’로 합산</span></div>
+    <div class="donut-grid" style="grid-template-columns:repeat(2,1fr)">
+      <div class="donut-card"><div class="donut-t">DA 매체 비중</div><div class="donut-box" style="height:300px"><canvas id="dn_mediaDA"></canvas></div></div>
+      <div class="donut-card"><div class="donut-t">SA 매체 비중</div><div class="donut-box" style="height:300px"><canvas id="dn_mediaSA"></canvas></div></div>
+    </div>
+  </div>
  </div><!-- /tab2 -->
 
   <div class="note"><span>ℹ️</span><div id="costNote"></div></div>
@@ -449,7 +458,7 @@ const PAL=['#2563eb','#7c3aed','#db2777','#d97706','#059669','#0ea5e9','#64748b'
 let donuts={};
 function budgetAgg(dim,gf){
   const by={};
-  inDaily().forEach(r=>{ if(gf&&r.g!==gf)return; const k=r[dim]; if(!k)return; by[k]=(by[k]||0)+r.c; });
+  inRows().forEach(r=>{ if(gf&&r.g!==gf)return; const k=r[dim]; if(!k)return; by[k]=(by[k]||0)+r.c; });
   return Object.entries(by).filter(e=>e[1]>0).sort((a,b)=>b[1]-a[1]);
 }
 // saLabel: SA가 전부 속하는 라벨(상시/Sales/구매). 그 라벨에만 (SA제외 = 라벨% - SA비중%) 병기
@@ -470,7 +479,14 @@ function renderDonut(id,entries,saLabel,saCost){
           formatter:(val,ctx)=>{const p=total?val/total*100:0; return p>=7?ctx.chart.data.labels[ctx.dataIndex]+'\n'+p.toFixed(0)+'%':'';}}
       }}});
 }
-function saCostNow(){ let s=0; inDaily().forEach(r=>{if(r.g==='SA')s+=r.c;}); return s; }
+function saCostNow(){ let s=0; inRows().forEach(r=>{if(r.g==='SA')s+=r.c;}); return s; }
+function groupSmall(entries,thr){
+  const total=entries.reduce((a,e)=>a+e[1],0); if(!total) return entries;
+  const big=[]; let etc=0;
+  entries.forEach(e=>{ if(e[1]/total*100>=thr) big.push(e); else etc+=e[1]; });
+  if(etc>0) big.push(['기타',etc]);
+  return big;
+}
 function renderBudget(){
   const saC=saCostNow();
   renderDonut('dn_s',budgetAgg('s'),'상시',saC);
@@ -479,6 +495,8 @@ function renderBudget(){
   renderDonut('dn_tDA',budgetAgg('t','DA'));
   renderDonut('dn_tSA',budgetAgg('t','SA'));
   renderDonut('dn_o2',budgetAgg('o2'),'구매',saC);
+  renderDonut('dn_mediaDA',groupSmall(budgetAgg('media','DA'),3));
+  renderDonut('dn_mediaSA',groupSmall(budgetAgg('media','SA'),3));
   const sub=document.getElementById('budgetSub'); if(sub)sub.textContent=`${state.start} ~ ${state.end} · 광고비 기준`;
 }
 function refresh(){ if(state.tab==='budget') renderBudget(); else renderAll(); }
