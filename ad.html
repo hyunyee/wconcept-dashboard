@@ -168,6 +168,13 @@
 <script>
 const F={ won:v=>v==null?'—':'₩'+Math.round(v).toLocaleString('ko-KR'),
   num:v=>v==null?'—':Math.round(v).toLocaleString('ko-KR'), pct:v=>v==null?'—':v.toFixed(0)+'%' };
+// 금액 압축 표기(억/만) — 표·KPI 칸 정렬용
+const WC=v=>{ if(v==null)return'—'; const a=Math.abs(v);
+  if(a>=1e8)return (v/1e8).toFixed(1)+'억';
+  if(a>=1e4)return Math.round(v/1e4).toLocaleString('ko-KR')+'만';
+  return Math.round(v).toLocaleString('ko-KR'); };
+// 캠페인명 보정(요약/미지정 행 라벨)
+const campLabel=c=>(!c||c==='-'||c==='(미지정)')?'(캠페인 미지정 · 매체 보고분)':c;
 const DIMS=['s','g','t','o1','o2'];
 const DIMKEY={s:'daehyo',g:'gubun',t:'yuhyeong',o1:'mokpyo1',o2:'mokpyo2'};
 const M=['c','im','ck','ins','su','od','rv','fo'];
@@ -204,8 +211,8 @@ function renderKPIs(){
   const pv=prevRange(); const prev=pv?derive(pv.reduce(add,emptyAgg())):null;
   const dP=(c,p)=>(p==null||p===0)?null:(c-p)/p*100;
   const cards=[
-    {cls:'k-cost',lab:'광고비',val:F.won(cur.c),dl:prev?dP(cur.c,prev.c):null,inv:true},
-    {cls:'k-rev', lab:'매출(보고)',val:F.won(cur.rv),dl:prev?dP(cur.rv,prev.rv):null},
+    {cls:'k-cost',lab:'광고비',val:WC(cur.c),dl:prev?dP(cur.c,prev.c):null,inv:true},
+    {cls:'k-rev', lab:'매출(보고)',val:WC(cur.rv),dl:prev?dP(cur.rv,prev.rv):null},
     {cls:'k-roas',lab:'ROAS',val:F.pct(cur.roas),dl:prev?(cur.roas-prev.roas):null,ppt:true},
     {cls:'',lab:'설치',val:F.num(cur.ins),dl:prev?dP(cur.ins,prev.ins):null},
     {cls:'',lab:'가입',val:F.num(cur.su),dl:prev?dP(cur.su,prev.su):null},
@@ -279,8 +286,8 @@ function renderMediaTbl(){
   ms.sort((a,b)=>{const x=a[s.key]??-1,y=b[s.key]??-1;return(x<y?-1:x>y?1:0)*s.dir;});
   const maxRev=Math.max(...ms.map(m=>m.rv),1);
   const head=`<thead><tr>${th('매체','media',s)}${th('광고비','c',s)}${th('매출','rv',s)}${th('ROAS','roas',s)}${th('설치','ins',s)}${th('가입','su',s)}${th('첫구매','fo',s)}${th('가입CPA','cpaSu',s)}</tr></thead>`;
-  const body=ms.map(m=>`<tr><td><b>${m.media}</b></td><td>${F.won(m.c)}</td>
-    <td>${F.won(m.rv)} <span class="barmini"><i style="width:${(m.rv/maxRev*100).toFixed(0)}%;background:var(--green)"></i></span></td>
+  const body=ms.map(m=>`<tr><td><b>${m.media}</b></td><td>${WC(m.c)}</td>
+    <td>${WC(m.rv)} <span class="barmini"><i style="width:${(m.rv/maxRev*100).toFixed(0)}%;background:var(--green)"></i></span></td>
     ${roasCell(m.roas)}<td>${F.num(m.ins)}</td><td>${F.num(m.su)}</td><td>${F.num(m.fo)}</td>
     <td>${m.cpaSu==null?'<span class=muted>—</span>':F.won(m.cpaSu)}</td></tr>`).join('');
   document.getElementById('mediaTbl').innerHTML=head+'<tbody>'+(body||'<tr><td colspan=8 class=muted style="text-align:center;padding:20px">데이터 없음</td></tr>')+'</tbody>';
@@ -300,9 +307,9 @@ function renderCampTbl(){
   cps.sort((a,b)=>{const x=a[s.key]??-1,y=b[s.key]??-1;return(x<y?-1:x>y?1:0)*s.dir;});
   const head=`<thead><tr>${th('캠페인','campaign',s)}${th('구분','g',s)}${th('광고비','c',s)}${th('매출','rv',s)}${th('ROAS','roas',s)}${th('설치','ins',s)}${th('가입','su',s)}${th('첫구매','fo',s)}${th('첫구매CPA','cpaFo',s)}</tr></thead>`;
   const body=cps.slice(0,300).map(c=>`<tr>
-    <td><span class="cname" title="${c.campaign}">${c.campaign}</span><br><span class="chl">${c.media} · ${c.s} · ${c.t} · ${c.o2}</span></td>
+    <td><span class="cname" title="${campLabel(c.campaign)}">${campLabel(c.campaign)}</span><br><span class="chl">${c.media} · ${c.s} · ${c.t} · ${c.o2}</span></td>
     <td><span class="gtag" style="background:${(gColors[c.g]||'#64748b')}22;color:${gColors[c.g]||'#64748b'}">${c.g}</span></td>
-    <td>${c.c?F.won(c.c):'<span class=muted>0</span>'}</td><td>${F.won(c.rv)}</td>
+    <td>${c.c?WC(c.c):'<span class=muted>0</span>'}</td><td>${WC(c.rv)}</td>
     ${roasCell(c.roas)}<td>${F.num(c.ins)}</td><td>${F.num(c.su)}</td><td>${F.num(c.fo)}</td>
     <td>${c.cpaFo==null?'<span class=muted>—</span>':F.won(c.cpaFo)}</td></tr>`).join('');
   document.getElementById('campTbl').innerHTML=head+'<tbody>'+(body||`<tr><td colspan=9 class=muted style="text-align:center;padding:24px">결과 없음</td></tr>`)+'</tbody>';
