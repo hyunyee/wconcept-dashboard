@@ -172,6 +172,15 @@
     <div class="morebtn" id="campMore"></div>
   </div>
 
+  <div class="card">
+    <div class="card-h">
+      <div class="card-t"><span class="bar"></span>소재 성과</div>
+      <input class="search" id="sojaeSearch" placeholder="소재 검색…">
+    </div>
+    <div class="tbl-wrap"><table id="sojaeTbl"></table></div>
+    <div class="morebtn" id="sojaeMore"></div>
+  </div>
+
   <div class="note"><span>ℹ️</span><div id="costNote"></div></div>
   <div class="foot" id="foot"></div>
 </div>
@@ -188,11 +197,12 @@ const WC=v=>{ if(v==null)return'—'; const a=Math.abs(v);
 const campLabel=c=>(!c||c==='-'||c==='(미지정)')?'(캠페인 미지정 · 매체 보고분)':c;
 const DIMS=['s','g','t','o1','o2'];
 const DIMKEY={s:'daehyo',g:'gubun',t:'yuhyeong',o1:'mokpyo1',o2:'mokpyo2'};
-const M=['c','im','ck','ins','su','od','rv','fo'];
+const M=['c','ins','su','rv','fo'];
 let DATA, minDate, maxDate, selMin;
 let state={ start:null, end:null, preset:7, metric:'money',
   f:{s:'전체',g:'전체',t:'전체',o1:'전체',o2:'전체'},
-  campSort:{key:'c',dir:-1}, mediaSort:{key:'c',dir:-1}, search:'', campExpanded:false, mediaExpanded:false };
+  campSort:{key:'c',dir:-1}, mediaSort:{key:'c',dir:-1}, sojaeSort:{key:'rv',dir:-1},
+  search:'', sojaeSearch:'', campExpanded:false, mediaExpanded:false, sojaeExpanded:false };
 let trendChart, mediaChart;
 
 // 날짜 유틸 (문자열 yyyy-mm-dd 비교 = 시간순)
@@ -211,17 +221,18 @@ const roasClass=v=>v==null?'muted':(v>=1000?'roas-good':v>=400?'roas-mid':'roas-
 const roasCell=v=>`<td class="${roasClass(v)}">${v==null?'<span class=muted>—</span>':v.toFixed(0)+'%'}</td>`;
 const matchF=r=>DIMS.every(d=>state.f[d]==='전체'||r[d]===state.f[d]);
 
-const inRange=()=>DATA.rows.filter(r=>r.dt>=state.start&&r.dt<=state.end&&matchF(r));
+const inDaily=()=>DATA.daily.filter(r=>r.dt>=state.start&&r.dt<=state.end&&matchF(r)); // KPI/추이(YoY밴드 포함)
+const inRows=()=>DATA.rows.filter(r=>r.dt>=state.start&&r.dt<=state.end&&matchF(r));   // 매체/캠페인/소재 표(올해)
 function prevRange(){
   const len=dayspan(state.start,state.end);
   const pe=addDays(state.start,-1), ps=addDays(pe,-(len-1));
   if(ps<selMin) return null;               // 직전 기간이 현재 밴드 시작 이전이면 비교 안 함
-  const r=DATA.rows.filter(x=>x.dt>=ps&&x.dt<=pe&&matchF(x));
+  const r=DATA.daily.filter(x=>x.dt>=ps&&x.dt<=pe&&matchF(x));
   return r.length?{rows:r,ps,pe}:null;
 }
 function yoyRange(){                         // 전년 동기(YoY)
   const ys=shiftYear(state.start,-1), ye=shiftYear(state.end,-1);
-  const r=DATA.rows.filter(x=>x.dt>=ys&&x.dt<=ye&&matchF(x));
+  const r=DATA.daily.filter(x=>x.dt>=ys&&x.dt<=ye&&matchF(x));
   return r.length?{rows:r,ys,ye}:null;
 }
 
@@ -236,7 +247,7 @@ function deltaSeg(curV,cmpV,inv,ppt,label,title){
   return `<span class="${cls}" title="${title}"><span class="dlab">${label}</span> ${ar}${txt}</span>`;
 }
 function renderKPIs(){
-  const cur=derive(inRange().reduce(add,emptyAgg()));
+  const cur=derive(inDaily().reduce(add,emptyAgg()));
   const pv=prevRange(); const prev=pv?derive(pv.rows.reduce(add,emptyAgg())):null;
   const yv=yoyRange(); const yoy=yv?derive(yv.rows.reduce(add,emptyAgg())):null;
   const yoyT=yv?`전년 동기 ${yv.ys} ~ ${yv.ye} 대비`:'전년 동기 데이터 없음';
@@ -262,7 +273,7 @@ function renderKPIs(){
 }
 
 function renderTrend(){
-  const rows=inRange(); const byDate={};
+  const rows=inDaily(); const byDate={};
   rows.forEach(r=>{(byDate[r.dt]=byDate[r.dt]||emptyAgg())&&add(byDate[r.dt],r);});
   const labels=Object.keys(byDate).sort(); const g=labels.map(d=>byDate[d]);
   const ctx=document.getElementById('trendChart'); if(trendChart)trendChart.destroy();
@@ -293,7 +304,7 @@ function renderTrend(){
 }
 
 function mediaAgg(){
-  const by={}; inRange().forEach(r=>{(by[r.media]=by[r.media]||{media:r.media,...emptyAgg()});add(by[r.media],r);});
+  const by={}; inRows().forEach(r=>{(by[r.media]=by[r.media]||{media:r.media,...emptyAgg()});add(by[r.media],r);});
   return Object.values(by).map(x=>({...x,...derive(x)}));
 }
 function renderMediaChart(){
@@ -319,11 +330,12 @@ function renderMediaTbl(){
   ms.sort((a,b)=>{const x=a[s.key]??-1,y=b[s.key]??-1;return(x<y?-1:x>y?1:0)*s.dir;});
   const maxRev=Math.max(...ms.map(m=>m.rv),1);
   const total=ms.length; const limit=state.mediaExpanded?total:12;
-  const head=`<thead><tr>${th('매체','media',s)}${th('광고비','c',s)}${th('매출','rv',s)}${th('ROAS','roas',s)}${th('설치','ins',s)}${th('가입','su',s)}${th('첫구매','fo',s)}${th('가입CPA','cpaSu',s)}</tr></thead>`;
+  const head=`<thead><tr>${th('매체','media',s)}${th('광고비','c',s)}${th('매출','rv',s)}${th('ROAS','roas',s)}${th('가입','su',s)}${th('첫구매','fo',s)}${th('가입CPA','cpaSu',s)}${th('첫구매CPA','cpaFo',s)}</tr></thead>`;
   const body=ms.slice(0,limit).map(m=>`<tr><td><b>${m.media}</b></td><td>${WC(m.c)}</td>
     <td>${WC(m.rv)} <span class="barmini"><i style="width:${(m.rv/maxRev*100).toFixed(0)}%;background:var(--green)"></i></span></td>
-    ${roasCell(m.roas)}<td>${F.num(m.ins)}</td><td>${F.num(m.su)}</td><td>${F.num(m.fo)}</td>
-    <td>${m.cpaSu==null?'<span class=muted>—</span>':F.won(m.cpaSu)}</td></tr>`).join('');
+    ${roasCell(m.roas)}<td>${F.num(m.su)}</td><td>${F.num(m.fo)}</td>
+    <td>${m.cpaSu==null?'<span class=muted>—</span>':F.won(m.cpaSu)}</td>
+    <td>${m.cpaFo==null?'<span class=muted>—</span>':F.won(m.cpaFo)}</td></tr>`).join('');
   document.getElementById('mediaTbl').innerHTML=head+'<tbody>'+(body||'<tr><td colspan=8 class=muted style="text-align:center;padding:20px">데이터 없음</td></tr>')+'</tbody>';
   const more=document.getElementById('mediaMore');
   if(total>12){
@@ -335,8 +347,15 @@ function renderMediaTbl(){
 const gColors={DA:'#7c3aed',SA:'#2563eb'};
 function campAgg(){
   const by={};
-  inRange().forEach(r=>{const k=r.media+'|'+r.campaign;
+  inRows().forEach(r=>{const k=r.media+'|'+r.campaign;
     if(!by[k])by[k]={media:r.media,campaign:r.campaign,s:r.s,g:r.g,t:r.t,o2:r.o2,...emptyAgg()};
+    add(by[k],r);});
+  return Object.values(by).map(x=>({...x,...derive(x)}));
+}
+function sojaeAgg(){
+  const by={};
+  inRows().forEach(r=>{const k=r.media+'|'+r.campaign+'|'+r.sojae;
+    if(!by[k])by[k]={media:r.media,campaign:r.campaign,sojae:r.sojae,s:r.s,g:r.g,t:r.t,o2:r.o2,...emptyAgg()};
     add(by[k],r);});
   return Object.values(by).map(x=>({...x,...derive(x)}));
 }
@@ -366,16 +385,42 @@ function renderCampTbl(){
   } else more.innerHTML='';
 }
 
+function renderSojaeTbl(){
+  const s=state.sojaeSort; let cps=sojaeAgg();
+  if(state.sojaeSearch){const q=state.sojaeSearch.toLowerCase();cps=cps.filter(c=>c.sojae.toLowerCase().includes(q)||c.campaign.toLowerCase().includes(q)||c.media.includes(state.sojaeSearch));}
+  cps.sort((a,b)=>{const x=a[s.key]??-1,y=b[s.key]??-1;return(x<y?-1:x>y?1:0)*s.dir;});
+  const total=cps.length;
+  const limit=state.sojaeExpanded?Math.min(total,300):15;
+  const thL=(label,key)=>{const act=s.key===key;const ar=act?(s.dir<0?'▼':'▲'):'▲';
+    return `<th class="sortable lft ${act?'act':''}" data-k="${key}">${label}<span class="arr">${ar}</span></th>`;};
+  const head=`<thead><tr><th style="width:42px">순위</th>${thL('소재','sojae')}${th('구분','g',s)}${th('광고비','c',s)}${th('매출','rv',s)}${th('ROAS','roas',s)}${th('설치','ins',s)}${th('가입','su',s)}${th('첫구매','fo',s)}${th('첫구매CPA','cpaFo',s)}</tr></thead>`;
+  const body=cps.slice(0,limit).map((c,i)=>`<tr>
+    <td class="rank">${i+1}</td>
+    <td class="lft"><span class="cname" title="${campLabel(c.sojae)}">${campLabel(c.sojae)}</span><br><span class="chl">${c.media} · ${campLabel(c.campaign)}</span></td>
+    <td><span class="gtag" style="background:${(gColors[c.g]||'#64748b')}22;color:${gColors[c.g]||'#64748b'}">${c.g}</span></td>
+    <td>${c.c?WC(c.c):'<span class=muted>0</span>'}</td><td>${WC(c.rv)}</td>
+    ${roasCell(c.roas)}<td>${F.num(c.ins)}</td><td>${F.num(c.su)}</td><td>${F.num(c.fo)}</td>
+    <td>${c.cpaFo==null?'<span class=muted>—</span>':F.won(c.cpaFo)}</td></tr>`).join('');
+  document.getElementById('sojaeTbl').innerHTML=head+'<tbody>'+(body||`<tr><td colspan=10 class=muted style="text-align:center;padding:24px">결과 없음</td></tr>`)+'</tbody>';
+  const more=document.getElementById('sojaeMore');
+  if(total>15){
+    more.innerHTML=state.sojaeExpanded
+      ? `<button id="sojaeToggle">접기 ▲</button>`
+      : `<button id="sojaeToggle">더보기 (${total-15}개 더) ▼</button>`;
+    document.getElementById('sojaeToggle').onclick=()=>{state.sojaeExpanded=!state.sojaeExpanded;renderSojaeTbl();};
+  } else more.innerHTML='';
+}
+
 function safe(name,fn){ try{ fn(); }catch(e){ console.error('['+name+'] 렌더 오류:',e); } }
 function renderAll(){
   safe('KPI',renderKPIs); safe('Trend',renderTrend); safe('MediaChart',renderMediaChart);
-  safe('MediaTbl',renderMediaTbl); safe('CampTbl',renderCampTbl);
+  safe('MediaTbl',renderMediaTbl); safe('CampTbl',renderCampTbl); safe('SojaeTbl',renderSojaeTbl);
   const d=document.getElementById('mediaSub'); if(d)d.textContent=`${state.start} ~ ${state.end}`;
 }
 
 // 기간 적용
 function applyPreset(n){ state.preset=n; state.end=maxDate; state.start=addDays(maxDate,-(n-1));
-  if(state.start<minDate)state.start=minDate; syncDateUI(); renderAll(); }
+  if(state.start<selMin)state.start=selMin; syncDateUI(); renderAll(); }
 function applyCustom(){ state.preset=null;
   const si=document.getElementById('dStart'), ei=document.getElementById('dEnd');
   let s=si.value, e=ei.value; if(!s||!e)return;
@@ -423,11 +468,14 @@ function bind(){
   document.getElementById('metricSeg').onclick=e=>{const b=e.target.closest('button');if(!b)return;
     state.metric=b.dataset.m;[...e.currentTarget.children].forEach(x=>x.classList.toggle('on',x===b));renderTrend();};
   document.getElementById('campSearch').oninput=e=>{state.search=e.target.value;renderCampTbl();};
+  document.getElementById('sojaeSearch').oninput=e=>{state.sojaeSearch=e.target.value;renderSojaeTbl();};
   document.getElementById('resetBtn').onclick=()=>{DIMS.forEach(d=>state.f[d]='전체');applyPreset(7);renderFilters();renderSelsum();renderAll();};
   document.getElementById('mediaTbl').onclick=e=>{const t=e.target.closest('th[data-k]');if(!t)return;
     const k=t.dataset.k;state.mediaSort.dir=state.mediaSort.key===k?-state.mediaSort.dir:-1;state.mediaSort.key=k;renderMediaTbl();};
   document.getElementById('campTbl').onclick=e=>{const t=e.target.closest('th[data-k]');if(!t)return;
     const k=t.dataset.k;state.campSort.dir=state.campSort.key===k?-state.campSort.dir:-1;state.campSort.key=k;renderCampTbl();};
+  document.getElementById('sojaeTbl').onclick=e=>{const t=e.target.closest('th[data-k]');if(!t)return;
+    const k=t.dataset.k;state.sojaeSort.dir=state.sojaeSort.key===k?-state.sojaeSort.dir:-1;state.sojaeSort.key=k;renderSojaeTbl();};
 }
 
 async function init(){
