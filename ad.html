@@ -39,7 +39,6 @@
     font-size:11px;color:var(--green);font-weight:600;}
   .dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 1.6s infinite;}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-  /* filter panel */
   .fpanel{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);
     padding:14px 18px;margin-bottom:20px;box-shadow:0 1px 3px rgba(15,23,42,0.04);}
   .frow{display:flex;align-items:center;gap:10px;padding:6px 0;flex-wrap:wrap;}
@@ -50,14 +49,19 @@
     font-size:12.5px;font-weight:600;border-radius:7px;cursor:pointer;font-family:inherit;transition:.15s;}
   .seg button:hover{border-color:var(--accent);color:var(--accent);}
   .seg button.on{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 0 12px var(--accent-glow);}
-  .frow.range .seg button.on{background:var(--accent);}
+  .dpick{display:flex;align-items:center;gap:6px;margin-left:4px;}
+  .dpick input[type=date]{background:var(--bg-base);border:1px solid var(--border-bright);border-radius:7px;
+    color:var(--text-1);padding:5px 9px;font-size:12.5px;font-family:inherit;outline:none;cursor:pointer;}
+  .dpick input[type=date]:focus{border-color:var(--accent);}
+  .dpick .tilde{color:var(--text-3);font-weight:700;}
+  .rangetag{font-size:11.5px;color:var(--accent);font-weight:700;background:var(--accent-glow);
+    border-radius:6px;padding:3px 9px;margin-left:2px;}
   .ftools{display:flex;align-items:center;gap:10px;margin-bottom:22px;flex-wrap:wrap;}
   .reset{padding:6px 13px;border:1px solid var(--border-bright);background:transparent;color:var(--text-2);
     font-size:12px;font-weight:600;border-radius:7px;cursor:pointer;font-family:inherit;}
   .reset:hover{border-color:var(--red);color:var(--red);}
   .selsum{font-size:12px;color:var(--text-3);}
   .selsum b{color:var(--accent);font-weight:700;}
-  /* kpi */
   .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px;}
   .kpi{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);
     padding:16px 18px;position:relative;overflow:hidden;transition:.2s;box-shadow:0 1px 3px rgba(15,23,42,0.04);}
@@ -139,7 +143,7 @@
   <div class="grid2">
     <div class="card">
       <div class="card-h"><div class="card-t"><span class="bar"></span>매체별 비용 vs 매출</div>
-        <span class="card-sub">선택 구간 누적</span></div>
+        <span class="card-sub" id="mediaSub"></span></div>
       <div class="chart-box" style="height:360px"><canvas id="mediaChart"></canvas></div>
     </div>
     <div class="card">
@@ -162,54 +166,42 @@
 </div>
 
 <script>
-const F = {
-  won: v => v==null?'—':'₩'+Math.round(v).toLocaleString('ko-KR'),
-  num: v => v==null?'—':Math.round(v).toLocaleString('ko-KR'),
-  pct: v => v==null?'—':v.toFixed(0)+'%',
-};
-const DIMS = ['s','g','t','o1','o2'];      // 5개 그룹핑 차원
-const DIMKEY = {s:'daehyo',g:'gubun',t:'yuhyeong',o1:'mokpyo1',o2:'mokpyo2'};
-let DATA, state = {
-  range:30, metric:'money',
+const F={ won:v=>v==null?'—':'₩'+Math.round(v).toLocaleString('ko-KR'),
+  num:v=>v==null?'—':Math.round(v).toLocaleString('ko-KR'), pct:v=>v==null?'—':v.toFixed(0)+'%' };
+const DIMS=['s','g','t','o1','o2'];
+const DIMKEY={s:'daehyo',g:'gubun',t:'yuhyeong',o1:'mokpyo1',o2:'mokpyo2'};
+const M=['c','im','ck','ins','su','od','rv','fo'];
+let DATA, minDate, maxDate;
+let state={ start:null, end:null, preset:30, metric:'money',
   f:{s:'전체',g:'전체',t:'전체',o1:'전체',o2:'전체'},
-  campSort:{key:'c',dir:-1}, mediaSort:{key:'c',dir:-1}, search:''
-};
+  campSort:{key:'c',dir:-1}, mediaSort:{key:'c',dir:-1}, search:'' };
 let trendChart, mediaChart;
 
-// ── 집계 헬퍼 ──
-const M = ['c','im','ck','ins','su','od','rv','fo'];
-function emptyAgg(){ const o={}; M.forEach(k=>o[k]=0); return o; }
-function add(a,r){ M.forEach(k=>a[k]+=(r[k]||0)); return a; }
-function derive(a){
-  return {...a,
-    roas: a.c>0 ? a.rv/a.c*100 : null,
-    cpaSu: a.c>0&&a.su>0 ? a.c/a.su : null,
-    cpaFo: a.c>0&&a.fo>0 ? a.c/a.fo : null,
-    cpi: a.c>0&&a.ins>0 ? a.c/a.ins : null,
-  };
-}
-const roasClass = v => v==null?'muted':(v>=1000?'roas-good':v>=400?'roas-mid':'roas-bad');
-function roasCell(v){ return `<td class="${roasClass(v)}">${v==null?'<span class=muted>—</span>':v.toFixed(0)+'%'}</td>`; }
+// 날짜 유틸 (문자열 yyyy-mm-dd 비교 = 시간순)
+function addDays(ds,n){ const [y,m,d]=ds.split('-').map(Number); const dt=new Date(Date.UTC(y,m-1,d));
+  dt.setUTCDate(dt.getUTCDate()+n); return dt.toISOString().slice(0,10); }
+function dayspan(a,b){ return Math.round((new Date(a+'T00:00:00Z')-0-(new Date(b+'T00:00:00Z')-0))/-86400000)+1; }
+const md = ds => ds.slice(5).replace('-','/');
 
-function matchF(r){ return DIMS.every(d=> state.f[d]==='전체' || r[d]===state.f[d]); }
+const emptyAgg=()=>{const o={};M.forEach(k=>o[k]=0);return o;};
+const add=(a,r)=>{M.forEach(k=>a[k]+=(r[k]||0));return a;};
+const derive=a=>({...a, roas:a.c>0?a.rv/a.c*100:null, cpaSu:a.c>0&&a.su>0?a.c/a.su:null,
+  cpaFo:a.c>0&&a.fo>0?a.c/a.fo:null, cpi:a.c>0&&a.ins>0?a.c/a.ins:null });
+const roasClass=v=>v==null?'muted':(v>=1000?'roas-good':v>=400?'roas-mid':'roas-bad');
+const roasCell=v=>`<td class="${roasClass(v)}">${v==null?'<span class=muted>—</span>':v.toFixed(0)+'%'}</td>`;
+const matchF=r=>DIMS.every(d=>state.f[d]==='전체'||r[d]===state.f[d]);
 
-function dailyInRange(){
-  // 선택 구간(7/14/30): 최신 날짜부터 N일
-  const dates=[...new Set(DATA.daily.map(d=>d.dt))].sort();
-  const keep=new Set(dates.slice(-state.range));
-  return DATA.daily.filter(d=>keep.has(d.dt) && matchF(d));
-}
-function dailyPrev(){
-  const dates=[...new Set(DATA.daily.map(d=>d.dt))].sort();
-  const prev=new Set(dates.slice(-state.range*2,-state.range));
-  if(prev.size<state.range) return null;
-  return DATA.daily.filter(d=>prev.has(d.dt) && matchF(d));
+const inRange=()=>DATA.rows.filter(r=>r.dt>=state.start&&r.dt<=state.end&&matchF(r));
+function prevRange(){
+  const len=dayspan(state.start,state.end);
+  const pe=addDays(state.start,-1), ps=addDays(pe,-(len-1));
+  if(ps<minDate) return null;
+  return DATA.rows.filter(r=>r.dt>=ps&&r.dt<=pe&&matchF(r));
 }
 
-// ── KPI ──
 function renderKPIs(){
-  const cur=derive(dailyInRange().reduce(add,emptyAgg()));
-  const pv=dailyPrev(); const prev=pv?derive(pv.reduce(add,emptyAgg())):null;
+  const cur=derive(inRange().reduce(add,emptyAgg()));
+  const pv=prevRange(); const prev=pv?derive(pv.reduce(add,emptyAgg())):null;
   const dP=(c,p)=>(p==null||p===0)?null:(c-p)/p*100;
   const cards=[
     {cls:'k-cost',lab:'광고비',val:F.won(cur.c),dl:prev?dP(cur.c,prev.c):null,inv:true},
@@ -224,8 +216,7 @@ function renderKPIs(){
   document.getElementById('kpis').innerHTML=cards.map(c=>{
     let dl='';
     if(c.dl!=null&&isFinite(c.dl)){
-      const good=c.inv?c.dl<0:c.dl>0;
-      const cls=Math.abs(c.dl)<0.5?'flat':(good?'up':'down');
+      const good=c.inv?c.dl<0:c.dl>0; const cls=Math.abs(c.dl)<0.5?'flat':(good?'up':'down');
       const ar=c.dl>0?'▲':c.dl<0?'▼':'–';
       const tx=c.ppt?((c.dl>0?'+':'')+c.dl.toFixed(0)+'%p'):((c.dl>0?'+':'')+c.dl.toFixed(0)+'%');
       dl=`<div class="delta ${cls}">${ar} ${tx} <span class="muted" style="font-weight:500">vs 직전</span></div>`;
@@ -234,24 +225,20 @@ function renderKPIs(){
   }).join('');
 }
 
-// ── 추이 ──
 function renderTrend(){
-  const rows=dailyInRange();
-  const byDate={};
-  rows.forEach(r=>{ (byDate[r.dt]=byDate[r.dt]||emptyAgg()) && add(byDate[r.dt],r); });
-  const labels=Object.keys(byDate).sort();
-  const g=labels.map(d=>byDate[d]);
-  const ctx=document.getElementById('trendChart');
-  if(trendChart)trendChart.destroy();
+  const rows=inRange(); const byDate={};
+  rows.forEach(r=>{(byDate[r.dt]=byDate[r.dt]||emptyAgg())&&add(byDate[r.dt],r);});
+  const labels=Object.keys(byDate).sort(); const g=labels.map(d=>byDate[d]);
+  const ctx=document.getElementById('trendChart'); if(trendChart)trendChart.destroy();
   let cfg;
   if(state.metric==='money'){
-    cfg={type:'bar',data:{labels,datasets:[
+    cfg={type:'bar',data:{labels:labels.map(md),datasets:[
       {label:'광고비',data:g.map(x=>x.c),backgroundColor:'rgba(37,99,235,0.55)',borderRadius:4,yAxisID:'y',order:2},
       {label:'매출',type:'line',data:g.map(x=>x.rv),borderColor:'#059669',backgroundColor:'rgba(5,150,105,0.08)',borderWidth:2.5,tension:.35,fill:true,pointRadius:0,yAxisID:'y',order:1},
       {label:'ROAS(%)',type:'line',data:g.map(x=>x.c>0?x.rv/x.c*100:null),borderColor:'#d97706',borderWidth:2,borderDash:[5,4],tension:.35,pointRadius:0,yAxisID:'y1',order:0},
     ]}};
   }else{
-    cfg={type:'line',data:{labels,datasets:[
+    cfg={type:'line',data:{labels:labels.map(md),datasets:[
       {label:'설치',data:g.map(x=>x.ins),borderColor:'#2563eb',backgroundColor:'rgba(37,99,235,0.08)',borderWidth:2.4,tension:.35,fill:true,pointRadius:0},
       {label:'가입',data:g.map(x=>x.su),borderColor:'#7c3aed',borderWidth:2.4,tension:.35,pointRadius:0},
       {label:'첫구매',data:g.map(x=>x.fo),borderColor:'#db2777',borderWidth:2.4,tension:.35,pointRadius:0},
@@ -269,17 +256,13 @@ function renderTrend(){
   trendChart=new Chart(ctx,cfg);
 }
 
-// ── 매체 집계(필터된 캠페인 기준) ──
 function mediaAgg(){
-  const cps=DATA.campaigns.filter(matchF);
-  const by={};
-  cps.forEach(r=>{ (by[r.media]=by[r.media]||{media:r.media,...emptyAgg()}); add(by[r.media],r); });
+  const by={}; inRange().forEach(r=>{(by[r.media]=by[r.media]||{media:r.media,...emptyAgg()});add(by[r.media],r);});
   return Object.values(by).map(x=>({...x,...derive(x)}));
 }
 function renderMediaChart(){
   const ms=mediaAgg().sort((a,b)=>b.c-a.c||b.rv-a.rv).slice(0,12);
-  const ctx=document.getElementById('mediaChart');
-  if(mediaChart)mediaChart.destroy();
+  const ctx=document.getElementById('mediaChart'); if(mediaChart)mediaChart.destroy();
   mediaChart=new Chart(ctx,{type:'bar',data:{labels:ms.map(m=>m.media),datasets:[
     {label:'광고비',data:ms.map(m=>m.c),backgroundColor:'rgba(37,99,235,0.75)',borderRadius:4},
     {label:'매출',data:ms.map(m=>m.rv),backgroundColor:'rgba(5,150,105,0.7)',borderRadius:4},
@@ -289,26 +272,30 @@ function renderMediaChart(){
     scales:{x:{grid:{color:'rgba(15,23,42,0.07)'},ticks:{color:'#64748b',font:{size:10},callback:v=>(v/100000000).toFixed(0)+'억'}},
       y:{grid:{display:false},ticks:{color:'#475569',font:{size:11}}}}}});
 }
-function th(label,key,s){const act=s.key===key;const ar=act?(s.dir<0?'▼':'▲'):'▲';
-  return `<th class="sortable ${act?'act':''}" data-k="${key}">${label}<span class="arr">${ar}</span></th>`;}
+const th=(label,key,s)=>{const act=s.key===key;const ar=act?(s.dir<0?'▼':'▲'):'▲';
+  return `<th class="sortable ${act?'act':''}" data-k="${key}">${label}<span class="arr">${ar}</span></th>`;};
 function renderMediaTbl(){
   const s=state.mediaSort; let ms=mediaAgg();
   ms.sort((a,b)=>{const x=a[s.key]??-1,y=b[s.key]??-1;return(x<y?-1:x>y?1:0)*s.dir;});
   const maxRev=Math.max(...ms.map(m=>m.rv),1);
   const head=`<thead><tr>${th('매체','media',s)}${th('광고비','c',s)}${th('매출','rv',s)}${th('ROAS','roas',s)}${th('설치','ins',s)}${th('가입','su',s)}${th('첫구매','fo',s)}${th('가입CPA','cpaSu',s)}</tr></thead>`;
-  const body=ms.map(m=>`<tr>
-    <td><b>${m.media}</b></td><td>${F.won(m.c)}</td>
+  const body=ms.map(m=>`<tr><td><b>${m.media}</b></td><td>${F.won(m.c)}</td>
     <td>${F.won(m.rv)} <span class="barmini"><i style="width:${(m.rv/maxRev*100).toFixed(0)}%;background:var(--green)"></i></span></td>
     ${roasCell(m.roas)}<td>${F.num(m.ins)}</td><td>${F.num(m.su)}</td><td>${F.num(m.fo)}</td>
     <td>${m.cpaSu==null?'<span class=muted>—</span>':F.won(m.cpaSu)}</td></tr>`).join('');
-  document.getElementById('mediaTbl').innerHTML=head+'<tbody>'+body+'</tbody>';
+  document.getElementById('mediaTbl').innerHTML=head+'<tbody>'+(body||'<tr><td colspan=8 class=muted style="text-align:center;padding:20px">데이터 없음</td></tr>')+'</tbody>';
 }
 
-// ── 캠페인 ──
 const gColors={DA:'#7c3aed',SA:'#2563eb'};
+function campAgg(){
+  const by={};
+  inRange().forEach(r=>{const k=r.media+'|'+r.campaign;
+    if(!by[k])by[k]={media:r.media,campaign:r.campaign,s:r.s,g:r.g,t:r.t,o2:r.o2,...emptyAgg()};
+    add(by[k],r);});
+  return Object.values(by).map(x=>({...x,...derive(x)}));
+}
 function renderCampTbl(){
-  const s=state.campSort;
-  let cps=DATA.campaigns.filter(matchF).map(c=>({...c,...derive(c)}));
+  const s=state.campSort; let cps=campAgg();
   if(state.search){const q=state.search.toLowerCase();cps=cps.filter(c=>c.campaign.toLowerCase().includes(q)||c.media.includes(state.search));}
   cps.sort((a,b)=>{const x=a[s.key]??-1,y=b[s.key]??-1;return(x<y?-1:x>y?1:0)*s.dir;});
   const head=`<thead><tr>${th('캠페인','campaign',s)}${th('구분','g',s)}${th('광고비','c',s)}${th('매출','rv',s)}${th('ROAS','roas',s)}${th('설치','ins',s)}${th('가입','su',s)}${th('첫구매','fo',s)}${th('첫구매CPA','cpaFo',s)}</tr></thead>`;
@@ -321,11 +308,34 @@ function renderCampTbl(){
   document.getElementById('campTbl').innerHTML=head+'<tbody>'+(body||`<tr><td colspan=9 class=muted style="text-align:center;padding:24px">결과 없음</td></tr>`)+'</tbody>';
 }
 
-// ── 필터 패널 ──
+function renderAll(){ renderKPIs(); renderTrend(); renderMediaChart(); renderMediaTbl(); renderCampTbl();
+  const d=document.getElementById('mediaSub'); if(d)d.textContent=`${state.start} ~ ${state.end}`; }
+
+// 기간 적용
+function applyPreset(n){ state.preset=n; state.end=maxDate; state.start=addDays(maxDate,-(n-1));
+  if(state.start<minDate)state.start=minDate; syncDateUI(); renderAll(); }
+function applyCustom(){ state.preset=null;
+  const si=document.getElementById('dStart'), ei=document.getElementById('dEnd');
+  let s=si.value, e=ei.value; if(!s||!e)return;
+  if(s>e){[s,e]=[e,s];} state.start=s; state.end=e; syncDateUI(); renderAll(); }
+function syncDateUI(){
+  document.getElementById('dStart').value=state.start;
+  document.getElementById('dEnd').value=state.end;
+  document.querySelectorAll('.seg[data-dim="preset"] button').forEach(b=>b.classList.toggle('on',+b.dataset.v===state.preset));
+  const days=dayspan(state.start,state.end);
+  document.getElementById('rangeTag').textContent=`${state.start} ~ ${state.end} · ${days}일`;
+}
+
 function renderFilters(){
   const L=DATA.meta.dimLabels;
-  let html=`<div class="frow range"><span class="flabel">기간</span><div class="seg" data-dim="range">
-    ${[7,14,30].map(r=>`<button data-v="${r}" class="${state.range===r?'on':''}">최근 ${r}일</button>`).join('')}</div></div>`;
+  let html=`<div class="frow"><span class="flabel">기간</span>
+    <div class="seg" data-dim="preset">${[7,14,30].map(r=>`<button data-v="${r}">최근 ${r}일</button>`).join('')}</div>
+    <div class="dpick">
+      <input type="date" id="dStart" min="${minDate}" max="${maxDate}">
+      <span class="tilde">~</span>
+      <input type="date" id="dEnd" min="${minDate}" max="${maxDate}">
+    </div>
+    <span class="rangetag" id="rangeTag"></span></div>`;
   DIMS.forEach(d=>{
     const vals=DATA.dims[DIMKEY[d]]||[];
     html+=`<div class="frow"><span class="flabel">${L[d]}</span><div class="seg" data-dim="${d}">
@@ -333,27 +343,25 @@ function renderFilters(){
       ${vals.map(v=>`<button data-v="${v}" class="${state.f[d]===v?'on':''}">${v}</button>`).join('')}</div></div>`;
   });
   const p=document.getElementById('fpanel'); p.innerHTML=html;
-  p.onclick=e=>{const b=e.target.closest('button');if(!b)return;
+  syncDateUI();
+  p.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
     const dim=b.parentElement.dataset.dim, v=b.dataset.v;
-    [...b.parentElement.children].forEach(x=>x.classList.toggle('on',x===b));
-    if(dim==='range'){state.range=+v; renderKPIs(); renderTrend(); }
-    else { state.f[dim]=v; renderAll(); }
-    renderSelsum();
-  };
+    if(dim==='preset'){ applyPreset(+v); }
+    else { state.f[dim]=v; [...b.parentElement.children].forEach(x=>x.classList.toggle('on',x===b)); renderAll(); renderSelsum(); }
+  });
+  document.getElementById('dStart').addEventListener('change',applyCustom);
+  document.getElementById('dEnd').addEventListener('change',applyCustom);
 }
 function renderSelsum(){
   const L=DATA.meta.dimLabels;
   const act=DIMS.filter(d=>state.f[d]!=='전체').map(d=>`${L[d]}=<b>${state.f[d]}</b>`);
-  document.getElementById('selsum').innerHTML = act.length?('선택: '+act.join(' · ')):'전체 광고 성과';
+  document.getElementById('selsum').innerHTML=act.length?('선택: '+act.join(' · ')):'전체 광고 성과';
 }
-
-function renderAll(){ renderKPIs(); renderTrend(); renderMediaChart(); renderMediaTbl(); renderCampTbl(); }
-
 function bind(){
   document.getElementById('metricSeg').onclick=e=>{const b=e.target.closest('button');if(!b)return;
     state.metric=b.dataset.m;[...e.currentTarget.children].forEach(x=>x.classList.toggle('on',x===b));renderTrend();};
   document.getElementById('campSearch').oninput=e=>{state.search=e.target.value;renderCampTbl();};
-  document.getElementById('resetBtn').onclick=()=>{DIMS.forEach(d=>state.f[d]='전체');renderFilters();renderSelsum();renderAll();};
+  document.getElementById('resetBtn').onclick=()=>{DIMS.forEach(d=>state.f[d]='전체');applyPreset(30);renderFilters();renderSelsum();renderAll();};
   document.getElementById('mediaTbl').onclick=e=>{const t=e.target.closest('th[data-k]');if(!t)return;
     const k=t.dataset.k;state.mediaSort.dir=state.mediaSort.key===k?-state.mediaSort.dir:-1;state.mediaSort.key=k;renderMediaTbl();};
   document.getElementById('campTbl').onclick=e=>{const t=e.target.closest('th[data-k]');if(!t)return;
@@ -362,8 +370,11 @@ function bind(){
 
 async function init(){
   DATA=await fetch('ad-data.json?t='+Date.now()).then(r=>r.json());
+  const dts=[...new Set(DATA.rows.map(r=>r.dt))].sort();
+  minDate=dts[0]; maxDate=dts[dts.length-1];
+  state.end=maxDate; state.start=addDays(maxDate,-29); if(state.start<minDate)state.start=minDate;
   const m=DATA.meta;
-  document.getElementById('period').textContent=`${m.from} ~ ${m.to} (${m.days}일) · ${m.source}`;
+  document.getElementById('period').textContent=`데이터 ${minDate} ~ ${maxDate} · ${m.source}`;
   document.getElementById('updated').textContent='갱신 '+m.generated.slice(5,16).replace('T',' ');
   document.getElementById('costNote').innerHTML=`<b>지표 기준</b> — ${m.metrics}. ${m.note}`;
   document.getElementById('foot').textContent='지원이(JIWON-AI) · W컨셉 퍼포먼스마케팅팀 · 광고raw 마스터파일 기반';
