@@ -174,7 +174,7 @@
 
   <div class="card">
     <div class="card-h">
-      <div class="card-t"><span class="bar"></span>소재 성과</div>
+      <div class="card-t"><span class="bar"></span>소재 성과 <span class="card-sub" style="font-weight:500;margin-left:6px;">SA(검색)는 소재 구분이 없어 DA만 표시</span></div>
       <input class="search" id="sojaeSearch" placeholder="소재 검색…">
     </div>
     <div class="tbl-wrap"><table id="sojaeTbl"></table></div>
@@ -354,7 +354,7 @@ function campAgg(){
 }
 function sojaeAgg(){
   const by={};
-  inRows().forEach(r=>{const k=r.media+'|'+r.campaign+'|'+r.sojae;
+  inRows().filter(r=>r.g==='DA').forEach(r=>{const k=r.media+'|'+r.campaign+'|'+r.sojae;
     if(!by[k])by[k]={media:r.media,campaign:r.campaign,sojae:r.sojae,s:r.s,g:r.g,t:r.t,o2:r.o2,...emptyAgg()};
     add(by[k],r);});
   return Object.values(by).map(x=>({...x,...derive(x)}));
