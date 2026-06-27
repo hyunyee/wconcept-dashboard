@@ -327,7 +327,7 @@ function campAgg(){
   return Object.values(by).map(x=>({...x,...derive(x)}));
 }
 function renderCampTbl(){
-  const s=state.campSort; let cps=campAgg();
+  const s=state.campSort; let cps=campAgg().filter(c=>c.c>0); // 광고비 0원 초과만
   if(state.search){const q=state.search.toLowerCase();cps=cps.filter(c=>c.campaign.toLowerCase().includes(q)||c.media.includes(state.search));}
   cps.sort((a,b)=>{const x=a[s.key]??-1,y=b[s.key]??-1;return(x<y?-1:x>y?1:0)*s.dir;});
   const head=`<thead><tr>${th('캠페인','campaign',s)}${th('구분','g',s)}${th('광고비','c',s)}${th('매출','rv',s)}${th('ROAS','roas',s)}${th('설치','ins',s)}${th('가입','su',s)}${th('첫구매','fo',s)}${th('첫구매CPA','cpaFo',s)}</tr></thead>`;
