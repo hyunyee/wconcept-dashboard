@@ -39,6 +39,16 @@
     font-size:11px;color:var(--green);font-weight:600;}
   .dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 1.6s infinite;}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+  .tabs{display:flex;gap:4px;margin-bottom:18px;border-bottom:1px solid var(--border);}
+  .tabs button{padding:11px 22px;border:none;background:transparent;color:var(--text-2);font-size:14px;
+    font-weight:700;cursor:pointer;font-family:inherit;border-bottom:2px solid transparent;margin-bottom:-1px;transition:.15s;}
+  .tabs button:hover{color:var(--text-1);}
+  .tabs button.on{color:var(--accent);border-bottom-color:var(--accent);}
+  .donut-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
+  @media(max-width:900px){.donut-grid{grid-template-columns:repeat(2,1fr);}}
+  .donut-card{background:var(--bg-card2);border:1px solid var(--border);border-radius:12px;padding:14px;}
+  .donut-t{font-size:13px;font-weight:700;margin-bottom:8px;text-align:center;}
+  .donut-box{position:relative;height:250px;}
   .fpanel{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);
     padding:14px 18px;margin-bottom:20px;box-shadow:0 1px 3px rgba(15,23,42,0.04);}
   .frow{display:flex;align-items:center;gap:10px;padding:6px 0;flex-wrap:wrap;}
@@ -129,12 +139,18 @@
 </div>
 
 <div class="wrap">
+  <div class="tabs">
+    <button data-tab="perf" class="on">광고 성과</button>
+    <button data-tab="budget">광고비용 편성</button>
+  </div>
+
   <div class="fpanel" id="fpanel"></div>
   <div class="ftools">
     <button class="reset" id="resetBtn">↺ 필터 초기화</button>
     <span class="selsum" id="selsum"></span>
   </div>
 
+ <div id="tab1">
   <div id="cmpNote" style="font-size:11.5px;color:var(--text-3);margin:-4px 2px 12px;"></div>
   <div class="kpis" id="kpis"></div>
 
@@ -180,6 +196,22 @@
     <div class="tbl-wrap"><table id="sojaeTbl"></table></div>
     <div class="morebtn" id="sojaeMore"></div>
   </div>
+ </div><!-- /tab1 -->
+
+ <div id="tab2" style="display:none">
+  <div class="card">
+    <div class="card-h"><div class="card-t"><span class="bar"></span>구분자별 광고비 편성 비율</div>
+      <span class="card-sub" id="budgetSub"></span></div>
+    <div class="donut-grid">
+      <div class="donut-card"><div class="donut-t">대표사업부</div><div class="donut-box"><canvas id="dn_s"></canvas></div></div>
+      <div class="donut-card"><div class="donut-t">광고구분 (DA / SA)</div><div class="donut-box"><canvas id="dn_g"></canvas></div></div>
+      <div class="donut-card"><div class="donut-t">목표1</div><div class="donut-box"><canvas id="dn_o1"></canvas></div></div>
+      <div class="donut-card"><div class="donut-t">광고유형 — DA 내</div><div class="donut-box"><canvas id="dn_tDA"></canvas></div></div>
+      <div class="donut-card"><div class="donut-t">광고유형 — SA 내</div><div class="donut-box"><canvas id="dn_tSA"></canvas></div></div>
+      <div class="donut-card"><div class="donut-t">목표2</div><div class="donut-box"><canvas id="dn_o2"></canvas></div></div>
+    </div>
+  </div>
+ </div><!-- /tab2 -->
 
   <div class="note"><span>ℹ️</span><div id="costNote"></div></div>
   <div class="foot" id="foot"></div>
@@ -202,7 +234,7 @@ let DATA, minDate, maxDate, selMin;
 let state={ start:null, end:null, preset:7, metric:'money',
   f:{s:'전체',g:'전체',t:'전체',o1:'전체',o2:'전체'},
   campSort:{key:'c',dir:-1}, mediaSort:{key:'c',dir:-1}, sojaeSort:{key:'rv',dir:-1},
-  search:'', sojaeSearch:'', campExpanded:false, mediaExpanded:false, sojaeExpanded:false };
+  search:'', sojaeSearch:'', campExpanded:false, mediaExpanded:false, sojaeExpanded:false, tab:'perf' };
 let trendChart, mediaChart;
 
 // 날짜 유틸 (문자열 yyyy-mm-dd 비교 = 시간순)
@@ -411,6 +443,44 @@ function renderSojaeTbl(){
   } else more.innerHTML='';
 }
 
+// ── 탭2: 광고비 편성 도넛 ──
+const PAL=['#2563eb','#7c3aed','#db2777','#d97706','#059669','#0ea5e9','#64748b','#f43f5e'];
+let donuts={};
+function budgetAgg(dim,gf){
+  const by={};
+  inDaily().forEach(r=>{ if(gf&&r.g!==gf)return; const k=r[dim]; if(!k)return; by[k]=(by[k]||0)+r.c; });
+  return Object.entries(by).filter(e=>e[1]>0).sort((a,b)=>b[1]-a[1]);
+}
+function renderDonut(id,entries){
+  const ctx=document.getElementById(id); if(!ctx)return;
+  if(donuts[id]){donuts[id].destroy();donuts[id]=null;}
+  const total=entries.reduce((a,e)=>a+e[1],0);
+  if(!total) return;
+  donuts[id]=new Chart(ctx,{type:'doughnut',data:{labels:entries.map(e=>e[0]),
+    datasets:[{data:entries.map(e=>e[1]),backgroundColor:entries.map((_,i)=>PAL[i%PAL.length]),borderWidth:2,borderColor:'#fff'}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'56%',
+      plugins:{legend:{position:'bottom',labels:{color:'#475569',font:{size:11},boxWidth:10,padding:7,
+        generateLabels:ch=>ch.data.labels.map((l,i)=>{const v=ch.data.datasets[0].data[i];const p=total?v/total*100:0;
+          return {text:`${l} ${p.toFixed(0)}%`,fillStyle:PAL[i%PAL.length],strokeStyle:PAL[i%PAL.length],index:i};})}},
+        tooltip:{callbacks:{label:c=>{const p=total?(c.parsed/total*100).toFixed(1):0;return ` ${c.label}: ${WC(c.parsed)} (${p}%)`;}}}}}});
+}
+function renderBudget(){
+  renderDonut('dn_s',budgetAgg('s'));
+  renderDonut('dn_g',budgetAgg('g'));
+  renderDonut('dn_o1',budgetAgg('o1'));
+  renderDonut('dn_tDA',budgetAgg('t','DA'));
+  renderDonut('dn_tSA',budgetAgg('t','SA'));
+  renderDonut('dn_o2',budgetAgg('o2'));
+  const sub=document.getElementById('budgetSub'); if(sub)sub.textContent=`${state.start} ~ ${state.end} · 광고비 기준`;
+}
+function refresh(){ if(state.tab==='budget') renderBudget(); else renderAll(); }
+function switchTab(t){ state.tab=t;
+  document.getElementById('tab1').style.display=(t==='perf')?'':'none';
+  document.getElementById('tab2').style.display=(t==='budget')?'':'none';
+  document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
+  refresh();
+}
+
 function safe(name,fn){ try{ fn(); }catch(e){ console.error('['+name+'] 렌더 오류:',e); } }
 function renderAll(){
   safe('KPI',renderKPIs); safe('Trend',renderTrend); safe('MediaChart',renderMediaChart);
@@ -420,11 +490,11 @@ function renderAll(){
 
 // 기간 적용
 function applyPreset(n){ state.preset=n; state.end=maxDate; state.start=addDays(maxDate,-(n-1));
-  if(state.start<selMin)state.start=selMin; syncDateUI(); renderAll(); }
+  if(state.start<selMin)state.start=selMin; syncDateUI(); refresh(); }
 function applyCustom(){ state.preset=null;
   const si=document.getElementById('dStart'), ei=document.getElementById('dEnd');
   let s=si.value, e=ei.value; if(!s||!e)return;
-  if(s>e){[s,e]=[e,s];} state.start=s; state.end=e; syncDateUI(); renderAll(); }
+  if(s>e){[s,e]=[e,s];} state.start=s; state.end=e; syncDateUI(); refresh(); }
 function syncDateUI(){
   document.getElementById('dStart').value=state.start;
   document.getElementById('dEnd').value=state.end;
@@ -454,7 +524,7 @@ function renderFilters(){
   p.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
     const dim=b.parentElement.dataset.dim, v=b.dataset.v;
     if(dim==='preset'){ applyPreset(+v); }
-    else { state.f[dim]=v; [...b.parentElement.children].forEach(x=>x.classList.toggle('on',x===b)); renderAll(); renderSelsum(); }
+    else { state.f[dim]=v; [...b.parentElement.children].forEach(x=>x.classList.toggle('on',x===b)); refresh(); renderSelsum(); }
   });
   document.getElementById('dStart').addEventListener('change',applyCustom);
   document.getElementById('dEnd').addEventListener('change',applyCustom);
@@ -469,7 +539,8 @@ function bind(){
     state.metric=b.dataset.m;[...e.currentTarget.children].forEach(x=>x.classList.toggle('on',x===b));renderTrend();};
   document.getElementById('campSearch').oninput=e=>{state.search=e.target.value;renderCampTbl();};
   document.getElementById('sojaeSearch').oninput=e=>{state.sojaeSearch=e.target.value;renderSojaeTbl();};
-  document.getElementById('resetBtn').onclick=()=>{DIMS.forEach(d=>state.f[d]='전체');applyPreset(7);renderFilters();renderSelsum();renderAll();};
+  document.getElementById('resetBtn').onclick=()=>{DIMS.forEach(d=>state.f[d]='전체');state.preset=7;state.end=maxDate;state.start=addDays(maxDate,-6);if(state.start<selMin)state.start=selMin;renderFilters();renderSelsum();refresh();};
+  document.querySelector('.tabs').onclick=e=>{const b=e.target.closest('button');if(b)switchTab(b.dataset.tab);};
   document.getElementById('mediaTbl').onclick=e=>{const t=e.target.closest('th[data-k]');if(!t)return;
     const k=t.dataset.k;state.mediaSort.dir=state.mediaSort.key===k?-state.mediaSort.dir:-1;state.mediaSort.key=k;renderMediaTbl();};
   document.getElementById('campTbl').onclick=e=>{const t=e.target.closest('th[data-k]');if(!t)return;
