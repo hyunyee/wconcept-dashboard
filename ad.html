@@ -179,7 +179,7 @@ const campLabel=c=>(!c||c==='-'||c==='(미지정)')?'(캠페인 미지정 · 매
 const DIMS=['s','g','t','o1','o2'];
 const DIMKEY={s:'daehyo',g:'gubun',t:'yuhyeong',o1:'mokpyo1',o2:'mokpyo2'};
 const M=['c','im','ck','ins','su','od','rv','fo'];
-let DATA, minDate, maxDate;
+let DATA, minDate, maxDate, selMin;
 let state={ start:null, end:null, preset:30, metric:'money',
   f:{s:'전체',g:'전체',t:'전체',o1:'전체',o2:'전체'},
   campSort:{key:'c',dir:-1}, mediaSort:{key:'c',dir:-1}, search:'' };
@@ -188,6 +188,8 @@ let trendChart, mediaChart;
 // 날짜 유틸 (문자열 yyyy-mm-dd 비교 = 시간순)
 function addDays(ds,n){ const [y,m,d]=ds.split('-').map(Number); const dt=new Date(Date.UTC(y,m-1,d));
   dt.setUTCDate(dt.getUTCDate()+n); return dt.toISOString().slice(0,10); }
+function shiftYear(ds,n){ const [y,m,d]=ds.split('-').map(Number); const dt=new Date(Date.UTC(y+n,m-1,d));
+  return dt.toISOString().slice(0,10); }
 function dayspan(a,b){ return Math.round((new Date(a+'T00:00:00Z')-0-(new Date(b+'T00:00:00Z')-0))/-86400000)+1; }
 const md = ds => ds.slice(5).replace('-','/');
 
@@ -203,41 +205,50 @@ const inRange=()=>DATA.rows.filter(r=>r.dt>=state.start&&r.dt<=state.end&&matchF
 function prevRange(){
   const len=dayspan(state.start,state.end);
   const pe=addDays(state.start,-1), ps=addDays(pe,-(len-1));
-  if(ps<minDate) return null;
-  return DATA.rows.filter(r=>r.dt>=ps&&r.dt<=pe&&matchF(r));
+  if(ps<selMin) return null;               // 직전 기간이 현재 밴드 시작 이전이면 비교 안 함
+  const r=DATA.rows.filter(x=>x.dt>=ps&&x.dt<=pe&&matchF(x));
+  return r.length?{rows:r,ps,pe}:null;
+}
+function yoyRange(){                         // 전년 동기(YoY)
+  const ys=shiftYear(state.start,-1), ye=shiftYear(state.end,-1);
+  const r=DATA.rows.filter(x=>x.dt>=ys&&x.dt<=ye&&matchF(x));
+  return r.length?{rows:r,ys,ye}:null;
 }
 
+function deltaLine(curV,cmpV,inv,ppt,label,title){
+  if(cmpV==null||curV==null||(!ppt&&cmpV===0))
+    return `<div class="delta flat" title="${title}">– <span class="muted" style="font-weight:500">${label}</span></div>`;
+  let val,txt;
+  if(ppt){ val=curV-cmpV; txt=(val>0?'+':'')+val.toFixed(0)+'%p'; }
+  else { val=(curV-cmpV)/cmpV*100; txt=(val>0?'+':'')+val.toFixed(0)+'%'; }
+  const good=inv?val<0:val>0; const cls=Math.abs(val)<0.5?'flat':(good?'up':'down');
+  const ar=val>0?'▲':val<0?'▼':'–';
+  return `<div class="delta ${cls}" title="${title}">${ar} ${txt} <span class="muted" style="font-weight:500">${label}</span></div>`;
+}
 function renderKPIs(){
   const cur=derive(inRange().reduce(add,emptyAgg()));
-  const pv=prevRange(); const prev=pv?derive(pv.reduce(add,emptyAgg())):null;
-  const dP=(c,p)=>(p==null||p===0)?null:(c-p)/p*100;
-  // 비교 기준(직전 동일기간) 날짜 표기
-  const len=dayspan(state.start,state.end);
-  const pe=addDays(state.start,-1), ps=addDays(pe,-(len-1));
-  const cmpTxt=prev?`${ps} ~ ${pe} (${len}일)`:'데이터 없음';
+  const pv=prevRange(); const prev=pv?derive(pv.rows.reduce(add,emptyAgg())):null;
+  const yv=yoyRange(); const yoy=yv?derive(yv.rows.reduce(add,emptyAgg())):null;
+  const yoyT=yv?`전년 동기 ${yv.ys} ~ ${yv.ye} 대비`:'전년 동기 데이터 없음';
+  const prevT=pv?`직전 동일기간 ${pv.ps} ~ ${pv.pe} 대비`:'직전 기간 데이터 없음';
   const cn=document.getElementById('cmpNote');
-  if(cn) cn.innerHTML = prev
-    ? `증감률(▲▼)은 <b style="color:var(--text-2)">직전 동일기간 ${cmpTxt}</b> 대비입니다`
-    : `증감률 비교 기준(직전 ${len}일)에 데이터가 없어 일부 카드는 증감 미표시`;
-  const cards=[
-    {cls:'k-cost',lab:'광고비',val:WC(cur.c),dl:prev?dP(cur.c,prev.c):null,inv:true},
-    {cls:'k-rev', lab:'매출(보고)',val:WC(cur.rv),dl:prev?dP(cur.rv,prev.rv):null},
-    {cls:'k-roas',lab:'ROAS',val:F.pct(cur.roas),dl:prev?(cur.roas-prev.roas):null,ppt:true},
-    {cls:'',lab:'설치',val:F.num(cur.ins),dl:prev?dP(cur.ins,prev.ins):null},
-    {cls:'',lab:'가입',val:F.num(cur.su),dl:prev?dP(cur.su,prev.su):null},
-    {cls:'',lab:'첫구매',val:F.num(cur.fo),dl:prev?dP(cur.fo,prev.fo):null},
-    {cls:'k-cpa',lab:'가입 CPA',val:F.won(cur.cpaSu),dl:prev?dP(cur.cpaSu,prev.cpaSu):null,inv:true},
-    {cls:'k-cpa',lab:'첫구매 CPA',val:F.won(cur.cpaFo),dl:prev?dP(cur.cpaFo,prev.cpaFo):null,inv:true},
+  if(cn) cn.innerHTML=`<b style="color:var(--text-2)">YoY</b> = 전년 동기(${yv?yv.ys+' ~ '+yv.ye:'데이터 없음'}) · `
+    +`<b style="color:var(--text-2)">vs 직전</b> = 직전 동일기간(${pv?pv.ps+' ~ '+pv.pe:'데이터 없음'}) 대비`;
+  const defs=[
+    {cls:'k-cost',lab:'광고비',f:WC,get:o=>o.c,inv:true},
+    {cls:'k-rev', lab:'매출(보고)',f:WC,get:o=>o.rv},
+    {cls:'k-roas',lab:'ROAS',f:v=>v==null?'—':v.toFixed(0)+'%',get:o=>o.roas,ppt:true},
+    {cls:'',lab:'설치',f:F.num,get:o=>o.ins},
+    {cls:'',lab:'가입',f:F.num,get:o=>o.su},
+    {cls:'',lab:'첫구매',f:F.num,get:o=>o.fo},
+    {cls:'k-cpa',lab:'가입 CPA',f:F.won,get:o=>o.cpaSu,inv:true},
+    {cls:'k-cpa',lab:'첫구매 CPA',f:F.won,get:o=>o.cpaFo,inv:true},
   ];
-  document.getElementById('kpis').innerHTML=cards.map(c=>{
-    let dl='';
-    if(c.dl!=null&&isFinite(c.dl)){
-      const good=c.inv?c.dl<0:c.dl>0; const cls=Math.abs(c.dl)<0.5?'flat':(good?'up':'down');
-      const ar=c.dl>0?'▲':c.dl<0?'▼':'–';
-      const tx=c.ppt?((c.dl>0?'+':'')+c.dl.toFixed(0)+'%p'):((c.dl>0?'+':'')+c.dl.toFixed(0)+'%');
-      dl=`<div class="delta ${cls}" title="직전 ${ps} ~ ${pe} 대비">${ar} ${tx} <span class="muted" style="font-weight:500">vs 직전</span></div>`;
-    }
-    return `<div class="kpi ${c.cls}"><div class="lab">${c.lab}</div><div class="val">${c.val}</div>${dl}</div>`;
+  document.getElementById('kpis').innerHTML=defs.map(d=>{
+    const cv=d.get(cur), yvl=yoy?d.get(yoy):null, pvl=prev?d.get(prev):null;
+    return `<div class="kpi ${d.cls}"><div class="lab">${d.lab}</div><div class="val">${d.f(cv)}</div>
+      ${deltaLine(cv,yvl,d.inv,d.ppt,'YoY',yoyT)}
+      ${deltaLine(cv,pvl,d.inv,d.ppt,'vs 직전',prevT)}</div>`;
   }).join('');
 }
 
@@ -351,9 +362,9 @@ function renderFilters(){
   let html=`<div class="frow"><span class="flabel">기간</span>
     <div class="seg" data-dim="preset">${[7,14,30].map(r=>`<button data-v="${r}">최근 ${r}일</button>`).join('')}</div>
     <div class="dpick">
-      <input type="date" id="dStart" min="${minDate}" max="${maxDate}">
+      <input type="date" id="dStart" min="${selMin}" max="${maxDate}">
       <span class="tilde">~</span>
-      <input type="date" id="dEnd" min="${minDate}" max="${maxDate}">
+      <input type="date" id="dEnd" min="${selMin}" max="${maxDate}">
     </div>
     <span class="rangetag" id="rangeTag"></span></div>`;
   DIMS.forEach(d=>{
@@ -392,9 +403,10 @@ async function init(){
   DATA=await fetch('ad-data.json?t='+Date.now()).then(r=>r.json());
   const dts=[...new Set(DATA.rows.map(r=>r.dt))].sort();
   minDate=dts[0]; maxDate=dts[dts.length-1];
-  state.end=maxDate; state.start=addDays(maxDate,-29); if(state.start<minDate)state.start=minDate;
+  selMin=addDays(maxDate,-((DATA.meta.days||90)-1)); if(selMin<minDate)selMin=minDate; // 선택 가능한 현재 밴드 시작(전년 데이터는 YoY용)
+  state.end=maxDate; state.start=addDays(maxDate,-29); if(state.start<selMin)state.start=selMin;
   const m=DATA.meta;
-  document.getElementById('period').textContent=`데이터 ${minDate} ~ ${maxDate} · ${m.source}`;
+  document.getElementById('period').textContent=`데이터 ${selMin} ~ ${maxDate} (YoY 비교 ${m.yoyFrom}~${m.yoyTo} 포함) · ${m.source}`;
   document.getElementById('updated').textContent='갱신 '+m.generated.slice(5,16).replace('T',' ');
   document.getElementById('costNote').innerHTML=`<b>지표 기준</b> — ${m.metrics}. ${m.note}`;
   document.getElementById('foot').textContent='지원이(JIWON-AI) · W컨셉 퍼포먼스마케팅팀 · 광고raw 마스터파일 기반';
