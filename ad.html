@@ -474,7 +474,10 @@ function renderDonut(id,entries,saLabel,saCost){
       plugins:{legend:{position:'bottom',labels:{color:'#475569',font:{size:11},boxWidth:10,padding:6,
         generateLabels:ch=>ch.data.labels.map((l,i)=>{const v=ch.data.datasets[0].data[i];const p=total?v/total*100:0;
           return {text:`${l} ${p.toFixed(0)}%`+exTxt(l,v),fillStyle:PAL[i%PAL.length],strokeStyle:PAL[i%PAL.length],index:i};})}},
-        tooltip:{callbacks:{label:c=>{const p=total?(c.parsed/total*100).toFixed(1):0;return ` ${c.label}: ${WC(c.parsed)} (${p}%)`+exTxt(c.label,c.parsed);}}},
+        tooltip:{callbacks:{
+          label:c=>{const p=total?(c.parsed/total*100).toFixed(1):0;return ` ${c.label}: ${WC(c.parsed)} (${p}%)`+exTxt(c.label,c.parsed);},
+          afterLabel:c=>{const e=entries[c.dataIndex]; if(e&&e[2]&&e[2].length) return e[2].map(x=>`   · ${x[0]} ${WC(x[1])} (${total?(x[1]/total*100).toFixed(1):0}%)`); return undefined;}
+        }},
         datalabels:{color:'#fff',font:{weight:'700',size:11},textAlign:'center',
           formatter:(val,ctx)=>{const p=total?val/total*100:0; return p>=7?ctx.chart.data.labels[ctx.dataIndex]+'\n'+p.toFixed(0)+'%':'';}}
       }}});
@@ -482,9 +485,9 @@ function renderDonut(id,entries,saLabel,saCost){
 function saCostNow(){ let s=0; inRows().forEach(r=>{if(r.g==='SA')s+=r.c;}); return s; }
 function groupSmall(entries,thr){
   const total=entries.reduce((a,e)=>a+e[1],0); if(!total) return entries;
-  const big=[]; let etc=0;
-  entries.forEach(e=>{ if(e[1]/total*100>=thr) big.push(e); else etc+=e[1]; });
-  if(etc>0) big.push(['기타',etc]);
+  const big=[]; const etcList=[]; let etc=0;
+  entries.forEach(e=>{ if(e[1]/total*100>=thr) big.push(e); else {etc+=e[1]; etcList.push(e);} });
+  if(etc>0) big.push(['기타',etc,etcList]); // 3번째: 기타 구성 매체 목록
   return big;
 }
 function renderBudget(){
