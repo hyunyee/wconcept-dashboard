@@ -145,7 +145,7 @@
 
   <div class="grid2">
     <div class="card">
-      <div class="card-h"><div class="card-t"><span class="bar"></span>매체별 비용 vs 매출</div>
+      <div class="card-h"><div class="card-t"><span class="bar"></span>매체별 비용 · ROAS</div>
         <span class="card-sub" id="mediaSub"></span></div>
       <div class="chart-box" style="height:360px"><canvas id="mediaChart"></canvas></div>
     </div>
@@ -182,7 +182,7 @@ const DIMS=['s','g','t','o1','o2'];
 const DIMKEY={s:'daehyo',g:'gubun',t:'yuhyeong',o1:'mokpyo1',o2:'mokpyo2'};
 const M=['c','im','ck','ins','su','od','rv','fo'];
 let DATA, minDate, maxDate, selMin;
-let state={ start:null, end:null, preset:30, metric:'money',
+let state={ start:null, end:null, preset:7, metric:'money',
   f:{s:'전체',g:'전체',t:'전체',o1:'전체',o2:'전체'},
   campSort:{key:'c',dir:-1}, mediaSort:{key:'c',dir:-1}, search:'' };
 let trendChart, mediaChart;
@@ -292,12 +292,16 @@ function renderMediaChart(){
   const ms=mediaAgg().sort((a,b)=>b.c-a.c||b.rv-a.rv).slice(0,12);
   const ctx=document.getElementById('mediaChart'); if(mediaChart)mediaChart.destroy();
   mediaChart=new Chart(ctx,{type:'bar',data:{labels:ms.map(m=>m.media),datasets:[
-    {label:'광고비',data:ms.map(m=>m.c),backgroundColor:'rgba(37,99,235,0.75)',borderRadius:4},
-    {label:'매출',data:ms.map(m=>m.rv),backgroundColor:'rgba(5,150,105,0.7)',borderRadius:4},
+    {label:'광고비',data:ms.map(m=>m.c),backgroundColor:'rgba(37,99,235,0.75)',borderRadius:4,xAxisID:'x'},
+    {label:'ROAS(%)',data:ms.map(m=>m.roas),backgroundColor:'rgba(217,119,6,0.8)',borderRadius:4,xAxisID:'x2'},
   ]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
     plugins:{legend:{labels:{color:'#475569',usePointStyle:true,pointStyleWidth:10,font:{size:12}}},
-      tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+F.won(c.parsed.x)}}},
-    scales:{x:{grid:{color:'rgba(15,23,42,0.07)'},ticks:{color:'#64748b',font:{size:10},callback:v=>(v/100000000).toFixed(0)+'억'}},
+      tooltip:{callbacks:{label:c=>c.dataset.label==='광고비'
+        ?' 광고비: '+F.won(c.parsed.x)
+        :' ROAS: '+(c.parsed.x==null?'—':c.parsed.x.toFixed(0)+'%')}}},
+    scales:{
+      x:{position:'bottom',grid:{color:'rgba(15,23,42,0.07)'},ticks:{color:'#2563eb',font:{size:10},callback:v=>(v/100000000).toFixed(0)+'억'},title:{display:true,text:'광고비',color:'#2563eb',font:{size:10}}},
+      x2:{position:'top',grid:{drawOnChartArea:false},ticks:{color:'#d97706',font:{size:10},callback:v=>v+'%'},title:{display:true,text:'ROAS',color:'#d97706',font:{size:10}}},
       y:{grid:{display:false},ticks:{color:'#475569',font:{size:11}}}}}});
 }
 const th=(label,key,s)=>{const act=s.key===key;const ar=act?(s.dir<0?'▼':'▲'):'▲';
@@ -361,7 +365,7 @@ function syncDateUI(){
 function renderFilters(){
   const L=DATA.meta.dimLabels;
   let html=`<div class="frow"><span class="flabel">기간</span>
-    <div class="seg" data-dim="preset">${[7,14,30].map(r=>`<button data-v="${r}">최근 ${r}일</button>`).join('')}</div>
+    <div class="seg" data-dim="preset">${[[1,'전일'],[7,'최근 7일'],[14,'최근 14일'],[30,'최근 30일']].map(([r,l])=>`<button data-v="${r}">${l}</button>`).join('')}</div>
     <div class="dpick">
       <input type="date" id="dStart" min="${selMin}" max="${maxDate}">
       <span class="tilde">~</span>
@@ -393,7 +397,7 @@ function bind(){
   document.getElementById('metricSeg').onclick=e=>{const b=e.target.closest('button');if(!b)return;
     state.metric=b.dataset.m;[...e.currentTarget.children].forEach(x=>x.classList.toggle('on',x===b));renderTrend();};
   document.getElementById('campSearch').oninput=e=>{state.search=e.target.value;renderCampTbl();};
-  document.getElementById('resetBtn').onclick=()=>{DIMS.forEach(d=>state.f[d]='전체');applyPreset(30);renderFilters();renderSelsum();renderAll();};
+  document.getElementById('resetBtn').onclick=()=>{DIMS.forEach(d=>state.f[d]='전체');applyPreset(7);renderFilters();renderSelsum();renderAll();};
   document.getElementById('mediaTbl').onclick=e=>{const t=e.target.closest('th[data-k]');if(!t)return;
     const k=t.dataset.k;state.mediaSort.dir=state.mediaSort.key===k?-state.mediaSort.dir:-1;state.mediaSort.key=k;renderMediaTbl();};
   document.getElementById('campTbl').onclick=e=>{const t=e.target.closest('th[data-k]');if(!t)return;
@@ -405,7 +409,7 @@ async function init(){
   const dts=[...new Set(DATA.rows.map(r=>r.dt))].sort();
   minDate=dts[0]; maxDate=dts[dts.length-1];
   selMin=addDays(maxDate,-((DATA.meta.days||90)-1)); if(selMin<minDate)selMin=minDate; // 선택 가능한 현재 밴드 시작(전년 데이터는 YoY용)
-  state.end=maxDate; state.start=addDays(maxDate,-29); if(state.start<selMin)state.start=selMin;
+  state.end=maxDate; state.start=addDays(maxDate,-6); if(state.start<selMin)state.start=selMin; // 기본 최근 7일
   const m=DATA.meta;
   document.getElementById('period').textContent=`데이터 ${selMin} ~ ${maxDate} (YoY 비교 ${m.yoyFrom}~${m.yoyTo} 포함) · ${m.source}`;
   document.getElementById('updated').textContent='갱신 '+m.generated.slice(5,16).replace('T',' ');
