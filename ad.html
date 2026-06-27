@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>W컨셉 광고 성과 대시보드</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&display=swap');
   :root{
@@ -451,26 +452,33 @@ function budgetAgg(dim,gf){
   inDaily().forEach(r=>{ if(gf&&r.g!==gf)return; const k=r[dim]; if(!k)return; by[k]=(by[k]||0)+r.c; });
   return Object.entries(by).filter(e=>e[1]>0).sort((a,b)=>b[1]-a[1]);
 }
-function renderDonut(id,entries){
+function renderDonut(id,entries,excl){
   const ctx=document.getElementById(id); if(!ctx)return;
   if(donuts[id]){donuts[id].destroy();donuts[id]=null;}
   const total=entries.reduce((a,e)=>a+e[1],0);
   if(!total) return;
-  donuts[id]=new Chart(ctx,{type:'doughnut',data:{labels:entries.map(e=>e[0]),
+  let exclMap=null; // SA제외(=DA only) 비중
+  if(excl){ const et=excl.reduce((a,e)=>a+e[1],0); exclMap={}; excl.forEach(e=>exclMap[e[0]]=et?e[1]/et*100:0); }
+  donuts[id]=new Chart(ctx,{type:'doughnut',plugins:[ChartDataLabels],data:{labels:entries.map(e=>e[0]),
     datasets:[{data:entries.map(e=>e[1]),backgroundColor:entries.map((_,i)=>PAL[i%PAL.length]),borderWidth:2,borderColor:'#fff'}]},
-    options:{responsive:true,maintainAspectRatio:false,cutout:'56%',
-      plugins:{legend:{position:'bottom',labels:{color:'#475569',font:{size:11},boxWidth:10,padding:7,
+    options:{responsive:true,maintainAspectRatio:false,cutout:'54%',layout:{padding:6},
+      plugins:{legend:{position:'bottom',labels:{color:'#475569',font:{size:11},boxWidth:10,padding:6,
         generateLabels:ch=>ch.data.labels.map((l,i)=>{const v=ch.data.datasets[0].data[i];const p=total?v/total*100:0;
-          return {text:`${l} ${p.toFixed(0)}%`,fillStyle:PAL[i%PAL.length],strokeStyle:PAL[i%PAL.length],index:i};})}},
-        tooltip:{callbacks:{label:c=>{const p=total?(c.parsed/total*100).toFixed(1):0;return ` ${c.label}: ${WC(c.parsed)} (${p}%)`;}}}}}});
+          let txt=`${l} ${p.toFixed(0)}%`; if(exclMap&&exclMap[l]!=null) txt+=` (SA제외 ${exclMap[l].toFixed(0)}%)`;
+          return {text:txt,fillStyle:PAL[i%PAL.length],strokeStyle:PAL[i%PAL.length],index:i};})}},
+        tooltip:{callbacks:{label:c=>{const p=total?(c.parsed/total*100).toFixed(1):0;
+          let s=` ${c.label}: ${WC(c.parsed)} (${p}%)`; if(exclMap&&exclMap[c.label]!=null)s+=` · SA제외 ${exclMap[c.label].toFixed(0)}%`; return s;}}},
+        datalabels:{color:'#fff',font:{weight:'700',size:11},textAlign:'center',
+          formatter:(val,ctx)=>{const p=total?val/total*100:0; return p>=7?ctx.chart.data.labels[ctx.dataIndex]+'\n'+p.toFixed(0)+'%':'';}}
+      }}});
 }
 function renderBudget(){
-  renderDonut('dn_s',budgetAgg('s'));
+  renderDonut('dn_s',budgetAgg('s'),budgetAgg('s','DA'));
   renderDonut('dn_g',budgetAgg('g'));
-  renderDonut('dn_o1',budgetAgg('o1'));
+  renderDonut('dn_o1',budgetAgg('o1'),budgetAgg('o1','DA'));
   renderDonut('dn_tDA',budgetAgg('t','DA'));
   renderDonut('dn_tSA',budgetAgg('t','SA'));
-  renderDonut('dn_o2',budgetAgg('o2'));
+  renderDonut('dn_o2',budgetAgg('o2'),budgetAgg('o2','DA'));
   const sub=document.getElementById('budgetSub'); if(sub)sub.textContent=`${state.start} ~ ${state.end} · 광고비 기준`;
 }
 function refresh(){ if(state.tab==='budget') renderBudget(); else renderAll(); }
