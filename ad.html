@@ -249,7 +249,7 @@ const campLabel=c=>(!c||c==='-'||c==='(미지정)')?'(캠페인 미지정 · 매
 const DIMS=['s','g','t','o1','o2'];
 const DIMKEY={s:'daehyo',g:'gubun',t:'yuhyeong',o1:'mokpyo1',o2:'mokpyo2'};
 const M=['c','ins','su','rv','fo','uv','auv'];
-let DATA, minDate, maxDate, selMin;
+let DATA, minDate, maxDate, selMin, GAPSET=new Set();
 let state={ start:null, end:null, preset:7, metric:'money',
   f:{s:'전체',g:'전체',t:'전체',o1:'전체',o2:'전체'},
   campSort:{key:'c',dir:-1}, mediaSort:{key:'c',dir:-1}, sojaeSort:{key:'rv',dir:-1}, promoSort:{key:'c',dir:-1},
@@ -642,15 +642,32 @@ function bind(){
 }
 
 async function init(){
-  DATA=await fetch('ad-data.json?t='+Date.now()).then(r=>r.json());
+  const [base,gap]=await Promise.all([
+    fetch('ad-data.json?t='+Date.now()).then(r=>r.json()),
+    fetch('airbridge-gap.json?t='+Date.now()).then(r=>r.ok?r.json():null).catch(()=>null)
+  ]);
+  DATA=base;
+  let gapDates=[];
+  if(gap&&gap.daily){
+    // 광고raw(엑셀)에 없는 날짜만 보강 — 엑셀 우선
+    const exD=new Set(DATA.daily.map(r=>r.dt)), exR=new Set(DATA.rows.map(r=>r.dt));
+    DATA.daily=DATA.daily.concat(gap.daily.filter(r=>!exD.has(r.dt)));
+    DATA.rows =DATA.rows.concat(gap.rows.filter(r=>!exR.has(r.dt)));
+    gapDates=(gap.meta&&gap.meta.gapDates)||[]; GAPSET=new Set(gapDates);
+    // 갭에서 새로 등장한 차원값을 필터 목록에 보강
+    const dk={s:'daehyo',g:'gubun',t:'yuhyeong',o1:'mokpyo1',o2:'mokpyo2'};
+    for(const r of gap.daily){ for(const k in dk){ const arr=DATA.dims[dk[k]]; if(arr&&r[k]&&!arr.includes(r[k]))arr.push(r[k]); } }
+  }
   const dts=[...new Set(DATA.rows.map(r=>r.dt))].sort();
   minDate=dts[0]; maxDate=dts[dts.length-1];
   selMin=addDays(maxDate,-((DATA.meta.days||90)-1)); if(selMin<minDate)selMin=minDate; // 선택 가능한 현재 밴드 시작(전년 데이터는 YoY용)
   state.end=maxDate; state.start=addDays(maxDate,-6); if(state.start<selMin)state.start=selMin; // 기본 최근 7일
   const m=DATA.meta;
-  document.getElementById('period').textContent=`데이터 ${selMin} ~ ${maxDate} (YoY 비교 ${m.yoyFrom}~${m.yoyTo} 포함) · ${m.source}`;
+  const gapNote=gapDates.length?` · <b style="color:#c026d3">⚡${gapDates[0]}~${gapDates[gapDates.length-1]} Airbridge 보강</b>`:'';
+  document.getElementById('period').innerHTML=`데이터 ${selMin} ~ ${maxDate} (YoY 비교 ${m.yoyFrom}~${m.yoyTo} 포함) · ${m.source}${gapNote}`;
   document.getElementById('updated').textContent='갱신 '+m.generated.slice(5,16).replace('T',' ');
-  document.getElementById('costNote').innerHTML=`<b>지표 기준</b> — ${m.metrics}. ${m.note}`;
+  document.getElementById('costNote').innerHTML=`<b>지표 기준</b> — ${m.metrics}. ${m.note}`
+    +(gapDates.length?`<br><b style="color:#c026d3">⚡ Airbridge 보강(${gapDates.join(', ')})</b> — 광고비=Gross(×1.1), 매출=App+Web×2.4 보정. UV 미집계.`:'');
   document.getElementById('foot').textContent='지원이(JIWON-AI) · W컨셉 퍼포먼스마케팅팀 · 광고raw 마스터파일 기반';
   renderFilters(); renderSelsum(); bind(); renderAll();
 }
