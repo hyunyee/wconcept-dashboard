@@ -65,11 +65,13 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
 .fi-mark.yavg{background:rgba(148,163,184,.7);outline:1.5px dashed rgba(148,163,184,.5)}
 .fi-inputs{display:flex;align-items:center;gap:6px;font-size:10px;color:#94a3b8;flex-wrap:wrap}
 .fi-inp-grp{display:flex;align-items:center;gap:2px}
-.fi-inp-grp+.fi-inp-grp{padding-left:6px;border-left:1px solid #e2e8f0}
-.fi-inp-lbl{font-size:10px;color:#94a3b8}
-.fi-inp-lbl.mvg{color:#f59e0b}
-.fi-inp-lbl.yvg{color:#94a3b8}
-.fi-inp{width:44px !important;font-size:10px !important;text-align:right;padding:1px 2px !important}
+.fi-legend{display:flex;align-items:center;gap:10px;margin-top:4px}
+.fi-leg-m{font-size:10px;color:#f59e0b;display:flex;align-items:center;gap:3px}
+.fi-leg-m::before{content:'';display:inline-block;width:8px;height:2px;background:#f59e0b;border-radius:1px}
+.fi-leg-y{font-size:10px;color:#94a3b8;display:flex;align-items:center;gap:3px}
+.fi-leg-y::before{content:'';display:inline-block;width:8px;height:2px;background:#94a3b8;border-radius:1px}
+.fi-leg-note{font-size:10px;color:#cbd5e1;margin-left:auto}
+.fi-inp-grp{display:none}
 /* 구분선 행 */
 .achv-table .divider-row td{border-top:2px solid #e2e8f0;background:#f8fafc;font-size:10px;color:#94a3b8;font-weight:600;padding:4px 10px}
 
@@ -135,23 +137,28 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
 .mc-btn{font-size:11px;color:#64748b;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:4px 10px;cursor:pointer}
 .mc-btn:hover{background:#f1f5f9}
 .mc-body{display:none;grid-template-columns:320px 1fr;gap:0;padding:0}
-/* 마감코멘트 폼 */
-.mc-form-panel{padding:16px 20px;border-right:1px solid #f1f5f9;overflow-y:auto;max-height:420px}
-.mc-fs-title{font-size:10px;font-weight:700;color:#64748b;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px}
-.mc-fg{display:grid;grid-template-columns:auto 1fr auto;gap:3px 8px;align-items:center;margin-bottom:10px}
-.mc-fg label{font-size:10px;color:#94a3b8;white-space:nowrap}
-.mc-fg .mc-unit{font-size:10px;color:#cbd5e1}
-/* 텍스트 미리보기 */
-.mc-preview-panel{padding:16px 18px;background:#fafbfd;display:flex;flex-direction:column;gap:10px}
-.mc-text-pre{font-size:12px;line-height:1.75;white-space:pre-wrap;color:#1e293b;font-family:'Pretendard',sans-serif;margin:0;flex:1}
+/* 텍스트 미리보기 + 인사이트 */
+.mc-preview-panel{padding:16px 18px;border-right:1px solid #f1f5f9;display:flex;flex-direction:column;gap:8px}
+.mc-insights-panel{padding:16px 18px;background:#fafbfd;overflow-y:auto;max-height:380px}
+.mc-text-pre{font-size:12px;line-height:1.75;white-space:pre-wrap;color:#1e293b;font-family:'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif;margin:0;flex:1}
+.mc-insight{display:flex;align-items:flex-start;gap:8px;padding:8px 10px;border-radius:7px;margin-bottom:6px;font-size:11px;line-height:1.5}
+.mc-insight:last-child{margin-bottom:0}
+.mc-insight.good{background:#f0fdf4;color:#166534}
+.mc-insight.warn{background:#fff7ed;color:#92400e}
+.mc-insight.info{background:#eff6ff;color:#1e40af}
+.mc-insight.neutral{background:#f8fafc;color:#475569}
+.mc-insight-ico{font-size:14px;flex-shrink:0;margin-top:1px}
 /* inputs */
-.mc-num{border:1.5px solid #e2e8f0;background:#fff;border-radius:4px;font:inherit;color:#0f172a;font-size:11px;font-weight:700;outline:none;width:60px;text-align:right;padding:1px 4px;transition:border .15s}
-.mc-num:focus{border-color:#8b5cf6;background:rgba(139,92,246,.04)}
+.mc-num{border:1px solid #e2e8f0;background:#fff;border-radius:4px;font:inherit;color:#0f172a;font-size:11px;font-weight:700;outline:none;width:60px;text-align:right;padding:1px 4px}
+.mc-num:focus{border-color:#8b5cf6}
 .mc-num-wide{width:80px}
 .mc-btn-save{background:#0B1D3A;color:#fff;border:none;border-radius:6px;padding:5px 14px;font-size:12px;font-weight:700;cursor:pointer}
 .mc-btn-save:hover{background:#162B52}
-.mc-btn-copy{background:#8b5cf6;color:#fff;border:none;border-radius:6px;padding:5px 14px;font-size:12px;font-weight:700;cursor:pointer}
-.mc-btn-copy:hover{background:#7c3aed}
+
+/* ─── MTD 페이스 버튼 ─── */
+.pace-btn{font-size:10px;font-weight:600;color:#64748b;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:14px;padding:3px 10px;cursor:pointer;transition:all .15s}
+.pace-btn:hover{background:#f1f5f9}
+.pace-btn.active{background:#10b981;color:#fff;border-color:#10b981}
 
 /* ─── 연간 섹션 ─── */
 .annual-table{width:100%;border-collapse:collapse;margin-top:8px}
@@ -467,53 +474,16 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
         <button class="mc-btn" onclick="event.stopPropagation();mcToggleCollapse()" style="margin-left:4px">✏️ 편집</button>
       </div>
     </div>
-    <div class="mc-body" id="mc-body" style="display:none;grid-template-columns:320px 1fr">
-      <!-- 좌: 입력 폼 -->
-      <div class="mc-form-panel">
-        <div class="mc-fs-title">전일자 실적</div>
-        <div class="mc-fg">
-          <label>총수주 목표</label><input class="mc-num mc-num-wide" id="mc-total-t" type="number" value="2650" oninput="mcUpdateText()"><span class="mc-unit">백만</span>
-          <label>총수주 달성</label><input class="mc-num mc-num-wide" id="mc-total-a" type="number" value="1960" oninput="mcUpdateText()"><span class="mc-unit">백만</span>
-          <label>순수주 목표</label><input class="mc-num mc-num-wide" id="mc-net-t" type="number" value="1800" oninput="mcUpdateText()"><span class="mc-unit">백만</span>
-          <label>순수주 달성</label><input class="mc-num mc-num-wide" id="mc-net-a" type="number" value="1135" oninput="mcUpdateText()"><span class="mc-unit">백만</span>
-          <label>순수주 YoY</label><input class="mc-num" id="mc-net-yoy" type="number" step="0.1" value="-30.0" oninput="mcUpdateText()"><span class="mc-unit">%</span>
-          <label>광고비 (잠정)</label><input class="mc-num mc-num-wide" id="mc-adcost" type="number" value="4600" oninput="mcUpdateText()"><span class="mc-unit">만원</span>
-          <label>광고비용율</label><input class="mc-num" id="mc-adrate" type="number" step="0.1" value="4.1" oninput="mcUpdateText()"><span class="mc-unit">%</span>
-          <label>당월 광고비용율</label><input class="mc-num" id="mc-adrate-mavg" type="number" step="0.1" value="2.9" oninput="mcUpdateText()"><span class="mc-unit">%</span>
-          <label>전년 광고비용율</label><input class="mc-num" id="mc-adrate-yavg" type="number" step="0.1" value="2.6" oninput="mcUpdateText()"><span class="mc-unit">%</span>
-          <label>전체 DAU</label><input class="mc-num" id="mc-dau" type="number" step="0.1" value="43.9" oninput="mcUpdateText()"><span class="mc-unit">만</span>
-          <label>당월 DAU 평균</label><input class="mc-num" id="mc-dau-mavg" type="number" step="0.1" value="59" oninput="mcUpdateText()"><span class="mc-unit">만</span>
-          <label>APP DAU</label><input class="mc-num" id="mc-appdau" type="number" step="0.1" value="24.5" oninput="mcUpdateText()"><span class="mc-unit">만</span>
-          <label>당월 APP DAU 평균</label><input class="mc-num" id="mc-appdau-mavg" type="number" step="0.1" value="28" oninput="mcUpdateText()"><span class="mc-unit">만</span>
-        </div>
-        <div class="mc-fs-title" style="margin-top:6px">MTD 누적</div>
-        <div class="mc-fg">
-          <label>APP MAU</label><input class="mc-num" id="mc-mtd-mau" type="number" step="0.1" value="182.0" oninput="mcUpdateText()"><span class="mc-unit">만</span>
-          <label>MAU YoY</label><input class="mc-num" id="mc-mtd-mau-yoy-v" type="number" step="0.1" value="16.1" oninput="mcUpdateText()"><span class="mc-unit">%</span>
-          <label>신규가입</label><input class="mc-num" id="mc-mtd-join" type="number" step="0.1" value="8.2" oninput="mcUpdateText()"><span class="mc-unit">만</span>
-          <label>신규가입 YoY</label><input class="mc-num" id="mc-mtd-join-yoy-v" type="number" step="0.1" value="9.7" oninput="mcUpdateText()"><span class="mc-unit">%</span>
-          <label>신규가입 달성률</label><input class="mc-num" id="mc-mtd-join-pct-v" type="number" value="84" oninput="mcUpdateText()"><span class="mc-unit">%</span>
-          <label>첫구매</label><input class="mc-num" id="mc-mtd-first" type="number" step="0.1" value="4.5" oninput="mcUpdateText()"><span class="mc-unit">만</span>
-          <label>첫구매 YoY</label><input class="mc-num" id="mc-mtd-first-yoy-v" type="number" step="0.1" value="4.3" oninput="mcUpdateText()"><span class="mc-unit">%</span>
-          <label>첫구매 달성률</label><input class="mc-num" id="mc-mtd-first-pct-v" type="number" value="87" oninput="mcUpdateText()"><span class="mc-unit">%</span>
-          <label>구매자수</label><input class="mc-num" id="mc-mtd-buyers" type="number" step="0.1" value="49.1" oninput="mcUpdateText()"><span class="mc-unit">만</span>
-          <label>구매자수 YoY</label><input class="mc-num" id="mc-mtd-buyers-yoy-v" type="number" step="0.1" value="0.3" oninput="mcUpdateText()"><span class="mc-unit">%</span>
-          <label>구매자수 달성률</label><input class="mc-num" id="mc-mtd-buyers-pct-v" type="number" value="81" oninput="mcUpdateText()"><span class="mc-unit">%</span>
-          <label>총수주</label><input class="mc-num" id="mc-mtd-total" type="number" step="0.1" value="726.1" oninput="mcUpdateText()"><span class="mc-unit">억</span>
-          <label>총수주 YoY</label><input class="mc-num" id="mc-mtd-total-yoy-v" type="number" step="0.1" value="2.6" oninput="mcUpdateText()"><span class="mc-unit">%</span>
-          <label>총수주 달성률</label><input class="mc-num" id="mc-mtd-total-pct-v" type="number" value="85" oninput="mcUpdateText()"><span class="mc-unit">%</span>
-          <label>순수주</label><input class="mc-num" id="mc-mtd-net" type="number" step="0.1" value="521.9" oninput="mcUpdateText()"><span class="mc-unit">억</span>
-          <label>순수주 YoY</label><input class="mc-num" id="mc-mtd-net-yoy-v" type="number" step="0.1" value="1.4" oninput="mcUpdateText()"><span class="mc-unit">%</span>
-          <label>순수주 달성률</label><input class="mc-num" id="mc-mtd-net-pct-v" type="number" value="89" oninput="mcUpdateText()"><span class="mc-unit">%</span>
-        </div>
-        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px;padding-top:10px;border-top:1px solid #f1f5f9">
-          <button class="mc-btn-save" id="mc-save-btn" onclick="mcSave()">💾 저장</button>
-        </div>
-      </div>
-      <!-- 우: 텍스트 미리보기 -->
+    <div class="mc-body" id="mc-body" style="display:none;grid-template-columns:1fr 1fr">
+      <!-- 좌: 자동 생성 Teams 텍스트 -->
       <div class="mc-preview-panel">
-        <div style="font-size:10px;color:#94a3b8;font-weight:600;letter-spacing:.04em">TEAMS 보고 미리보기</div>
+        <div style="font-size:10px;font-weight:700;color:#64748b;letter-spacing:.04em;text-transform:uppercase">Teams 보고 텍스트 <span style="font-weight:400;color:#94a3b8">(자동 생성)</span></div>
         <pre id="mc-text-preview" class="mc-text-pre"></pre>
+      </div>
+      <!-- 우: 인사이트 자동 감지 -->
+      <div class="mc-insights-panel">
+        <div style="font-size:10px;font-weight:700;color:#64748b;letter-spacing:.04em;text-transform:uppercase;margin-bottom:10px">📌 특이사항 / 인사이트</div>
+        <div id="mc-insights-list"><div class="mc-insight neutral"><span class="mc-insight-ico">⏳</span><span>데이터 분석 중...</span></div></div>
       </div>
     </div>
   </div>
@@ -554,8 +524,15 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
       </table>
     </div>
     <div class="card">
-      <div class="card-title">순수주 MTD 달성 페이스</div>
-      <div class="card-sub">누적 실적 vs 목표 페이스 (억원) · 초록=실적 / 점선=목표</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
+        <div class="card-title" style="margin-bottom:0">MTD 달성 페이스</div>
+        <div style="display:flex;gap:4px" id="pace-metric-btns">
+          <button class="pace-btn active" data-m="net" onclick="selectPaceMetric(this)">순수주</button>
+          <button class="pace-btn" data-m="gmv" onclick="selectPaceMetric(this)">총수주</button>
+          <button class="pace-btn" data-m="adcost" onclick="selectPaceMetric(this)">광고비</button>
+        </div>
+      </div>
+      <div class="card-sub" id="pace-chart-sub">누적 실적 vs 목표 페이스 (억원)</div>
       <div class="chart-box h260"><canvas id="chart-mtd-pace"></canvas></div>
     </div>
   </div>
@@ -563,65 +540,49 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
   <!-- 전환 퍼널 (세션 기준) -->
   <div class="sec-hd">
     <h2>전환 퍼널</h2>
-    <span class="sec-note">전일 기준 · 직접 입력 · <span style="color:#f59e0b;font-weight:700">┃</span> 당월평균 · <span style="color:#94a3b8;font-weight:700">┃</span> 26년평균</span>
+    <span class="sec-note">전일 기준 · RAW/Tableau 자동 연동 · <span style="color:#f59e0b;font-weight:700">┃</span> 당월평균 · <span style="color:#94a3b8;font-weight:700">┃</span> 26년평균</span>
   </div>
   <div class="card" style="margin-bottom:14px">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px 36px">
       <!-- 세션→구매 전환율 -->
       <div class="fi">
-        <div class="fi-head"><span class="fi-lbl">세션→구매 전환율</span><span class="fi-val" id="fi-s2p-disp">3.2%</span></div>
+        <div class="fi-head"><span class="fi-lbl">세션→구매 전환율</span><span class="fi-val" id="fi-s2p-disp">-</span></div>
         <div class="fi-gauge-wrap">
-          <div class="fi-gauge-fill good" id="fi-s2p-fill" style="width:32%"></div>
+          <div class="fi-gauge-fill good" id="fi-s2p-fill" style="width:0%"></div>
           <div class="fi-mark mavg" id="fi-s2p-m-mark" style="left:35%"></div>
           <div class="fi-mark yavg" id="fi-s2p-y-mark" style="left:42%"></div>
         </div>
-        <div class="fi-inputs">
-          <span class="fi-inp-grp"><span class="fi-inp-lbl">전일</span><input class="mc-num fi-inp" id="fi-s2p-v" type="number" step="0.01" value="3.2" oninput="funnelUpdate()">%</span>
-          <span class="fi-inp-grp"><span class="fi-inp-lbl mvg">당월</span><input class="mc-num fi-inp" id="fi-s2p-m" type="number" step="0.01" value="3.5" oninput="funnelUpdate()">%</span>
-          <span class="fi-inp-grp"><span class="fi-inp-lbl yvg">26년</span><input class="mc-num fi-inp" id="fi-s2p-y" type="number" step="0.01" value="4.2" oninput="funnelUpdate()">%</span>
-        </div>
+        <div class="fi-legend"><span class="fi-leg-m">당월 <span id="fi-s2p-m-lbl">-</span></span><span class="fi-leg-y">26년 <span id="fi-s2p-y-lbl">-</span></span><span class="fi-leg-note">GA4/Tableau 연동 예정</span></div>
       </div>
       <!-- 세션→신규가입 전환율 -->
       <div class="fi">
-        <div class="fi-head"><span class="fi-lbl">세션→신규가입 전환율</span><span class="fi-val" id="fi-s2j-disp">0.44%</span></div>
+        <div class="fi-head"><span class="fi-lbl">세션→신규가입 전환율</span><span class="fi-val" id="fi-s2j-disp">-</span></div>
         <div class="fi-gauge-wrap">
-          <div class="fi-gauge-fill good" id="fi-s2j-fill" style="width:22%"></div>
+          <div class="fi-gauge-fill good" id="fi-s2j-fill" style="width:0%"></div>
           <div class="fi-mark mavg" id="fi-s2j-m-mark" style="left:26%"></div>
           <div class="fi-mark yavg" id="fi-s2j-y-mark" style="left:30%"></div>
         </div>
-        <div class="fi-inputs">
-          <span class="fi-inp-grp"><span class="fi-inp-lbl">전일</span><input class="mc-num fi-inp" id="fi-s2j-v" type="number" step="0.001" value="0.44" oninput="funnelUpdate()">%</span>
-          <span class="fi-inp-grp"><span class="fi-inp-lbl mvg">당월</span><input class="mc-num fi-inp" id="fi-s2j-m" type="number" step="0.001" value="0.52" oninput="funnelUpdate()">%</span>
-          <span class="fi-inp-grp"><span class="fi-inp-lbl yvg">26년</span><input class="mc-num fi-inp" id="fi-s2j-y" type="number" step="0.001" value="0.60" oninput="funnelUpdate()">%</span>
-        </div>
+        <div class="fi-legend"><span class="fi-leg-m">당월 <span id="fi-s2j-m-lbl">-</span></span><span class="fi-leg-y">26년 <span id="fi-s2j-y-lbl">-</span></span><span class="fi-leg-note">GA4/Tableau 연동 예정</span></div>
       </div>
       <!-- APP세션 비중 -->
       <div class="fi">
-        <div class="fi-head"><span class="fi-lbl">APP세션 비중</span><span class="fi-val" id="fi-app-disp">56%</span></div>
+        <div class="fi-head"><span class="fi-lbl">APP세션 비중</span><span class="fi-val" id="fi-app-disp">-</span></div>
         <div class="fi-gauge-wrap">
-          <div class="fi-gauge-fill good" id="fi-app-fill" style="width:56%"></div>
+          <div class="fi-gauge-fill good" id="fi-app-fill" style="width:0%"></div>
           <div class="fi-mark mavg" id="fi-app-m-mark" style="left:57%"></div>
           <div class="fi-mark yavg" id="fi-app-y-mark" style="left:60%"></div>
         </div>
-        <div class="fi-inputs">
-          <span class="fi-inp-grp"><span class="fi-inp-lbl">전일</span><input class="mc-num fi-inp" id="fi-app-v" type="number" step="0.1" value="56" oninput="funnelUpdate()">%</span>
-          <span class="fi-inp-grp"><span class="fi-inp-lbl mvg">당월</span><input class="mc-num fi-inp" id="fi-app-m" type="number" step="0.1" value="57" oninput="funnelUpdate()">%</span>
-          <span class="fi-inp-grp"><span class="fi-inp-lbl yvg">26년</span><input class="mc-num fi-inp" id="fi-app-y" type="number" step="0.1" value="60" oninput="funnelUpdate()">%</span>
-        </div>
+        <div class="fi-legend"><span class="fi-leg-m">당월 <span id="fi-app-m-lbl">-</span></span><span class="fi-leg-y">26년 <span id="fi-app-y-lbl">-</span></span><span class="fi-leg-note">GA4/Tableau 연동 예정</span></div>
       </div>
-      <!-- 광고비용율 -->
+      <!-- 광고비용율 (RAW 자동 계산) -->
       <div class="fi">
-        <div class="fi-head"><span class="fi-lbl">광고비용율 (순수주 대비)</span><span class="fi-val" id="fi-adr-disp">4.1%</span></div>
+        <div class="fi-head"><span class="fi-lbl">광고비용율 <span style="font-size:9px;color:#94a3b8">(순수주 대비, RAW 자동)</span></span><span class="fi-val" id="fi-adr-disp">-</span></div>
         <div class="fi-gauge-wrap">
-          <div class="fi-gauge-fill bad" id="fi-adr-fill" style="width:41%"></div>
+          <div class="fi-gauge-fill bad" id="fi-adr-fill" style="width:0%"></div>
           <div class="fi-mark mavg" id="fi-adr-m-mark" style="left:29%"></div>
           <div class="fi-mark yavg" id="fi-adr-y-mark" style="left:26%"></div>
         </div>
-        <div class="fi-inputs">
-          <span class="fi-inp-grp"><span class="fi-inp-lbl">전일</span><input class="mc-num fi-inp" id="fi-adr-v" type="number" step="0.1" value="4.1" oninput="funnelUpdate()">%</span>
-          <span class="fi-inp-grp"><span class="fi-inp-lbl mvg">당월</span><input class="mc-num fi-inp" id="fi-adr-m" type="number" step="0.1" value="2.9" oninput="funnelUpdate()">%</span>
-          <span class="fi-inp-grp"><span class="fi-inp-lbl yvg">26년</span><input class="mc-num fi-inp" id="fi-adr-y" type="number" step="0.1" value="2.6" oninput="funnelUpdate()">%</span>
-        </div>
+        <div class="fi-legend"><span class="fi-leg-m">당월 <span id="fi-adr-m-lbl">-</span></span><span class="fi-leg-y">26년 <span id="fi-adr-y-lbl">-</span></span></div>
       </div>
     </div>
   </div>
@@ -915,82 +876,168 @@ const fmtISO = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')
 document.getElementById('badge-date').textContent = fmtISO(YESTERDAY);
 document.getElementById('ch-date-note').textContent = `Daily 기준 (${fmtMD(YESTERDAY)})`;
 
-// ── 마감 코멘트 (Teams 텍스트 형식) ────────────────────────────────
-const MC_KEY = 'wck_mc_v5';
-const MC_ALL_FIELDS = [
-  'mc-total-t','mc-total-a','mc-net-t','mc-net-a','mc-net-yoy',
-  'mc-adcost','mc-adrate','mc-adrate-mavg','mc-adrate-yavg',
-  'mc-dau','mc-dau-mavg','mc-appdau','mc-appdau-mavg',
-  'mc-mtd-mau','mc-mtd-mau-yoy-v',
-  'mc-mtd-join','mc-mtd-join-yoy-v','mc-mtd-join-pct-v',
-  'mc-mtd-first','mc-mtd-first-yoy-v','mc-mtd-first-pct-v',
-  'mc-mtd-buyers','mc-mtd-buyers-yoy-v','mc-mtd-buyers-pct-v',
-  'mc-mtd-total','mc-mtd-total-yoy-v','mc-mtd-total-pct-v',
-  'mc-mtd-net','mc-mtd-net-yoy-v','mc-mtd-net-pct-v',
-];
+// ── 마감 코멘트 (RAW 자동 생성) ──────────────────────────────────
 
-function mcInit() {
-  document.getElementById('mc-date-label').textContent = `(${fmtMD(YESTERDAY)} 기준)`;
-  const raw = localStorage.getItem(MC_KEY);
-  if (raw) {
-    try {
-      const saved = JSON.parse(raw);
-      MC_ALL_FIELDS.forEach(id => {
-        const el = document.getElementById(id);
-        if (el && saved[id] !== undefined) el.value = saved[id];
-      });
-      if (saved.savedAt) {
-        const dt = new Date(saved.savedAt);
-        document.getElementById('mc-saved-time').textContent =
-          `저장: ${dt.toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})}`;
-      }
-    } catch(e) {}
+// RAW + DAILY_TARGETS + KPI_DAILY에서 직접 계산
+function mcCalcData() {
+  if (!RAW) return null;
+  const m = TODAY.getMonth()+1, d = TODAY.getDate()-1;
+  const monthStr = `${TODAY.getFullYear()}-${String(m).padStart(2,'0')}`;
+  const yDate = fmtISO(YESTERDAY);
+
+  // 전일 RAW 합산
+  const yRows = RAW[yDate] || [];
+  let yGmv=0, yNet=0, yAdcost=0;
+  yRows.forEach(h => { if(h){ if(h[1])yGmv+=h[1]; if(h[2])yNet+=h[2]; if(h[5])yAdcost+=h[5]; } });
+
+  // 전일 목표
+  const tgt = getTargets(yDate);
+  const tgtGmv = tgt.revenue || 0;
+  const tgtNet = tgt.net_revenue || 0;
+
+  // 전일 YoY (전년동요일)
+  const comps = getComparisonDates(yDate);
+  let lyNet=0;
+  (comps.ly && RAW[comps.ly] || []).forEach(h => { if(h&&h[2]) lyNet+=h[2]; });
+
+  // MTD RAW 합산 (1일 ~ 전일)
+  let mtdGmv=0, mtdNet=0, mtdAdcost=0;
+  for (let i=1; i<=d; i++) {
+    const ds = `${monthStr}-${String(i).padStart(2,'0')}`;
+    (RAW[ds]||[]).forEach(h=>{ if(h){ if(h[1])mtdGmv+=h[1]; if(h[2])mtdNet+=h[2]; if(h[5])mtdAdcost+=h[5]; } });
   }
-  mcUpdateText();
+
+  // 월 목표 (ANNUAL)
+  const actM = (ANNUAL && ANNUAL[m-1]) || {};
+  const netTgtM = (actM.nT || 0) * 1e8;
+  const daysInM = new Date(TODAY.getFullYear(), m, 0).getDate();
+  const netPace = netTgtM * d / daysInM;
+
+  return {
+    m, d, yDate,
+    yGmv, yNet, yAdcost,
+    tgtGmv, tgtNet, lyNet,
+    mtdGmv, mtdNet, mtdAdcost,
+    netTgtM, netPace, daysInM, actM,
+    gmvPct: tgtGmv>0 ? Math.round(yGmv/tgtGmv*100) : 0,
+    netPct:  tgtNet>0 ? Math.round(yNet/tgtNet*100)  : 0,
+    adrate:  yNet>0 ? (yAdcost/yNet*100).toFixed(1) : 0,
+    mtdAdrate: mtdNet>0 ? (mtdAdcost/mtdNet*100).toFixed(1) : 0,
+    mtdNetPct: netTgtM>0 ? Math.round(mtdNet/netTgtM*100) : 0,
+    netYoy: lyNet>0 ? ((yNet-lyNet)/lyNet*100).toFixed(1) : null,
+  };
 }
 
 function mcGenerateText() {
-  const g = id => +document.getElementById(id)?.value || 0;
-  const m = TODAY.getMonth()+1, d = TODAY.getDate()-1;
+  const cd = mcCalcData();
+  if (!cd) return '데이터 로딩 중...';
+  const { m, d, yGmv, yNet, yAdcost, tgtGmv, tgtNet, gmvPct, netPct, adrate, mtdNet, mtdGmv, mtdAdrate, mtdNetPct, netTgtM, netYoy, actM } = cd;
   const wday = ['일','월','화','수','목','금','토'][YESTERDAY.getDay()];
-  const totalT=g('mc-total-t'), totalA=g('mc-total-a');
-  const netT=g('mc-net-t'), netA=g('mc-net-a'), netYoy=g('mc-net-yoy');
-  const adcost=g('mc-adcost'), adrate=g('mc-adrate');
-  const adrateMavg=g('mc-adrate-mavg'), adrateYavg=g('mc-adrate-yavg');
-  const dau=g('mc-dau'), dauMavg=g('mc-dau-mavg');
-  const appDau=g('mc-appdau'), appMavg=g('mc-appdau-mavg');
-  const tPct = totalT ? Math.round(totalA/totalT*100) : 0;
-  const nPct  = netT  ? Math.round(netA/netT*100)     : 0;
-  const dauPct = dauMavg ? Math.round((dau-dauMavg)/dauMavg*100) : 0;
-  const appPct = appMavg ? Math.round((appDau-appMavg)/appMavg*100) : 0;
-  const mauV=g('mc-mtd-mau'),   mauYoy=g('mc-mtd-mau-yoy-v');
-  const joinV=g('mc-mtd-join'),  joinYoy=g('mc-mtd-join-yoy-v'),  joinPct=g('mc-mtd-join-pct-v');
-  const firstV=g('mc-mtd-first'),firstYoy=g('mc-mtd-first-yoy-v'),firstPct=g('mc-mtd-first-pct-v');
-  const buyV=g('mc-mtd-buyers'), buyYoy=g('mc-mtd-buyers-yoy-v'), buyPct=g('mc-mtd-buyers-pct-v');
-  const totM=g('mc-mtd-total'),  totMYoy=g('mc-mtd-total-yoy-v'), totMPct=g('mc-mtd-total-pct-v');
-  const netM=g('mc-mtd-net'),    netMYoy=g('mc-mtd-net-yoy-v'),   netMPct=g('mc-mtd-net-pct-v');
-  const yf = v => v===0?'-': v>0?`+${Math.abs(v).toFixed(1)}%`:`△${Math.abs(v).toFixed(1)}%`;
-  const df = v => v>=0?`+${v}%`:`△${Math.abs(v)}%`;
+  const f8 = v => v>0 ? `${(v/1e8).toFixed(1)}억` : '-';
+  const yf = v => v===null?'-': +v>=0?`+${Math.abs(+v).toFixed(1)}%`:`△${Math.abs(+v).toFixed(1)}%`;
+
+  // KPI_DAILY에서 신규가입/첫구매 읽기
+  const joinV   = KPI_DAILY?.join?.val  || '-';
+  const joinYoy = KPI_DAILY?.join?.yoy  || '-';
+  const firstV  = KPI_DAILY?.first?.val || '-';
+  const firstYoy= KPI_DAILY?.first?.yoy || '-';
+  const mauV    = KPI_DAILY?.mau?.val   ? (parseInt(KPI_DAILY.mau.val.replace(/,/g,''))/10000).toFixed(0)+'만' : '-';
+  const mauYoy  = KPI_DAILY?.mau?.yoy   || '-';
+
+  // ANNUAL_ACT에서 MTD 누적
+  const mauMtd    = actM.mauA    ? `${(actM.mauA/10000).toFixed(1)}만` : mauV;
+  const joinMtd   = actM.joinA   ? `${(actM.joinA/10000).toFixed(1)}만` : '-';
+  const buyersMtd = actM.buyersA ? `${(actM.buyersA/10000).toFixed(1)}만` : '-';
+
+  const netTgtStr = netTgtM>0 ? ` · 달성률 ${mtdNetPct}%` : '';
+
   return `안녕하세요! 전일 및 ${m}월 MTD 전사 수주 실적 공유드립니다.
 
 (1) 전일자(${m}/${d}(${wday}))
-목표: 총수주 ${(totalT/100).toFixed(1)}억, 순수주 ${(netT/100).toFixed(1)}억
-달성: 총수주 ${(totalA/100).toFixed(1)}억(달성률 ${tPct}%), 순수주 ${(netA/100).toFixed(1)}억(달성률 ${nPct}%, YoY ${yf(netYoy)})
-ㄴ 광고비 ${adcost.toLocaleString()}만원 소진 기준(잠정) / 순수주 대비 광고비용율 ${adrate}% (${m}월 평균 ${adrateMavg}%, 전년 평균 ${adrateYavg}%)
-ㄴ 전일자 전체 DAU ${dau}만 (${m}월 평균 ${dauMavg}만 대비 ${df(dauPct)}), APP DAU ${appDau}만 (${m}월 평균 ${appMavg}만 대비 ${df(appPct)})
+목표: 총수주 ${f8(tgtGmv)}, 순수주 ${f8(tgtNet)}
+달성: 총수주 ${f8(yGmv)}(달성률 ${gmvPct}%), 순수주 ${f8(yNet)}(달성률 ${netPct}%, YoY ${yf(netYoy)})
+ㄴ 신규가입 ${joinV}명(YoY ${joinYoy}), 첫구매 ${firstV}명(YoY ${firstYoy})
+ㄴ 광고비 ${(yAdcost/1e4).toFixed(0)}만원(잠정) · 순수주 대비 광고비용율 ${adrate}%
 
-(2) ${m}월 누적 달성 현황(${m}/1~${m}/${d} 기준)
-APP MAU ${mauV}만(YoY ${yf(mauYoy)})
-신규가입 ${joinV}만(YoY ${yf(joinYoy)}, 일 누계 목표비 달성 ${joinPct}%)
-첫구매 ${firstV}만(YoY ${yf(firstYoy)}, 일 누계 목표비 달성 ${firstPct}%)
-구매자수 ${buyV}만(YoY ${yf(buyYoy)}, 일 누계 목표비 달성 ${buyPct}%)
-총수주 ${totM}억(YoY ${yf(totMYoy)}, 일 누계 목표 대비 달성 ${totMPct}%), 순수주 ${netM}억(YoY ${yf(netMYoy)}, 일 누계 목표 대비 달성 ${netMPct}%)`;
+(2) ${m}월 MTD 달성 현황(${m}/1~${m}/${d})
+APP MAU ${mauMtd}(YoY ${mauYoy})
+순수주 ${f8(mtdNet)}${netTgtStr} · 총수주 ${f8(mtdGmv)} · 광고비용율 ${mtdAdrate}%${
+  joinMtd!=='-'   ? `\n신규가입 ${joinMtd}` : ''
+}${
+  buyersMtd!=='-' ? `  구매자수 ${buyersMtd}` : ''
+}`;
 }
 
-function mcUpdateText() {
-  const el = document.getElementById('mc-text-preview');
-  if (el) el.textContent = mcGenerateText();
+function mcDetectInsights() {
+  const cd = mcCalcData();
+  if (!cd) return [];
+  const { m, d, yNet, yGmv, yAdcost, mtdNet, mtdAdcost, adrate, mtdAdrate, netPace, netTgtM, tgtNet } = cd;
+  const ins = [];
+  const fa = (v,f) => f!==undefined ? v*f : v;
+
+  // 1. 광고비용율 이상
+  if (+adrate > 0 && +mtdAdrate > 0) {
+    const gap = +adrate - +mtdAdrate;
+    if (gap > 0.5)  ins.push({ type:'warn', ico:'📢', text:`광고비용율 ${adrate}% — 당월 평균(${mtdAdrate}%)보다 ${gap.toFixed(1)}%p 높음` });
+    if (gap < -0.5) ins.push({ type:'good', ico:'💰', text:`광고비용율 ${adrate}% — 당월 평균(${mtdAdrate}%)보다 ${Math.abs(gap).toFixed(1)}%p 낮음 (효율적 집행)` });
+  }
+
+  // 2. MTD 순수주 vs 목표 페이스
+  if (netPace > 0 && mtdNet > 0) {
+    const paceRatio = mtdNet / netPace;
+    if (paceRatio < 0.92) ins.push({ type:'warn', ico:'📉', text:`MTD 순수주 ${(mtdNet/1e8).toFixed(1)}억 — 목표 페이스(${(netPace/1e8).toFixed(1)}억) 대비 ${(paceRatio*100).toFixed(0)}%` });
+    if (paceRatio > 1.05) ins.push({ type:'good', ico:'📈', text:`MTD 순수주 ${(mtdNet/1e8).toFixed(1)}억 — 목표 페이스 초과 달성 (${(paceRatio*100).toFixed(0)}%)` });
+  }
+
+  // 3. 전일 순수주 달성률
+  if (tgtNet > 0 && yNet > 0) {
+    const np = Math.round(yNet/tgtNet*100);
+    if (np < 70)  ins.push({ type:'warn', ico:'⚠️', text:`전일 순수주 달성률 ${np}% — 목표 미달 (${(yNet/1e8).toFixed(1)}억 / ${(tgtNet/1e8).toFixed(1)}억)` });
+    if (np >= 100) ins.push({ type:'good', ico:'✅', text:`전일 순수주 목표 달성! ${(yNet/1e8).toFixed(1)}억 / ${(tgtNet/1e8).toFixed(1)}억 (${np}%)` });
+  }
+
+  // 4. 전주동요일 비교
+  const lwDate = new Date(YESTERDAY); lwDate.setDate(lwDate.getDate()-7);
+  const lwStr = lwDate.toISOString().split('T')[0];
+  let lwNet=0; (RAW&&RAW[lwStr]||[]).forEach(h=>{ if(h&&h[2]) lwNet+=h[2]; });
+  if (lwNet>0 && yNet>0) {
+    const diff = (yNet-lwNet)/lwNet*100;
+    if (Math.abs(diff)>15) ins.push({
+      type: diff>0?'good':'warn', ico: diff>0?'↑':'↓',
+      text:`전주동요일 대비 순수주 ${diff>0?'+':''}${diff.toFixed(1)}% (${(yNet/1e8).toFixed(1)}억 vs ${(lwNet/1e8).toFixed(1)}억)`
+    });
+  }
+
+  // 5. KPI_DAILY 신규가입 YoY 이상
+  const joinYoyV = KPI_DAILY?.join?.yoy ? parseFloat(KPI_DAILY.join.yoy.replace(/[△+%]/g,'')) * (KPI_DAILY.join.yoy.includes('△')?-1:1) : null;
+  if (joinYoyV !== null && Math.abs(joinYoyV)>20) {
+    ins.push({ type:joinYoyV>0?'good':'warn', ico:joinYoyV>0?'👥':'👥',
+      text:`신규가입 YoY ${joinYoyV>0?'+':'△'}${Math.abs(joinYoyV).toFixed(1)}% — 전년 대비 ${joinYoyV>0?'큰 증가':'큰 감소'}`
+    });
+  }
+
+  if (ins.length === 0) ins.push({ type:'info', ico:'✔️', text:'특이사항 없음 · 정상 범위 내 실적' });
+  return ins;
 }
+
+function mcRefresh() {
+  const textEl = document.getElementById('mc-text-preview');
+  if (textEl) textEl.textContent = mcGenerateText();
+  const listEl = document.getElementById('mc-insights-list');
+  if (listEl) {
+    const ins = mcDetectInsights();
+    listEl.innerHTML = ins.map(i =>
+      `<div class="mc-insight ${i.type}"><span class="mc-insight-ico">${i.ico}</span><span>${i.text}</span></div>`
+    ).join('');
+  }
+}
+
+function mcInit() {
+  document.getElementById('mc-date-label').textContent = `(${fmtMD(YESTERDAY)} 기준)`;
+  mcRefresh();
+}
+
+function mcUpdateText() { mcRefresh(); }
 
 function mcCopyText() {
   navigator.clipboard.writeText(mcGenerateText()).then(() => {
@@ -1006,17 +1053,6 @@ function mcToggleCollapse() {
   const ch   = document.getElementById('mc-chevron');
   body.style.display = mcCollapsed ? 'none' : 'grid';
   ch.style.transform  = mcCollapsed ? 'rotate(180deg)' : '';
-}
-
-function mcSave() {
-  const data = { savedAt: new Date().toISOString() };
-  MC_ALL_FIELDS.forEach(id => { const el=document.getElementById(id); if(el) data[id]=el.value; });
-  localStorage.setItem(MC_KEY, JSON.stringify(data));
-  const dt = new Date();
-  document.getElementById('mc-saved-time').textContent =
-    `저장: ${dt.toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})}`;
-  const btn = document.getElementById('mc-save-btn');
-  if (btn) { btn.textContent = '✅ 저장완료'; setTimeout(() => { btn.textContent = '💾 저장'; }, 1500); }
 }
 
 mcInit();
@@ -1113,43 +1149,55 @@ mkDonut('chart-ch-first', [
 ], 'first-legend');
 
 // ── MTD 순수주 달성 페이스 차트 ──
-function buildMtdPaceChart() {
+// MTD 페이스 차트 — 지표 선택 가능 (net/gmv/adcost)
+let mtdPaceChart = null;
+const PACE_METRICS = {
+  net:    { rawIdx:2, tgtKey:'nT',  label:'순수주 누적', paceLabel:'순수주 목표 페이스', unit:'억', color:'#10b981', hasPace:true  },
+  gmv:    { rawIdx:1, tgtKey:'tT',  label:'총수주 누적', paceLabel:'총수주 목표 페이스', unit:'억', color:'#3b82f6', hasPace:true  },
+  adcost: { rawIdx:5, tgtKey:null,  label:'광고비 누적', paceLabel:null,                 unit:'억', color:'#f59e0b', hasPace:false },
+};
+
+function buildMtdPaceChart(metricKey) {
+  if (!metricKey) metricKey = 'net';
   const canvas = document.getElementById('chart-mtd-pace');
   if (!canvas) return;
-  const now = TODAY;
-  const year = now.getFullYear(), month = now.getMonth();
+  const metric = PACE_METRICS[metricKey];
+  const year = TODAY.getFullYear(), month = TODAY.getMonth();
   const daysInMonth = new Date(year, month+1, 0).getDate();
   const monthStr = `${year}-${String(month+1).padStart(2,'0')}`;
-  const monthTarget = (ANNUAL && ANNUAL[month] && ANNUAL[month].nT) ? ANNUAL[month].nT : 685;
+  const monthTarget = metric.hasPace && ANNUAL && ANNUAL[month] && ANNUAL[month][metric.tgtKey]
+    ? ANNUAL[month][metric.tgtKey] : null;
+
   const labels = [], paceData = [], actualCum = [];
-  let cumNet = 0;
+  let cumVal = 0;
   for (let d = 1; d <= daysInMonth; d++) {
     const ds = `${monthStr}-${String(d).padStart(2,'0')}`;
     labels.push(d === 1 || d % 5 === 0 || d === daysInMonth ? `${month+1}/${d}` : '');
-    paceData.push(+(monthTarget * d / daysInMonth).toFixed(1));
+    if (monthTarget) paceData.push(+(monthTarget * d / daysInMonth).toFixed(1));
     if (RAW && RAW[ds]) {
-      let dayNet = 0;
-      RAW[ds].forEach(h => { if (h && h[2]) dayNet += h[2]; });
-      cumNet += dayNet;
-      actualCum.push(+(cumNet / 1e8).toFixed(1));
+      let dayVal = 0;
+      RAW[ds].forEach(h => { if (h && h[metric.rawIdx]) dayVal += h[metric.rawIdx]; });
+      cumVal += dayVal;
+      actualCum.push(+(cumVal / 1e8).toFixed(1));
     } else { actualCum.push(d < TODAY.getDate() ? null : undefined); }
   }
   const filteredActual = actualCum.map(v => v === undefined ? null : v);
-  new Chart(canvas, {
+  const datasets = [];
+  if (monthTarget) {
+    datasets.push({ label: metric.paceLabel, data: paceData,
+      borderColor: 'rgba(148,163,184,0.6)', borderWidth: 1.5, borderDash: [5,4],
+      pointRadius: 0, fill: false, tension: 0, datalabels: { display: false } });
+  }
+  datasets.push({ label: metric.label, data: filteredActual,
+    borderColor: metric.color, borderWidth: 2.5,
+    pointRadius: 0, pointHoverRadius: 4,
+    fill: monthTarget ? { target: 0, above:`${metric.color}12`, below:'rgba(239,68,68,0.05)' } : false,
+    tension: 0.3, datalabels: { display: false } });
+
+  if (mtdPaceChart) { mtdPaceChart.destroy(); mtdPaceChart = null; }
+  mtdPaceChart = new Chart(canvas, {
     type: 'line',
-    data: {
-      labels,
-      datasets: [
-        { label: '목표 페이스', data: paceData,
-          borderColor: 'rgba(148,163,184,0.6)', borderWidth: 1.5, borderDash: [5,4],
-          pointRadius: 0, fill: false, tension: 0, datalabels: { display: false } },
-        { label: '순수주 누적', data: filteredActual,
-          borderColor: '#10b981', borderWidth: 2.5,
-          pointRadius: 0, pointHoverRadius: 4,
-          fill: { target: 0, above:'rgba(16,185,129,0.07)', below:'rgba(239,68,68,0.05)' },
-          tension: 0.3, datalabels: { display: false } }
-      ]
-    },
+    data: { labels, datasets },
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: {
@@ -1157,16 +1205,27 @@ function buildMtdPaceChart() {
         datalabels: { display: false },
         tooltip: {
           mode: 'index', intersect: false,
-          callbacks: { label: ctx => ctx.parsed.y != null ? `  ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)}억` : null }
+          callbacks: { label: ctx => ctx.parsed.y != null ? `  ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)}${metric.unit}` : null }
         }
       },
       scales: {
         x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 9 } } },
         y: { min: 0, grid: { color: '#f1f5f9' }, border: { display: false },
-          ticks: { color: '#94a3b8', font: { size: 10 }, callback: v => v + '억' } }
+          ticks: { color: '#94a3b8', font: { size: 10 }, callback: v => v + metric.unit } }
       }
     }
   });
+  // 부제목 업데이트
+  const sub = document.getElementById('pace-chart-sub');
+  if (sub) sub.textContent = monthTarget
+    ? `누적 실적 vs 목표 페이스 (억원) · ${month+1}월`
+    : `누적 실적 (억원) · ${month+1}월 (목표 미설정)`;
+}
+
+function selectPaceMetric(btn) {
+  document.querySelectorAll('.pace-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  buildMtdPaceChart(btn.dataset.m);
 }
 
 // ── ROAS / 광고비 차트 ──
@@ -2178,30 +2237,74 @@ function render() {
 // INIT
 // ═══════════════════════════════════════════════
 // ── 전환 퍼널 업데이트 ────────────────────────────────────────────
-const FUNNEL_ITEMS = [
-  { id:'s2p', max:10,  inv:false },
-  { id:'s2j', max:2,   inv:false },
-  { id:'app', max:100, inv:false },
-  { id:'adr', max:10,  inv:true  },
+// 광고비용율은 RAW 자동 계산, 세션 지표는 GA4/Tableau 연동 예정
+const FUNNEL_DEFS = [
+  { id:'s2p', max:10,  inv:false, unit:'%', dec:2 },
+  { id:'s2j', max:2,   inv:false, unit:'%', dec:3 },
+  { id:'app', max:100, inv:false, unit:'%', dec:1 },
+  { id:'adr', max:10,  inv:true,  unit:'%', dec:1 },
 ];
-function funnelUpdate() {
-  FUNNEL_ITEMS.forEach(({ id, max, inv }) => {
-    const v = +document.getElementById(`fi-${id}-v`)?.value || 0;
-    const m = +document.getElementById(`fi-${id}-m`)?.value || 0;
-    const y = +document.getElementById(`fi-${id}-y`)?.value || 0;
-    const disp = document.getElementById(`fi-${id}-disp`);
-    if (disp) disp.textContent = v + '%';
-    const fill = document.getElementById(`fi-${id}-fill`);
-    if (fill) {
-      fill.style.width = Math.min(v/max*100, 100) + '%';
-      const isGood = inv ? v <= m : v >= m;
-      const isBad  = inv ? v > m * 1.15 : v < m * 0.85;
-      fill.className = `fi-gauge-fill ${isGood ? 'good' : isBad ? 'bad' : 'warn'}`;
-    }
+// 월평균 기준값 (당월/연간) — GA4 연동 전 참고값
+const FUNNEL_REF = {
+  s2p: { m:3.5,  y:4.2  },
+  s2j: { m:0.52, y:0.60 },
+  app: { m:57,   y:60   },
+  adr: { m:null, y:null },  // RAW 계산
+};
+
+function funnelUpdateItem(id, v, mVal, yVal, max, inv, dec) {
+  const fmt = n => n != null ? n.toFixed(dec) + '%' : '-';
+  const disp = document.getElementById(`fi-${id}-disp`);
+  if (disp) disp.textContent = v != null ? fmt(v) : '-';
+  const fill = document.getElementById(`fi-${id}-fill`);
+  if (fill && v != null) {
+    fill.style.width = Math.min(v/max*100, 100) + '%';
+    const isGood = inv ? (mVal&&v<=mVal) : (mVal&&v>=mVal);
+    const isBad  = inv ? (mVal&&v>mVal*1.15) : (mVal&&v<mVal*0.85);
+    fill.className = `fi-gauge-fill ${isGood?'good':isBad?'bad':'warn'}`;
+  }
+  if (mVal != null) {
     const mm = document.getElementById(`fi-${id}-m-mark`);
-    if (mm) mm.style.left = Math.min(m/max*100, 100) + '%';
+    if (mm) mm.style.left = Math.min(mVal/max*100, 100) + '%';
+    const ml = document.getElementById(`fi-${id}-m-lbl`);
+    if (ml) ml.textContent = fmt(mVal);
+  }
+  if (yVal != null) {
     const ym = document.getElementById(`fi-${id}-y-mark`);
-    if (ym) ym.style.left = Math.min(y/max*100, 100) + '%';
+    if (ym) ym.style.left = Math.min(yVal/max*100, 100) + '%';
+    const yl = document.getElementById(`fi-${id}-y-lbl`);
+    if (yl) yl.textContent = fmt(yVal);
+  }
+}
+
+function funnelUpdate() {
+  // 광고비용율: RAW에서 자동 계산
+  let adrV = null, adrM = null;
+  if (RAW) {
+    const yDate = fmtISO(YESTERDAY);
+    let yNet=0, yAd=0;
+    (RAW[yDate]||[]).forEach(h=>{ if(h){ if(h[2])yNet+=h[2]; if(h[5])yAd+=h[5]; } });
+    if (yNet>0) adrV = yAd/yNet*100;
+    // 당월 평균 광고비용율
+    const m = TODAY.getMonth()+1, d = TODAY.getDate()-1;
+    const monthStr = `${TODAY.getFullYear()}-${String(m).padStart(2,'0')}`;
+    let mNet=0, mAd=0, mDays=0;
+    for (let i=1; i<=d; i++) {
+      const ds = `${monthStr}-${String(i).padStart(2,'0')}`;
+      (RAW[ds]||[]).forEach(h=>{ if(h){ if(h[2])mNet+=h[2]; if(h[5])mAd+=h[5]; } });
+      if (RAW[ds]) mDays++;
+    }
+    if (mNet>0) adrM = mAd/mNet*100;
+  }
+
+  FUNNEL_DEFS.forEach(({ id, max, inv, dec }) => {
+    const ref = FUNNEL_REF[id];
+    if (id === 'adr') {
+      funnelUpdateItem(id, adrV, adrM, null, max, inv, dec);
+    } else {
+      // 세션 지표: GA4/Tableau 미연동, 레전드만 표시
+      funnelUpdateItem(id, null, ref?.m, ref?.y, max, inv, dec);
+    }
   });
 }
 
