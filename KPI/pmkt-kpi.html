@@ -985,6 +985,8 @@ function setAnnualView(el) {
   document.getElementById('view-realtime').style.display = 'none';
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   el.classList.add('active');
+  // 탭이 visible 상태가 된 후 차트 생성 (display:none 상태에서 생성 시 크기 0 오류 방지)
+  setTimeout(initAnnualChart, 0);
 }
 
 document.getElementById('tab-daily').addEventListener('click', function() {
@@ -1120,7 +1122,7 @@ const curMonIdx = TODAY.getMonth(); // 0-indexed, 6월=5
 if (curMonIdx < ANNUAL.length) ANNUAL[curMonIdx].note = `${YESTERDAY.getMonth()+1}/${YESTERDAY.getDate()}기준(진행중)`;
 
 // ── 연간 차트 설정 ─────────────────────────────────────────────
-Chart.register(ChartDataLabels);
+// ChartDataLabels는 CDN 로드 시 자동 전역 등록됨 (별도 register 불필요)
 
 const ANNUAL_METRICS = [
   { tKey:'nT',      aKey:'nA',      label:'순수주',          unit:'억원',
@@ -2068,7 +2070,6 @@ function init() {
   document.getElementById('custom-date').value = lastDate;
   document.getElementById('btn-today').classList.add('active');
   render();
-  initAnnualChart();
   if (location.hash === '#realtime') setRealtimeView(document.getElementById('tab-realtime'));
   setInterval(() => {
     document.getElementById('updated-at').textContent = `업데이트 ${new Date().toLocaleTimeString('ko-KR')}`;
