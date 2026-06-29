@@ -1908,6 +1908,7 @@ function init() {
   document.getElementById('custom-date').value = lastDate;
   document.getElementById('btn-today').classList.add('active');
   render();
+  if (location.hash === '#realtime') setRealtimeView(document.getElementById('tab-realtime'));
   setInterval(() => {
     document.getElementById('updated-at').textContent = `업데이트 ${new Date().toLocaleTimeString('ko-KR')}`;
   }, 60000);
