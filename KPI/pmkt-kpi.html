@@ -48,7 +48,17 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
 .card-title{font-size:13px;font-weight:700;color:#0f172a;margin-bottom:2px}
 .card-sub{font-size:11px;color:#94a3b8;margin-bottom:14px}
 .chart-box{position:relative}
-.chart-box.h180{height:180px}.chart-box.h200{height:200px}.chart-box.h240{height:240px}.chart-box.h260{height:260px}
+.chart-box.h180{height:180px}.chart-box.h200{height:200px}.chart-box.h220{height:220px}.chart-box.h240{height:240px}.chart-box.h260{height:260px}
+/* 전환 퍼널 */
+.funnel-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f1f5f9}
+.funnel-row:last-child{border-bottom:none}
+.funnel-lbl{font-size:11px;color:#64748b;font-weight:600;flex:0 0 130px}
+.funnel-val{font-size:16px;font-weight:800;color:#0f172a;flex:0 0 60px;text-align:right}
+.funnel-bar-bg{flex:1;height:8px;background:#f1f5f9;border-radius:4px;overflow:hidden}
+.funnel-bar-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,#6366f1,#818cf8)}
+.funnel-note{font-size:10px;color:#94a3b8;flex:0 0 100px;text-align:right}
+/* 구분선 행 */
+.achv-table .divider-row td{border-top:2px solid #e2e8f0;background:#f8fafc;font-size:10px;color:#94a3b8;font-weight:600;padding:4px 10px}
 
 /* ─── KPI Cards ─── */
 .kpi-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:16px}
@@ -457,7 +467,7 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
         <button class="mc-btn" onclick="event.stopPropagation();mcToggleEdit()" id="mc-edit-btn">✏️ 편집</button>
       </div>
     </div>
-    <div class="mc-body" id="mc-body" style="display:none">
+    <div class="mc-body" id="mc-body" style="display:grid;grid-template-columns:1fr 1fr">
       <!-- 전일자 실적 -->
       <div class="mc-col">
         <div class="mc-col-title">📋 전일자 실적 <span id="mc-daily-date" style="font-weight:400;color:#94a3b8;font-size:11px"></span></div>
@@ -511,6 +521,73 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
           </div>
         </div>
       </div>
+      <!-- MTD 누적 달성 현황 -->
+      <div class="mc-col">
+        <div class="mc-col-title">📊 월 누적 달성 <span id="mc-mtd-period" style="font-weight:400;color:#94a3b8;font-size:11px"></span></div>
+        <!-- APP MAU -->
+        <div class="mc-mtd-row">
+          <div class="mc-mtd-lbl">APP MAU</div>
+          <div class="mc-mtd-val"><input class="mc-num mc-num-wide" id="mc-mtd-mau" type="number" step="0.1" value="182.0" readonly>만명</div>
+          <div class="mc-mtd-right">
+            <span class="yoy" id="mc-mtd-mau-yoy">+16.1%</span>
+            <div class="mc-mtd-prog-bg"><div class="mc-mtd-prog-fill" id="mc-mtd-mau-pb" style="width:100%;background:#10b981"></div></div>
+            <span class="mc-mtd-pct" id="mc-mtd-mau-pct-lbl">109%</span>
+          </div>
+        </div>
+        <!-- 신규가입 -->
+        <div class="mc-mtd-row">
+          <div class="mc-mtd-lbl">신규가입</div>
+          <div class="mc-mtd-val"><input class="mc-num mc-num-wide" id="mc-mtd-join" type="number" step="0.1" value="8.2" readonly>만명</div>
+          <div class="mc-mtd-right">
+            <span class="yoy" id="mc-mtd-join-yoy">+9.7%</span>
+            <div class="mc-mtd-prog-bg"><div class="mc-mtd-prog-fill" id="mc-mtd-join-pb" style="width:84%;background:#f59e0b"></div></div>
+            <span class="mc-mtd-pct" id="mc-mtd-join-pct-lbl">84%</span>
+          </div>
+        </div>
+        <!-- 첫구매 -->
+        <div class="mc-mtd-row">
+          <div class="mc-mtd-lbl">첫구매</div>
+          <div class="mc-mtd-val"><input class="mc-num mc-num-wide" id="mc-mtd-first" type="number" step="0.1" value="4.5" readonly>만명</div>
+          <div class="mc-mtd-right">
+            <span class="yoy" id="mc-mtd-first-yoy">+4.3%</span>
+            <div class="mc-mtd-prog-bg"><div class="mc-mtd-prog-fill" id="mc-mtd-first-pb" style="width:87%;background:#f59e0b"></div></div>
+            <span class="mc-mtd-pct" id="mc-mtd-first-pct-lbl">87%</span>
+          </div>
+        </div>
+        <!-- 구매자수 -->
+        <div class="mc-mtd-row">
+          <div class="mc-mtd-lbl">구매자수</div>
+          <div class="mc-mtd-val"><input class="mc-num mc-num-wide" id="mc-mtd-buyers" type="number" step="0.1" value="49.1" readonly>만명</div>
+          <div class="mc-mtd-right">
+            <span class="yoy" id="mc-mtd-buyers-yoy">+0.3%</span>
+            <div class="mc-mtd-prog-bg"><div class="mc-mtd-prog-fill" id="mc-mtd-buyers-pb" style="width:81%;background:#f59e0b"></div></div>
+            <span class="mc-mtd-pct" id="mc-mtd-buyers-pct-lbl">81%</span>
+          </div>
+        </div>
+        <div style="margin:8px 0;border-top:1px dashed #e2e8f0;padding-top:8px">
+          <div style="font-size:10px;color:#94a3b8;font-weight:600;margin-bottom:6px">전사 매출</div>
+        </div>
+        <!-- 총수주 -->
+        <div class="mc-mtd-row">
+          <div class="mc-mtd-lbl">총수주</div>
+          <div class="mc-mtd-val"><input class="mc-num mc-num-wide" id="mc-mtd-total" type="number" step="0.1" value="726.1" readonly>억원</div>
+          <div class="mc-mtd-right">
+            <span class="yoy" id="mc-mtd-total-yoy">+2.6%</span>
+            <div class="mc-mtd-prog-bg"><div class="mc-mtd-prog-fill" id="mc-mtd-total-pb" style="width:85%;background:#f59e0b"></div></div>
+            <span class="mc-mtd-pct" id="mc-mtd-total-pct-lbl">85%</span>
+          </div>
+        </div>
+        <!-- 순수주 -->
+        <div class="mc-mtd-row">
+          <div class="mc-mtd-lbl">순수주</div>
+          <div class="mc-mtd-val"><input class="mc-num mc-num-wide" id="mc-mtd-net" type="number" step="0.1" value="521.9" readonly>억원</div>
+          <div class="mc-mtd-right">
+            <span class="yoy" id="mc-mtd-net-yoy">+1.4%</span>
+            <div class="mc-mtd-prog-bg"><div class="mc-mtd-prog-fill" id="mc-mtd-net-pb" style="width:89%;background:#f59e0b"></div></div>
+            <span class="mc-mtd-pct" id="mc-mtd-net-pct-lbl">89%</span>
+          </div>
+        </div>
+      </div>
     </div>
     <div id="mc-footer" style="padding:8px 20px 12px;display:none;justify-content:flex-end;gap:8px">
       <button class="mc-btn-save" onclick="mcSave()">💾 저장</button>
@@ -523,32 +600,33 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
     <span class="sec-note" id="kpi-period-label"></span>
   </div>
   <div class="kpi-grid">
-    <div class="kpi-card c-blue"><div class="kpi-lbl">APP MAU</div><div class="kpi-val" id="k-mau">-</div><div class="kpi-sub" id="k-mau-sub">-</div><span class="yoy" id="k-mau-yoy">-</span></div>
-    <div class="kpi-card c-indigo"><div class="kpi-lbl">APP DAU</div><div class="kpi-val" id="k-dau">-</div><div class="kpi-sub" id="k-dau-sub">-</div><span class="yoy" id="k-dau-yoy">-</span></div>
-    <div class="kpi-card c-teal"><div class="kpi-lbl">신규가입</div><div class="kpi-val" id="k-join">-</div><div class="kpi-sub" id="k-join-sub">-</div><span class="yoy" id="k-join-yoy">-</span></div>
-    <div class="kpi-card c-green"><div class="kpi-lbl">방문자수</div><div class="kpi-val" id="k-visit">-</div><div class="kpi-sub" id="k-visit-sub">-</div><span class="yoy" id="k-visit-yoy">-</span></div>
-    <div class="kpi-card c-orange"><div class="kpi-lbl">첫구매완료</div><div class="kpi-val" id="k-first">-</div><div class="kpi-sub" id="k-first-sub">-</div><span class="yoy" id="k-first-yoy">-</span></div>
-    <div class="kpi-card c-rose"><div class="kpi-lbl">순주문 <span style="font-size:10px;color:#94a3b8">(백만)</span></div><div class="kpi-val" id="k-net">-</div><div class="kpi-sub" id="k-net-sub">-</div><span class="yoy" id="k-net-yoy">-</span></div>
+    <div class="kpi-card c-blue">  <div class="kpi-lbl">APP MAU</div>                                     <div class="kpi-val" id="k-mau">-</div>     <div class="kpi-sub" id="k-mau-sub">-</div>     <span class="yoy" id="k-mau-yoy">-</span></div>
+    <div class="kpi-card c-green"> <div class="kpi-lbl">순수주 <span style="font-size:10px;color:#94a3b8">(백만)</span></div>  <div class="kpi-val" id="k-net">-</div>     <div class="kpi-sub" id="k-net-sub">-</div>     <span class="yoy" id="k-net-yoy">-</span></div>
+    <div class="kpi-card c-teal">  <div class="kpi-lbl">신규가입</div>                                    <div class="kpi-val" id="k-join">-</div>    <div class="kpi-sub" id="k-join-sub">-</div>    <span class="yoy" id="k-join-yoy">-</span></div>
+    <div class="kpi-card c-orange"><div class="kpi-lbl">첫구매</div>                                      <div class="kpi-val" id="k-first">-</div>   <div class="kpi-sub" id="k-first-sub">-</div>   <span class="yoy" id="k-first-yoy">-</span></div>
+    <div class="kpi-card c-indigo"><div class="kpi-lbl">신규가입(광고)</div>                               <div class="kpi-val" id="k-joinad">-</div>  <div class="kpi-sub" id="k-joinad-sub">-</div>  <span class="yoy" id="k-joinad-yoy">-</span></div>
+    <div class="kpi-card c-rose">  <div class="kpi-lbl">첫구매(광고)</div>                                 <div class="kpi-val" id="k-firstad">-</div> <div class="kpi-sub" id="k-firstad-sub">-</div> <span class="yoy" id="k-firstad-yoy">-</span></div>
   </div>
 
-  <!-- ③ MTD KPI 달성현황 -->
+  <!-- ③ MTD 달성현황 -->
   <div class="sec-hd">
-    <h2>MTD KPI 달성현황</h2>
-    <span class="sec-note">6/1~6/25 기준 · 목표 대비 진도율</span>
+    <h2>MTD 달성현황</h2>
+    <span class="sec-note" id="mtd-period-note">6/1~ 기준 · 목표 대비 진도율</span>
   </div>
   <div class="grid-2">
     <div class="card">
       <div class="card-title">Target vs Actual</div>
-      <div class="card-sub">6월 MTD 목표 달성률 (채널ID 기준)</div>
+      <div class="card-sub">월 누적 목표 달성률 (채널ID 기준)</div>
       <table class="achv-table">
         <thead><tr><th>지표</th><th>단위</th><th>Target</th><th>Actual</th><th>달성률</th><th>YoY</th></tr></thead>
         <tbody>
           <tr><td>APP MAU</td><td>명</td><td>1,712,722</td><td>1,864,932</td><td><div class="prog-wrap"><div class="prog-bar-bg"><div class="prog-bar bar-green" style="width:100%"></div></div><span class="prog-pct pct-over">109%</span></div></td><td><span class="yoy up">+15.1%</span></td></tr>
-          <tr><td>APP DAU</td><td>명</td><td>345,975</td><td>282,009</td><td><div class="prog-wrap"><div class="prog-bar-bg"><div class="prog-bar bar-yellow" style="width:82%"></div></div><span class="prog-pct pct-warn">82%</span></div></td><td><span class="yoy up">+0.8%</span></td></tr>
           <tr><td>신규가입</td><td>명</td><td>100,888</td><td>84,863</td><td><div class="prog-wrap"><div class="prog-bar-bg"><div class="prog-bar bar-yellow" style="width:84%"></div></div><span class="prog-pct pct-warn">84%</span></div></td><td><span class="yoy up">+3.8%</span></td></tr>
-          <tr><td>방문자수</td><td>명</td><td>385,162</td><td>346,052</td><td><div class="prog-wrap"><div class="prog-bar-bg"><div class="prog-bar bar-yellow" style="width:90%"></div></div><span class="prog-pct pct-warn">90%</span></div></td><td><span class="yoy up">+1.3%</span></td></tr>
           <tr><td>첫구매</td><td>명</td><td>53,923</td><td>46,928</td><td><div class="prog-wrap"><div class="prog-bar-bg"><div class="prog-bar bar-yellow" style="width:87%"></div></div><span class="prog-pct pct-warn">87%</span></div></td><td><span class="yoy up">+1.1%</span></td></tr>
-          <tr><td>순주문</td><td>백만</td><td>60,100</td><td>53,328</td><td><div class="prog-wrap"><div class="prog-bar-bg"><div class="prog-bar bar-yellow" style="width:89%"></div></div><span class="prog-pct pct-warn">89%</span></div></td><td><span class="yoy up">+0.5%</span></td></tr>
+          <tr><td>신규가입(광고)</td><td>명</td><td>32,190</td><td>-</td><td><div class="prog-wrap"><div class="prog-bar-bg"><div class="prog-bar bar-yellow" style="width:0%"></div></div><span class="prog-pct pct-warn">-</span></div></td><td><span class="yoy flat">-</span></td></tr>
+          <tr><td>첫구매(광고)</td><td>명</td><td>9,348</td><td>-</td><td><div class="prog-wrap"><div class="prog-bar-bg"><div class="prog-bar bar-yellow" style="width:0%"></div></div><span class="prog-pct pct-warn">-</span></div></td><td><span class="yoy flat">-</span></td></tr>
+          <tr class="divider-row"><td colspan="6">▼ 전사 타겟</td></tr>
+          <tr><td>순수주</td><td>백만</td><td>60,100</td><td>53,328</td><td><div class="prog-wrap"><div class="prog-bar-bg"><div class="prog-bar bar-yellow" style="width:89%"></div></div><span class="prog-pct pct-warn">89%</span></div></td><td><span class="yoy up">+0.5%</span></td></tr>
           <tr><td>총수주</td><td>백만</td><td>88,175</td><td>73,535</td><td><div class="prog-wrap"><div class="prog-bar-bg"><div class="prog-bar bar-red" style="width:83%"></div></div><span class="prog-pct pct-low">83%</span></div></td><td><span class="yoy up">+1.7%</span></td></tr>
           <tr><td>GMV</td><td>백만</td><td>56,900</td><td>55,203</td><td><div class="prog-wrap"><div class="prog-bar-bg"><div class="prog-bar bar-green" style="width:97%"></div></div><span class="prog-pct pct-over">97%</span></div></td><td><span class="yoy up">+9.5%</span></td></tr>
         </tbody>
@@ -556,8 +634,49 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
     </div>
     <div class="card">
       <div class="card-title">MTD 달성률 현황</div>
-      <div class="card-sub">6월 목표 대비 달성률 차트</div>
+      <div class="card-sub">월 누적 목표 대비 달성률</div>
       <div class="chart-box h260"><canvas id="chart-mtd-achieve"></canvas></div>
+    </div>
+  </div>
+
+  <!-- ③-B 순수주 일별 추이 + 전환 퍼널 -->
+  <div class="sec-hd">
+    <h2>순수주 일별 추이</h2>
+    <span class="sec-note" id="trend-note">최근 30일 · 전주동요일 비교</span>
+  </div>
+  <div class="grid-32">
+    <div class="card">
+      <div class="card-title">일별 순수주 (억원)</div>
+      <div class="card-sub">막대: 당일 실적 · 선: 전주동요일 실적</div>
+      <div class="chart-box h220"><canvas id="chart-trend-net"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">전환 퍼널</div>
+      <div class="card-sub">Daily 기준 · 직접 입력</div>
+      <div class="funnel-row">
+        <span class="funnel-lbl">방문→구매 전환율</span>
+        <span class="funnel-val" id="f-visit-buy">3.2%</span>
+        <div class="funnel-bar-bg"><div class="funnel-bar-fill" id="f-vb-bar" style="width:32%"></div></div>
+        <span class="funnel-note" id="f-vb-ref">전월 3.5%</span>
+      </div>
+      <div class="funnel-row">
+        <span class="funnel-lbl">방문→신규가입 전환율</span>
+        <span class="funnel-val" id="f-visit-join">0.44%</span>
+        <div class="funnel-bar-bg"><div class="funnel-bar-fill" id="f-vj-bar" style="width:44%;background:linear-gradient(90deg,#14b8a6,#2dd4bf)"></div></div>
+        <span class="funnel-note" id="f-vj-ref">전월 0.52%</span>
+      </div>
+      <div class="funnel-row">
+        <span class="funnel-lbl">APP 비중 (앱DAU/전체)</span>
+        <span class="funnel-val" id="f-app-ratio">56%</span>
+        <div class="funnel-bar-bg"><div class="funnel-bar-fill" id="f-ar-bar" style="width:56%;background:linear-gradient(90deg,#3b82f6,#60a5fa)"></div></div>
+        <span class="funnel-note" id="f-ar-ref">전월 57%</span>
+      </div>
+      <div class="funnel-row">
+        <span class="funnel-lbl">광고비용율 (순수주대비)</span>
+        <span class="funnel-val" id="f-adrate">4.1%</span>
+        <div class="funnel-bar-bg"><div class="funnel-bar-fill" id="f-adrate-bar" style="width:41%;background:linear-gradient(90deg,#f59e0b,#fbbf24)"></div></div>
+        <span class="funnel-note" id="f-adrate-ref">월평균 2.9%</span>
+      </div>
     </div>
   </div>
 
@@ -847,25 +966,48 @@ document.getElementById('badge-date').textContent = fmtISO(YESTERDAY);
 document.getElementById('ch-date-note').textContent = `Daily 기준 (${fmtMD(YESTERDAY)})`;
 
 // ── 마감 코멘트 ────────────────────────────────────────────────────
-const MC_KEY = 'wck_mc_v3';
+const MC_KEY = 'wck_mc_v4';
 let mcEditing = false;
 
-function mcInit() {
-  // 날짜 라벨
-  document.getElementById('mc-date-label').textContent = `(${fmtMD(YESTERDAY)} 기준)`;
-  document.getElementById('mc-daily-date').textContent = fmtMD(YESTERDAY);
-  document.getElementById('mc-period-note').textContent = `기준: ${fmtMD(YESTERDAY)}`;
+const MC_DAILY_FIELDS = ['mc-total-t','mc-total-a','mc-net-t','mc-net-a','mc-adrate','mc-adrate-mavg','mc-adrate-yavg','mc-adcost','mc-dau','mc-dau-mavg','mc-appdau','mc-appdau-mavg'];
+const MC_MTD_FIELDS   = ['mc-mtd-mau','mc-mtd-join','mc-mtd-first','mc-mtd-buyers','mc-mtd-total','mc-mtd-net'];
+const MC_MTD_YOY      = ['mc-mtd-mau-yoy','mc-mtd-join-yoy','mc-mtd-first-yoy','mc-mtd-buyers-yoy','mc-mtd-total-yoy','mc-mtd-net-yoy'];
+const MC_MTD_PCT      = ['mc-mtd-mau-pct-lbl','mc-mtd-join-pct-lbl','mc-mtd-first-pct-lbl','mc-mtd-buyers-pct-lbl','mc-mtd-total-pct-lbl','mc-mtd-net-pct-lbl'];
+const MC_MTD_PB       = ['mc-mtd-mau-pb','mc-mtd-join-pb','mc-mtd-first-pb','mc-mtd-buyers-pb','mc-mtd-total-pb','mc-mtd-net-pb'];
 
-  // localStorage 복원
+function mcInit() {
+  document.getElementById('mc-date-label').textContent  = `(${fmtMD(YESTERDAY)} 기준)`;
+  document.getElementById('mc-daily-date').textContent  = fmtMD(YESTERDAY);
+  document.getElementById('mc-period-note').textContent = `기준: ${fmtMD(YESTERDAY)}`;
+  // MTD 기간 표시
+  const m = TODAY.getMonth()+1, d = TODAY.getDate()-1;
+  document.getElementById('mc-mtd-period').textContent = `(${m}/1~${m}/${d} 누적)`;
+  // chevron 초기 방향
+  document.getElementById('mc-chevron').style.transform = 'rotate(180deg)';
+
   const raw = localStorage.getItem(MC_KEY);
   if (raw) {
     try {
-      const d = JSON.parse(raw);
-      const fields = ['mc-total-t','mc-total-a','mc-net-t','mc-net-a','mc-adrate','mc-adrate-mavg','mc-adrate-yavg',
-        'mc-adcost','mc-dau','mc-dau-mavg','mc-appdau','mc-appdau-mavg'];
-      fields.forEach(id => { if (d[id] !== undefined) document.getElementById(id).value = d[id]; });
-      if (d.savedAt) {
-        const dt = new Date(d.savedAt);
+      const saved = JSON.parse(raw);
+      [...MC_DAILY_FIELDS, ...MC_MTD_FIELDS].forEach(id => {
+        const el = document.getElementById(id);
+        if (el && saved[id] !== undefined) el.value = saved[id];
+      });
+      MC_MTD_YOY.forEach(id => {
+        const el = document.getElementById(id);
+        if (el && saved[id] !== undefined) el.textContent = saved[id];
+      });
+      MC_MTD_PCT.forEach(id => {
+        const el = document.getElementById(id);
+        if (el && saved[id] !== undefined) el.textContent = saved[id];
+      });
+      MC_MTD_PB.forEach((id, i) => {
+        const pct = parseInt(MC_MTD_PCT[i] && document.getElementById(MC_MTD_PCT[i])?.textContent) || 0;
+        const el = document.getElementById(id);
+        if (el) { el.style.width = Math.min(pct, 100) + '%'; el.style.background = pct >= 100 ? '#10b981' : pct >= 85 ? '#f59e0b' : '#ef4444'; }
+      });
+      if (saved.savedAt) {
+        const dt = new Date(saved.savedAt);
         document.getElementById('mc-saved-time').textContent = `저장: ${dt.toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})}`;
       }
     } catch(e) {}
@@ -906,15 +1048,15 @@ function mcUpdateCalc() {
 
 }
 
-let mcCollapsed = true;
+let mcCollapsed = false;
 function mcToggleCollapse() {
   mcCollapsed = !mcCollapsed;
   const body = document.getElementById('mc-body');
   const footer = document.getElementById('mc-footer');
   const ch = document.getElementById('mc-chevron');
-  body.style.display = mcCollapsed ? 'none' : '';
+  body.style.display = mcCollapsed ? 'none' : 'grid';
   if (mcCollapsed) footer.style.display = 'none';
-  ch.style.transform = mcCollapsed ? '' : 'rotate(180deg)';
+  ch.style.transform = mcCollapsed ? 'rotate(180deg)' : '';
 }
 
 function mcToggleEdit() {
@@ -932,10 +1074,10 @@ function mcToggleEdit() {
 }
 
 function mcSave() {
-  const fields = ['mc-total-t','mc-total-a','mc-net-t','mc-net-a','mc-adrate','mc-adrate-mavg','mc-adrate-yavg',
-    'mc-adcost','mc-dau','mc-dau-mavg','mc-appdau','mc-appdau-mavg'];
   const data = { savedAt: new Date().toISOString() };
-  fields.forEach(id => { data[id] = document.getElementById(id).value; });
+  [...MC_DAILY_FIELDS, ...MC_MTD_FIELDS].forEach(id => { const el=document.getElementById(id); if(el) data[id]=el.value; });
+  MC_MTD_YOY.forEach(id => { const el=document.getElementById(id); if(el) data[id]=el.textContent; });
+  MC_MTD_PCT.forEach(id => { const el=document.getElementById(id); if(el) data[id]=el.textContent; });
   localStorage.setItem(MC_KEY, JSON.stringify(data));
   const dt = new Date();
   document.getElementById('mc-saved-time').textContent = `저장: ${dt.toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})}`;
@@ -947,26 +1089,28 @@ function mcSave() {
 
 mcInit();
 
-// ── 핵심지표 (Daily 고정) ──────────────────────────────────────────
+// ── 핵심지표 (Daily · 수동 업데이트) ─────────────────────────────
 const KPI_DAILY = { label:`${fmtISO(YESTERDAY)} Daily 기준`,
-  mau:{val:'1,864,932',sub:'일 기준',yoy:'+10.8%',up:true},
-  dau:{val:'273,709',  sub:'일 기준',yoy:'△22.5%',up:false},
-  join:{val:'2,847',   sub:'일 기준',yoy:'△42.9%',up:false},
-  visit:{val:'14,965', sub:'일 기준',yoy:'△16.1%',up:false},
-  first:{val:'1,792',  sub:'일 기준',yoy:'△26.9%',up:false},
-  net:{val:'1,138',    sub:'일 기준(백만)',yoy:'△18.9%',up:false},
+  mau:     {val:'1,864,932', sub:'일 기준',       yoy:'+10.8%', up:true  },
+  net:     {val:'1,138',     sub:'일 기준(백만)',  yoy:'-18.9%', up:false },
+  join:    {val:'2,847',     sub:'일 기준',        yoy:'-42.9%', up:false },
+  first:   {val:'1,792',     sub:'일 기준',        yoy:'-26.9%', up:false },
+  joinAd:  {val:'-',         sub:'일 기준',        yoy:'-',      up:null  },
+  firstAd: {val:'-',         sub:'일 기준',        yoy:'-',      up:null  },
 };
 
 (function initKPI() {
   const d = KPI_DAILY;
   document.getElementById('kpi-period-label').textContent = d.label;
-  ['mau','dau','join','visit','first','net'].forEach((k,i) => {
-    const v = d[k]; const id = ['k-mau','k-dau','k-join','k-visit','k-first','k-net'][i];
-    document.getElementById(id).textContent = v.val;
+  const keys = ['mau','net','join','first','joinAd','firstAd'];
+  const ids  = ['k-mau','k-net','k-join','k-first','k-joinad','k-firstad'];
+  keys.forEach((k, i) => {
+    const v = d[k]; const id = ids[i];
+    document.getElementById(id).textContent     = v.val;
     document.getElementById(id+'-sub').textContent = v.sub;
     const yEl = document.getElementById(id+'-yoy');
-    yEl.textContent = v.up===null ? v.yoy : (v.up ? '▲ ' : '▼ ') + v.yoy.replace('△','').replace('+','');
-    yEl.className = 'yoy ' + (v.up===null ? 'flat' : v.up ? 'up' : 'dn');
+    yEl.textContent = v.up === null ? v.yoy : (v.up ? '▲ ' : '▼ ') + v.yoy.replace(/^[+\-]/, '');
+    yEl.className = 'yoy ' + (v.up === null ? 'flat' : v.up ? 'up' : 'dn');
   });
 })();
 
@@ -1025,40 +1169,41 @@ mkDonut('chart-ch-first', [
 ], 'first-legend');
 
 // ── MTD 달성률 가로 바차트 ──
+const MTD_LABELS = ['APP MAU','신규가입','첫구매','신규가입(광고)','첫구매(광고)','순수주','총수주','GMV'];
+const MTD_DATA   = [109, 84, 87, 0, 0, 89, 83, 97];
+const mtdColor = v => v >= 100 ? 'rgba(16,185,129,0.85)' : v >= 85 ? 'rgba(245,158,11,0.85)' : v > 0 ? 'rgba(239,68,68,0.85)' : 'rgba(203,213,225,0.5)';
 new Chart(document.getElementById('chart-mtd-achieve'), {
   type: 'bar',
   data: {
-    labels: ['APP MAU','APP DAU','신규가입','방문자수','첫구매','순주문','총수주','GMV'],
+    labels: MTD_LABELS,
     datasets: [{
       label: '달성률',
-      data: [109, 82, 84, 90, 87, 89, 83, 97],
-      backgroundColor: [
-        'rgba(16,185,129,0.8)',  // 109% green
-        'rgba(245,158,11,0.8)', // 82% yellow
-        'rgba(245,158,11,0.8)', // 84%
-        'rgba(245,158,11,0.8)', // 90%
-        'rgba(245,158,11,0.8)', // 87%
-        'rgba(245,158,11,0.8)', // 89%
-        'rgba(239,68,68,0.8)',  // 83% red
-        'rgba(16,185,129,0.8)', // 97% green
-      ],
+      data: MTD_DATA,
+      backgroundColor: MTD_DATA.map(mtdColor),
       borderRadius: 4,
+    },{
+      // 100% 기준선 표시용 (투명 바)
+      type: 'line', label: '목표(100%)', data: MTD_LABELS.map(() => 100),
+      borderColor: 'rgba(100,116,139,0.4)', borderWidth: 1.5, borderDash: [4,3],
+      pointRadius: 0, fill: false,
+      datalabels: { display: false },
     }]
   },
   options: {
     responsive: true, maintainAspectRatio: false, indexAxis: 'y',
     plugins: {
       legend: { display: false },
-      tooltip: { callbacks: { label: ctx => `달성률: ${ctx.parsed.x}%` } },
-      annotation: {}
-    },
-    scales: {
-      x: {
-        min: 0, max: 115,
-        grid: { color: '#f1f5f9' },
-        ticks: { color: '#94a3b8', font: { size: 10 }, callback: v => v + '%' },
-        border: { display: false }
+      datalabels: {
+        display: ctx => ctx.datasetIndex === 0 && MTD_DATA[ctx.dataIndex] > 0,
+        formatter: v => v + '%',
+        anchor: 'end', align: 'right', font: { size: 10, weight: '700' },
+        color: ctx => mtdColor(MTD_DATA[ctx.dataIndex]).replace('0.85)', '1)'),
       },
+      tooltip: { callbacks: { label: ctx => `달성률: ${ctx.parsed.x}%` } },
+    },
+    layout: { padding: { right: 40 } },
+    scales: {
+      x: { min: 0, max: 120, grid: { color: '#f1f5f9' }, ticks: { color: '#94a3b8', font: { size: 10 }, callback: v => v + '%' }, border: { display: false } },
       y: { grid: { display: false }, ticks: { color: '#475569', font: { size: 11, weight: '600' } } }
     }
   }
@@ -2072,11 +2217,84 @@ function render() {
 // ═══════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════
+// ── 일별 순수주 추이 (RAW 데이터 기반) ──────────────────────────────
+function buildTrendChart() {
+  const canvas = document.getElementById('chart-trend-net');
+  if (!canvas || !RAW) return;
+  const allDates = Object.keys(RAW).sort();
+  const lastDate = allDates[allDates.length - 1];
+  const endDt = new Date(lastDate);
+
+  const labels = [], netThis = [], netPrev = [];
+  for (let i = 29; i >= 0; i--) {
+    const dt = new Date(endDt); dt.setDate(dt.getDate() - i);
+    const ds = dt.toISOString().split('T')[0];
+    const pd = new Date(dt); pd.setDate(pd.getDate() - 7);
+    const ps = pd.toISOString().split('T')[0];
+    labels.push(`${dt.getMonth()+1}/${dt.getDate()}`);
+    const sumNet = arr => {
+      if (!arr) return null;
+      let s = 0; arr.forEach(h => { if (h && h[2]) s += h[2]; });
+      return s > 0 ? +(s / 1e8).toFixed(1) : null;
+    };
+    netThis.push(sumNet(RAW[ds]));
+    netPrev.push(sumNet(RAW[ps]));
+  }
+
+  new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { type: 'bar',  label: '당일', data: netThis,
+          backgroundColor: netThis.map((v,i) => {
+            if (v == null) return 'transparent';
+            const p = netPrev[i];
+            return (p && v >= p) ? 'rgba(16,185,129,0.75)' : 'rgba(100,116,139,0.55)';
+          }),
+          borderRadius: 4, maxBarThickness: 24,
+          datalabels: { display: false }
+        },
+        { type: 'line', label: '전주동요일', data: netPrev,
+          borderColor: '#f59e0b', borderWidth: 2, borderDash: [4, 3],
+          pointBackgroundColor: '#f59e0b', pointRadius: 2, pointHoverRadius: 4,
+          fill: false, tension: 0.3,
+          datalabels: { display: false }
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true, position: 'top', labels: { font: { size: 10 }, boxWidth: 10 } },
+        datalabels: { display: false },
+        tooltip: {
+          mode: 'index', intersect: false,
+          callbacks: {
+            label: ctx => ctx.parsed.y != null ? `  ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)}억` : null
+          }
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 9 }, maxTicksLimit: 15 } },
+        y: { grid: { color: '#f1f5f9' }, border: { display: false },
+          ticks: { color: '#94a3b8', font: { size: 10 }, callback: v => v + '억' } }
+      }
+    }
+  });
+
+  // 기간 노트 업데이트
+  const s = new Date(endDt); s.setDate(s.getDate() - 29);
+  document.getElementById('trend-note').textContent =
+    `${s.getMonth()+1}/${s.getDate()} ~ ${endDt.getMonth()+1}/${endDt.getDate()} · 전주동요일 비교`;
+}
+
 function init() {
   const lastDate = getLastDate();
   selectedDate = lastDate;
   document.getElementById('custom-date').value = lastDate;
   document.getElementById('btn-today').classList.add('active');
+  buildTrendChart();
   render();
   if (location.hash === '#realtime') setRealtimeView(document.getElementById('tab-realtime'));
   setInterval(() => {
