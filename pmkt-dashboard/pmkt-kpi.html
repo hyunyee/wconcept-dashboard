@@ -1,0 +1,1931 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>마케팅 KPI 실적 현황 | W CONCEPT</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif;background:#EEF2F7;color:#1e293b;font-size:13px}
+
+/* ─── Header ─── */
+.hd{background:linear-gradient(135deg,#0B1D3A 0%,#162B52 60%,#1E3A6E 100%);padding:16px 28px;display:flex;align-items:center;justify-content:space-between}
+.hd-l h1{color:#fff;font-size:18px;font-weight:800;letter-spacing:-.4px}
+.hd-l span{color:#94a3b8;font-size:11px;margin-top:2px;display:block}
+.hd-r{display:flex;align-items:center;gap:8px}
+.badge{border-radius:20px;padding:3px 11px;font-size:11px;font-weight:600}
+.badge-date{background:rgba(255,255,255,.08);color:#e2e8f0;border:1px solid rgba(255,255,255,.12)}
+.badge-live{background:rgba(16,185,129,.18);color:#34d399;border:1px solid rgba(16,185,129,.25)}
+.pulse{display:inline-block;width:6px;height:6px;background:#34d399;border-radius:50%;margin-right:5px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ─── Tabs ─── */
+.tabs{background:#fff;border-bottom:1px solid #e2e8f0;padding:0 28px;display:flex;align-items:center;gap:0}
+.tab-btn{padding:12px 18px;border:none;background:none;font-size:13px;font-weight:600;color:#94a3b8;cursor:pointer;border-bottom:3px solid transparent;transition:all .15s;position:relative;top:1px}
+.tab-btn:hover{color:#475569}
+.tab-btn.active{color:#0B1D3A;border-bottom-color:#0B1D3A}
+.tab-btn.annual-tab.active{color:#8b5cf6;border-bottom-color:#8b5cf6}
+.tab-sep{width:1px;height:18px;background:#e2e8f0;margin:0 4px}
+.tab-divider{width:1px;height:32px;background:#e2e8f0;margin:0 8px}
+.tab-note{margin-left:auto;font-size:11px;color:#94a3b8;padding:12px 0}
+
+/* ─── Layout ─── */
+.main{padding:20px 28px;max-width:1500px;margin:0 auto}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px}
+.grid-32{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:14px}
+
+/* ─── Section heading ─── */
+.sec-hd{display:flex;align-items:center;justify-content:space-between;margin:20px 0 10px}
+.sec-hd h2{font-size:14px;font-weight:800;color:#0f172a;display:flex;align-items:center;gap:6px}
+.sec-hd h2::before{content:'';width:3px;height:14px;background:#3b82f6;border-radius:2px;display:inline-block}
+.sec-note{font-size:11px;color:#94a3b8}
+
+/* ─── Card ─── */
+.card{background:#fff;border-radius:10px;padding:18px 20px;box-shadow:0 1px 3px rgba(0,0,0,.06),0 0 0 1px rgba(0,0,0,.04)}
+.card-title{font-size:13px;font-weight:700;color:#0f172a;margin-bottom:2px}
+.card-sub{font-size:11px;color:#94a3b8;margin-bottom:14px}
+.chart-box{position:relative}
+.chart-box.h180{height:180px}.chart-box.h200{height:200px}.chart-box.h240{height:240px}.chart-box.h260{height:260px}
+
+/* ─── KPI Cards ─── */
+.kpi-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:16px}
+.kpi-card{background:#fff;border-radius:10px;padding:16px 18px;box-shadow:0 1px 3px rgba(0,0,0,.06),0 0 0 1px rgba(0,0,0,.04);position:relative;overflow:hidden}
+.kpi-card::after{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.c-blue::after{background:#3b82f6}.c-indigo::after{background:#6366f1}.c-green::after{background:#10b981}
+.c-teal::after{background:#14b8a6}.c-orange::after{background:#f59e0b}.c-rose::after{background:#f43f5e}
+.kpi-lbl{font-size:11px;color:#64748b;font-weight:600;margin-bottom:8px}
+.kpi-val{font-size:21px;font-weight:800;color:#0f172a;letter-spacing:-.5px;margin-bottom:4px}
+.kpi-sub{font-size:11px;color:#94a3b8;margin-bottom:4px}
+.yoy{display:inline-block;padding:1px 7px;border-radius:4px;font-size:11px;font-weight:700}
+.yoy.up{background:#dcfce7;color:#16a34a}.yoy.dn{background:#fee2e2;color:#dc2626}.yoy.flat{background:#f1f5f9;color:#64748b}
+
+/* ─── Progress ─── */
+.prog-wrap{display:flex;align-items:center;gap:8px}
+.prog-bar-bg{flex:1;height:6px;background:#f1f5f9;border-radius:3px;overflow:hidden}
+.prog-bar{height:100%;border-radius:3px;transition:width .5s ease}
+.prog-pct{font-size:12px;font-weight:800;width:36px;text-align:right}
+.pct-over{color:#10b981}.pct-warn{color:#f59e0b}.pct-low{color:#ef4444}
+.bar-green{background:linear-gradient(90deg,#10b981,#34d399)}
+.bar-yellow{background:linear-gradient(90deg,#f59e0b,#fbbf24)}
+.bar-red{background:linear-gradient(90deg,#ef4444,#f87171)}
+
+/* ─── Tables ─── */
+.achv-table{width:100%;border-collapse:collapse}
+.achv-table th{padding:7px 10px;background:#f8fafc;color:#64748b;font-size:11px;font-weight:700;text-align:right;border-bottom:2px solid #e2e8f0}
+.achv-table th:first-child,.achv-table th:nth-child(2){text-align:left}
+.achv-table td{padding:8px 10px;border-bottom:1px solid #f1f5f9;text-align:right;color:#1e293b;font-size:12px}
+.achv-table td:first-child{text-align:left;font-weight:700;color:#0f172a;white-space:nowrap}
+.achv-table td:nth-child(2){text-align:left;color:#94a3b8;font-size:11px}
+.achv-table tr:hover td{background:#fafbfd}
+.achv-table tr:last-child td{border-bottom:none}
+.dt{width:100%;border-collapse:collapse}
+.dt th{padding:8px 12px;background:#f8fafc;color:#64748b;font-size:11px;font-weight:700;text-align:right;border-bottom:2px solid #e2e8f0;white-space:nowrap}
+.dt th:first-child{text-align:left}.dt th:nth-child(2){text-align:left}
+.dt td{padding:8px 12px;border-bottom:1px solid #f8fafc;text-align:right;font-size:12px;color:#334155}
+.dt td:first-child{text-align:left;font-weight:700;color:#0f172a}
+.dt td:nth-child(2){text-align:left;color:#64748b;font-size:11px}
+.dt tr:last-child td{border-bottom:none}
+.dt tr:hover td{background:#fafbfd}
+.chg-up{color:#10b981;font-weight:700}.chg-dn{color:#ef4444;font-weight:700}.chg-flat{color:#94a3b8}
+
+/* ─── Channel legend ─── */
+.ch-legend{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.ch-item{display:grid;grid-template-columns:10px 70px 1fr 38px;align-items:center;gap:7px;font-size:11px}
+.ch-dot{width:10px;height:10px;border-radius:2px}
+.ch-bar-bg{height:5px;background:#f1f5f9;border-radius:3px;overflow:hidden}
+.ch-bar-fill{height:100%;border-radius:3px}
+.ch-pct{text-align:right;font-weight:700;color:#475569}
+.legend-row{display:flex;gap:14px;margin-top:8px;flex-wrap:wrap}
+.leg{display:flex;align-items:center;gap:4px;font-size:11px;color:#64748b}
+.leg-dot{width:10px;height:10px;border-radius:2px}
+
+/* ─── 마감 코멘트 ─── */
+.mc-wrap{background:#fff;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,.06),0 0 0 1px rgba(0,0,0,.04);margin-bottom:0;overflow:hidden}
+.mc-header{display:flex;align-items:center;justify-content:space-between;padding:13px 20px;border-bottom:2px solid #f1f5f9}
+.mc-header h2{font-size:13px;font-weight:800;color:#0f172a;display:flex;align-items:center;gap:6px}
+.mc-header h2::before{content:'';width:3px;height:14px;background:#8b5cf6;border-radius:2px;display:inline-block}
+.mc-hdr-right{display:flex;align-items:center;gap:8px}
+.mc-saved{font-size:11px;color:#94a3b8}
+.mc-btn{font-size:11px;color:#64748b;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:4px 10px;cursor:pointer}
+.mc-btn:hover{background:#f1f5f9}
+.mc-body{display:block}
+.mc-col{padding:16px 20px;border-right:1px solid #f1f5f9}
+.mc-col:last-child{border-right:none}
+.mc-col-title{font-size:12px;font-weight:800;color:#0f172a;margin-bottom:12px;display:flex;align-items:center;gap:5px}
+/* 전일자 col */
+.mc-kpi-row{margin-bottom:12px}
+.mc-kpi-label{font-size:10px;font-weight:700;color:#64748b;margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px}
+.mc-prog-wrap{display:flex;align-items:center;gap:8px;margin-bottom:3px}
+.mc-prog-bg{flex:1;height:7px;background:#f1f5f9;border-radius:3px;overflow:hidden}
+.mc-prog-fill{height:100%;border-radius:3px;transition:width .5s ease}
+.mc-prog-pct{font-size:13px;font-weight:800;width:34px;text-align:right}
+.mc-prog-meta{font-size:11px;color:#94a3b8;display:flex;justify-content:space-between}
+.mc-stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid #f8fafc}
+.mc-stat-item{background:#f8fafc;border-radius:7px;padding:9px 10px}
+.mc-stat-lbl{font-size:10px;color:#94a3b8;font-weight:600;margin-bottom:3px}
+.mc-stat-val{font-size:14px;font-weight:800;color:#0f172a}
+.mc-stat-diff{font-size:10px;font-weight:700;margin-top:1px}
+.mc-stat-ref{font-size:10px;color:#94a3b8}
+/* 월누적 col */
+.mc-mtd-row{display:grid;grid-template-columns:90px 1fr auto;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #f8fafc}
+.mc-mtd-row:last-child{border-bottom:none}
+.mc-mtd-lbl{font-size:11px;font-weight:700;color:#475569;white-space:nowrap}
+.mc-mtd-val{font-size:12px;font-weight:800;color:#0f172a}
+.mc-mtd-right{display:flex;align-items:center;gap:6px;justify-content:flex-end}
+.mc-mtd-prog-bg{width:60px;height:5px;background:#f1f5f9;border-radius:2px;overflow:hidden}
+.mc-mtd-prog-fill{height:100%;border-radius:2px}
+.mc-mtd-pct{font-size:11px;font-weight:700;width:32px;text-align:right}
+/* 편집 모드 input */
+.mc-num{border:none;background:transparent;font:inherit;color:inherit;outline:none;width:60px;text-align:right;padding:0}
+.mc-editing .mc-num{border-bottom:1.5px solid #8b5cf6;background:rgba(139,92,246,.05);border-radius:2px;padding:0 2px;cursor:text;color:#1e293b}
+.mc-num-wide{width:80px}
+.mc-footer{padding:8px 20px 12px;display:none;justify-content:flex-end;gap:8px}
+.mc-btn-save{background:#0B1D3A;color:#fff;border:none;border-radius:6px;padding:5px 14px;font-size:12px;font-weight:700;cursor:pointer}
+.mc-btn-save:hover{background:#162B52}
+
+/* ─── 연간 섹션 ─── */
+.annual-table{width:100%;border-collapse:collapse;margin-top:8px}
+.annual-table th{padding:8px 10px;background:#f8fafc;color:#64748b;font-size:11px;font-weight:700;text-align:right;border-bottom:2px solid #e2e8f0;white-space:nowrap}
+.annual-table th:first-child{text-align:left}
+.annual-table td{padding:8px 10px;border-bottom:1px solid #f1f5f9;text-align:right;font-size:12px;color:#334155}
+.annual-table td:first-child{text-align:left;font-weight:700;color:#0f172a}
+.annual-table tr:hover td{background:#fafbfd}
+.annual-table tr:last-child td{border-bottom:none}
+.annual-table .cur-month{background:#fef9ff}
+.annual-table .cur-month td{background:#fef9ff}
+.ann-pct{font-size:11px;font-weight:700}
+.ann-pct.over{color:#10b981}.ann-pct.warn{color:#f59e0b}.ann-pct.low{color:#ef4444}.ann-pct.empty{color:#cbd5e1}
+
+
+/* ─── Responsive ─── */
+@media(max-width:1200px){.kpi-grid{grid-template-columns:repeat(3,1fr)}.grid-3{grid-template-columns:1fr 1fr}.mc-body{grid-template-columns:1fr}}
+@media(max-width:900px){.kpi-grid{grid-template-columns:repeat(2,1fr)}.grid-2,.grid-3,.grid-32{grid-template-columns:1fr}.main{padding:14px 16px}}
+
+/* ═══ 실시간 대시보드 (scoped: #view-realtime) ═══ */
+/* 탭 내부에서 wck 자체 헤더 숨김 (상위 헤더와 중복) */
+#view-realtime .header { display: none !important; }
+#view-realtime .rt-main { padding: 20px 28px; }
+#view-realtime .filter-bar { flex-wrap: nowrap; }
+
+:root {
+    --bg-base: #EEF2F7;
+    --bg-card: #ffffff;
+    --bg-card2: #f8fafc;
+    --bg-hover: #f1f5f9;
+    --border: #e2e8f0;
+    --border-bright: #cbd5e1;
+    --accent: #3b82f6;
+    --accent-glow: rgba(59,130,246,0.12);
+    --accent2: #6366f1;
+    --green: #10b981;
+    --green-dim: rgba(16,185,129,0.1);
+    --red: #ef4444;
+    --red-dim: rgba(239,68,68,0.1);
+    --yellow: #f59e0b;
+    --yellow-dim: rgba(245,158,11,0.1);
+    --text-1: #0f172a;
+    --text-2: #475569;
+    --text-3: #94a3b8;
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+  
+  /* ── Header ── */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 28px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    background: linear-gradient(135deg, #0B1D3A 0%, #162B52 60%, #1E3A6E 100%);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .header-left { display:flex; align-items:center; gap:14px; }
+  .logo-dot {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 8px;
+    display: flex; align-items:center; justify-content:center;
+    font-size: 14px; font-weight: 700; color: #fff;
+  }
+  .header-title { font-size: 17px; font-weight: 800; color: #fff; letter-spacing: -0.3px; }
+  .header-sub { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+  .live-badge {
+    display: flex; align-items:center; gap:6px;
+    background: rgba(16,185,129,0.18); border: 1px solid rgba(16,185,129,0.3);
+    border-radius: 20px; padding: 4px 12px;
+    font-size: 11px; color: #34d399; font-weight: 600;
+  }
+  .live-dot {
+    width:6px; height:6px; border-radius:50%; background:#34d399;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+  50%{opacity:0.3;} }
+  
+  /* ── Date Filter Bar ── */
+  .filter-bar {
+    display: flex; align-items:center; gap:8px;
+    padding: 10px 28px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-card);
+    flex-wrap: nowrap;
+  }
+  .filter-label { font-size:11px; color:var(--text-3); font-weight:600; letter-spacing:0.05em; text-transform:uppercase; margin-right:4px; }
+  .date-btn {
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--border-bright);
+    background: transparent;
+    color: var(--text-2);
+    font-size: 12px; font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+  .date-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
+  .date-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: 0 0 12px var(--accent-glow); }
+  .filter-sep { width: 1px; height: 20px; background: var(--border); margin: 0 4px; }
+  .custom-date-wrap { display:flex; align-items:center; gap:6px; }
+  .custom-date-wrap input {
+    background: #fff;
+    border: 1px solid var(--border-bright);
+    border-radius: 6px;
+    color: var(--text-1);
+    padding: 5px 10px;
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+    outline: none;
+  }
+  .custom-date-wrap input:focus { border-color: var(--accent); }
+  .compare-label { font-size:11px; color:var(--text-3); font-weight:600; letter-spacing:0.05em; text-transform:uppercase; margin-left: 8px; }
+  .compare-btn {
+    padding: 5px 12px; border-radius:6px; border:1px solid var(--border-bright);
+    background: transparent; color:var(--text-2); font-size:12px; cursor:pointer;
+    transition:all 0.15s; font-family:inherit;
+  }
+  .compare-btn:hover { border-color:var(--accent2); color:var(--accent2); }
+  .compare-btn.active { background:var(--accent2); border-color:var(--accent2); color:#fff; }
+  
+  /* ── Main Layout ── */
+  .rt-main { padding: 20px 28px; display:flex; flex-direction:column; gap:20px; }
+  
+  /* ── KPI Section ── */
+  #view-realtime .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  #view-realtime .kpi-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06), 0 0 0 1px rgba(0,0,0,.03);
+    transition: border-color 0.2s;
+  }
+  #view-realtime .kpi-card::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:2px;
+  }
+  #view-realtime .kpi-card.blue::before { background: linear-gradient(90deg,var(--accent),transparent); }
+  #view-realtime .kpi-card.indigo::before { background: linear-gradient(90deg,var(--accent2),transparent); }
+  #view-realtime .kpi-card.green::before { background: linear-gradient(90deg,var(--green),transparent); }
+  #view-realtime .kpi-card.yellow::before { background: linear-gradient(90deg,var(--yellow),transparent); }
+  #view-realtime .kpi-card.alert { border-color: var(--red) !important; background: linear-gradient(135deg, var(--bg-card) 0%, rgba(239,68,68,0.06) 100%); }
+  #view-realtime .kpi-card.alert::before { background: linear-gradient(90deg,var(--red),transparent); }
+  
+  .kpi-label { font-size:11px; color:var(--text-3); font-weight:600; letter-spacing:0.05em; text-transform:uppercase; }
+  .kpi-value { font-size: 26px; font-weight: 700; color: var(--text-1); margin: 8px 0 6px; line-height:1; }
+  .kpi-value.alert-text { color: var(--red); }
+  .kpi-row { display:flex; align-items:center; justify-content:space-between; }
+  .kpi-badge {
+    font-size:10px; font-weight:600; padding:2px 8px; border-radius:4px;
+  }
+  .kpi-badge.up { background:var(--green-dim); color:var(--green); }
+  .kpi-badge.down { background:var(--red-dim); color:var(--red); }
+  .kpi-badge.neutral { background:rgba(148,163,184,0.1); color:var(--text-2); }
+  .kpi-target { font-size:11px; color:var(--text-3); }
+  .kpi-progress-wrap { margin-top: 10px; }
+  .kpi-progress-bar { height:3px; background:var(--border); border-radius:3px; overflow:hidden; }
+  .kpi-progress-fill { height:100%; border-radius:3px; transition: width 0.6s ease; }
+  .kpi-progress-fill.blue { background: var(--accent); }
+  .kpi-progress-fill.green { background: var(--green); }
+  .kpi-progress-fill.yellow { background: var(--yellow); }
+  .kpi-progress-fill.red { background: var(--red); }
+  .kpi-progress-fill.indigo { background: var(--accent2); }
+  .kpi-progress-pct { font-size: 11px; font-weight:600; margin-top:4px; }
+  
+  /* Forecasted section */
+  .forecast-row { display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
+  .forecast-chip {
+    font-size:10px; padding:2px 8px; border-radius:4px;
+    background: rgba(59,130,246,0.1); color:var(--accent); border:1px solid rgba(59,130,246,0.2);
+  }
+  
+  /* ── Section Header ── */
+  .section-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+  .section-title { font-size:13px; font-weight:700; color:var(--text-1); display:flex;align-items:center;gap:8px; }
+  .section-title-dot { width:6px;height:6px;border-radius:50%;background:var(--accent); }
+  .section-sub { font-size:11px; color:var(--text-3); }
+  
+  /* ── Chart Cards ── */
+  .chart-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .chart-grid-1 { display:grid; grid-template-columns:1fr; gap:14px; }
+  .chart-card {
+    background:var(--bg-card);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding: 18px 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06), 0 0 0 1px rgba(0,0,0,.03);
+  }
+  .chart-card.alert-card { border-color: rgba(239,68,68,0.4); }
+  
+  #view-realtime .legend-row { display:flex; gap:14px; flex-wrap:wrap; margin-bottom:14px; }
+  .legend-item { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--text-2); }
+  .legend-dot { width:8px;height:8px;border-radius:50%; flex-shrink:0; }
+  
+  /* Alert badge inline */
+  .alert-badge {
+    display:inline-flex; align-items:center; gap:4px;
+    background:var(--red-dim); border:1px solid rgba(239,68,68,0.3);
+    border-radius:4px; padding:2px 8px; font-size:10px; color:var(--red); font-weight:600;
+  }
+  
+  /* ── Summary Box ── */
+  .summary-box {
+    background: var(--bg-card2);
+    border: 1px solid var(--border-bright);
+    border-radius: var(--radius);
+    padding: 16px 22px;
+    display: flex; flex-direction: column; gap: 9px;
+  }
+  .summary-row {
+    display: flex; align-items: baseline; gap: 6px;
+    font-size: 12.5px; color: var(--text-2); line-height: 1.5; flex-wrap: wrap;
+  }
+  .summary-row .s-num { font-size: 13px; font-weight: 700; color: var(--text-1); }
+  .summary-row .s-num.good { color: var(--green); }
+  .summary-row .s-num.bad  { color: var(--red); }
+  .summary-row .s-num.warn { color: var(--yellow); }
+  .summary-row .s-idx { font-size: 11px; font-weight: 700; color: var(--text-3); min-width: 14px; }
+  .summary-divider { width:100%; height:1px; background: var(--border); margin: 2px 0; }
+
+  /* ── Ad Recommendation Panel ── */
+  .rec-panel { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); box-shadow:0 1px 3px rgba(0,0,0,.06); }
+  .rec-header { display:flex; align-items:center; justify-content:space-between; padding:14px 18px; cursor:pointer; user-select:none; }
+  .rec-header:hover { background:var(--bg-hover); border-radius:var(--radius); }
+  .rec-title { font-size:13px; font-weight:700; color:var(--text-1); display:flex; align-items:center; gap:8px; }
+  .rec-remain { font-size:11px; color:var(--text-3); font-weight:400; }
+  .rec-toggle-btn { font-size:11px; color:var(--text-3); display:flex; align-items:center; gap:6px; }
+  .rec-toggle-icon { font-size:12px; transition:transform .2s ease; display:inline-block; }
+  .rec-toggle-icon.open { transform:rotate(180deg); }
+  .rec-.rec-body.open { display:block; }
+  .rec-scenarios { background:var(--bg-card2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:14px 16px; }
+  .rec-gap-label { font-size:12px; font-weight:700; margin-bottom:4px; }
+  .rec-roas-note { font-size:11px; color:var(--text-3); margin-bottom:12px; }
+  .rec-scenario-row { display:flex; align-items:center; padding:7px 0; border-bottom:1px solid var(--border); gap:8px; }
+  .rec-scenario-row:last-child { border-bottom:none; }
+  .rec-scenario-ad { font-size:12px; font-weight:700; color:var(--text-1); min-width:90px; }
+  .rec-scenario-addrev { font-size:11px; color:var(--text-3); flex:1; }
+  .rec-scenario-pct { font-size:13px; font-weight:800; min-width:52px; text-align:right; }
+  .rec-logic-note { margin-top:12px; padding:10px 12px; background:rgba(59,130,246,0.05); border:1px solid rgba(59,130,246,0.15); border-radius:var(--radius-sm); font-size:11px; color:var(--text-2); line-height:1.7; }
+  
+  canvas { display:block; }
+  
+  .chart-wrapper { position:relative; }
+  
+  /* scrollbar */
+  ::-webkit-scrollbar { width:6px; }
+  ::-webkit-scrollbar-track { background:#f1f5f9; }
+  ::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:3px; }
+
+  .updated-at { font-size:10px; color:#94a3b8; }
+  
+  
+  @media (max-width: 1100px) {
+    #view-realtime .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .chart-grid-2 { grid-template-columns: 1fr; }
+  }
+
+</style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<div class="hd">
+  <div class="hd-l">
+    <h1>마케팅 KPI 실적 현황</h1>
+    <span>W CONCEPT · Performance Marketing Team</span>
+  </div>
+  <div class="hd-r">
+    <div class="badge badge-date">금액단위: 백만원</div>
+    <div class="badge badge-live"><span class="pulse"></span>기준일: <span id="badge-date"></span></div>
+  </div>
+</div>
+
+<!-- ── Period Tabs ── -->
+<div class="tabs">
+  <button class="tab-btn active" id="tab-daily">Daily (전일 기준)</button>
+  <div class="tab-divider"></div>
+  <button class="tab-btn annual-tab" onclick="setAnnualView(this)">📅 26연간 월별</button>
+  <div class="tab-divider"></div>
+  <button class="tab-btn realtime-tab" id="tab-realtime" onclick="setRealtimeView(this)">📊 실시간</button>
+  <span class="tab-note">* 채널ID 적재: 25년 05월 이전 미적재</span>
+</div>
+
+<div class="main">
+
+<!-- ════════ 기본 대시보드 뷰 ════════ -->
+<div id="view-dash">
+
+  <!-- ① 마감 코멘트 -->
+  <div class="sec-hd" style="margin-top:16px">
+    <h2 style="--before-color:#8b5cf6">마감 코멘트</h2>
+    <span class="sec-note" id="mc-period-note"></span>
+  </div>
+  <div class="mc-wrap" id="mc-wrap">
+    <div class="mc-header" style="cursor:pointer" onclick="mcToggleCollapse()">
+      <h2>전일 실적 요약 <span style="font-size:11px;font-weight:400;color:#94a3b8" id="mc-date-label"></span></h2>
+      <div class="mc-hdr-right">
+        <span class="mc-saved" id="mc-saved-time"></span>
+        <span id="mc-chevron" style="font-size:11px;color:#94a3b8;margin-right:4px;transition:transform .2s;display:inline-block">▲</span>
+        <button class="mc-btn" onclick="event.stopPropagation();mcToggleEdit()" id="mc-edit-btn">✏️ 편집</button>
+      </div>
+    </div>
+    <div class="mc-body" id="mc-body" style="display:none">
+      <!-- 전일자 실적 -->
+      <div class="mc-col">
+        <div class="mc-col-title">📋 전일자 실적 <span id="mc-daily-date" style="font-weight:400;color:#94a3b8;font-size:11px"></span></div>
+        <!-- 총수주 -->
+        <div class="mc-kpi-row">
+          <div class="mc-kpi-label">총수주</div>
+          <div class="mc-prog-wrap">
+            <div class="mc-prog-bg"><div class="mc-prog-fill" id="mc-pb-total" style="width:74%;background:linear-gradient(90deg,#ef4444,#f87171)"></div></div>
+            <span class="mc-prog-pct pct-low" id="mc-pct-total">74%</span>
+          </div>
+          <div class="mc-prog-meta">
+            <span>목표 <input class="mc-num mc-num-wide" id="mc-total-t" type="number" value="2650" readonly>백만</span>
+            <span>달성 <input class="mc-num mc-num-wide" id="mc-total-a" type="number" value="1960" readonly>백만</span>
+          </div>
+        </div>
+        <!-- 순수주 -->
+        <div class="mc-kpi-row">
+          <div class="mc-kpi-label">순수주</div>
+          <div class="mc-prog-wrap">
+            <div class="mc-prog-bg"><div class="mc-prog-fill" id="mc-pb-net" style="width:63%;background:linear-gradient(90deg,#ef4444,#f87171)"></div></div>
+            <span class="mc-prog-pct pct-low" id="mc-pct-net">63%</span>
+          </div>
+          <div class="mc-prog-meta">
+            <span>목표 <input class="mc-num mc-num-wide" id="mc-net-t" type="number" value="1800" readonly>백만</span>
+            <span>달성 <input class="mc-num mc-num-wide" id="mc-net-a" type="number" value="1135" readonly>백만</span>
+          </div>
+        </div>
+        <!-- 부가 지표 -->
+        <div class="mc-stat-grid">
+          <div class="mc-stat-item">
+            <div class="mc-stat-lbl">광고비용율</div>
+            <div class="mc-stat-val"><input class="mc-num" id="mc-adrate" type="number" step="0.1" value="4.1" readonly>%</div>
+            <div class="mc-stat-ref">월평균 <input class="mc-num" id="mc-adrate-mavg" type="number" step="0.1" value="2.9" readonly>% / 전년 <input class="mc-num" id="mc-adrate-yavg" type="number" step="0.1" value="2.6" readonly>%</div>
+          </div>
+          <div class="mc-stat-item">
+            <div class="mc-stat-lbl">광고비 (잠정)</div>
+            <div class="mc-stat-val"><input class="mc-num mc-num-wide" id="mc-adcost" type="number" value="46" readonly>백만</div>
+            <div class="mc-stat-ref">&nbsp;</div>
+          </div>
+          <div class="mc-stat-item">
+            <div class="mc-stat-lbl">전체 DAU</div>
+            <div class="mc-stat-val"><input class="mc-num" id="mc-dau" type="number" step="0.1" value="43.9" readonly>만</div>
+            <div class="mc-stat-diff" id="mc-dau-diff" style="color:#ef4444"></div>
+            <div class="mc-stat-ref">월평균 <input class="mc-num" id="mc-dau-mavg" type="number" step="0.1" value="59" readonly>만</div>
+          </div>
+          <div class="mc-stat-item">
+            <div class="mc-stat-lbl">APP DAU</div>
+            <div class="mc-stat-val"><input class="mc-num" id="mc-appdau" type="number" step="0.1" value="24.5" readonly>만</div>
+            <div class="mc-stat-diff" id="mc-appdau-diff" style="color:#ef4444"></div>
+            <div class="mc-stat-ref">월평균 <input class="mc-num" id="mc-appdau-mavg" type="number" step="0.1" value="28" readonly>만</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="mc-footer" style="padding:8px 20px 12px;display:none;justify-content:flex-end;gap:8px">
+      <button class="mc-btn-save" onclick="mcSave()">💾 저장</button>
+    </div>
+  </div>
+
+  <!-- ② 핵심지표 달성 현황 -->
+  <div class="sec-hd">
+    <h2>핵심지표 달성 현황</h2>
+    <span class="sec-note" id="kpi-period-label"></span>
+  </div>
+  <div class="kpi-grid">
+    <div class="kpi-card c-blue"><div class="kpi-lbl">APP MAU</div><div class="kpi-val" id="k-mau">-</div><div class="kpi-sub" id="k-mau-sub">-</div><span class="yoy" id="k-mau-yoy">-</span></div>
+    <div class="kpi-card c-indigo"><div class="kpi-lbl">APP DAU</div><div class="kpi-val" id="k-dau">-</div><div class="kpi-sub" id="k-dau-sub">-</div><span class="yoy" id="k-dau-yoy">-</span></div>
+    <div class="kpi-card c-teal"><div class="kpi-lbl">신규가입</div><div class="kpi-val" id="k-join">-</div><div class="kpi-sub" id="k-join-sub">-</div><span class="yoy" id="k-join-yoy">-</span></div>
+    <div class="kpi-card c-green"><div class="kpi-lbl">방문자수</div><div class="kpi-val" id="k-visit">-</div><div class="kpi-sub" id="k-visit-sub">-</div><span class="yoy" id="k-visit-yoy">-</span></div>
+    <div class="kpi-card c-orange"><div class="kpi-lbl">첫구매완료</div><div class="kpi-val" id="k-first">-</div><div class="kpi-sub" id="k-first-sub">-</div><span class="yoy" id="k-first-yoy">-</span></div>
+    <div class="kpi-card c-rose"><div class="kpi-lbl">순주문 <span style="font-size:10px;color:#94a3b8">(백만)</span></div><div class="kpi-val" id="k-net">-</div><div class="kpi-sub" id="k-net-sub">-</div><span class="yoy" id="k-net-yoy">-</span></div>
+  </div>
+
+  <!-- ③ MTD KPI 달성현황 -->
+  <div class="sec-hd">
+    <h2>MTD KPI 달성현황</h2>
+    <span class="sec-note">6/1~6/25 기준 · 목표 대비 진도율</span>
+  </div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Target vs Actual</div>
+      <div class="card-sub">6월 MTD 목표 달성률 (채널ID 기준)</div>
+      <table class="achv-table">
+        <thead><tr><th>지표</th><th>단위</th><th>Target</th><th>Actual</th><th>달성률</th><th>YoY</th></tr></thead>
+        <tbody>
+          <tr><td>APP MAU</td><td>명</td><td>1,712,722</td><td>1,864,932</td><td><div class="prog-wrap"><div class="prog-bar-bg"><div class="prog-bar bar-green" style="width:100%"></div></div><span class="prog-pct pct-over">109%</span></div></td><td><span class="yoy up">+15.1%</span></td></tr>
+          <tr><td>APP DAU</td><td>명</td><td>345,975</td><td>282,009</td><td><div class="prog-wrap"><div class="prog-bar-bg"><div class="prog-bar bar-yellow" style="width:82%"></div></div><span class="prog-pct pct-warn">82%</span></div></td><td><span class="yoy up">+0.8%</span></td></tr>
+          <tr><td>신규가입</td><td>명</td><td>100,888</td><td>84,863</td><td><div class="prog-wrap"><div class="prog-bar-bg"><div class="prog-bar bar-yellow" style="width:84%"></div></div><span class="prog-pct pct-warn">84%</span></div></td><td><span class="yoy up">+3.8%</span></td></tr>
+          <tr><td>방문자수</td><td>명</td><td>385,162</td><td>346,052</td><td><div class="prog-wrap"><div class="prog-bar-bg"><div class="prog-bar bar-yellow" style="width:90%"></div></div><span class="prog-pct pct-warn">90%</span></div></td><td><span class="yoy up">+1.3%</span></td></tr>
+          <tr><td>첫구매</td><td>명</td><td>53,923</td><td>46,928</td><td><div class="prog-wrap"><div class="prog-bar-bg"><div class="prog-bar bar-yellow" style="width:87%"></div></div><span class="prog-pct pct-warn">87%</span></div></td><td><span class="yoy up">+1.1%</span></td></tr>
+          <tr><td>순주문</td><td>백만</td><td>60,100</td><td>53,328</td><td><div class="prog-wrap"><div class="prog-bar-bg"><div class="prog-bar bar-yellow" style="width:89%"></div></div><span class="prog-pct pct-warn">89%</span></div></td><td><span class="yoy up">+0.5%</span></td></tr>
+          <tr><td>총수주</td><td>백만</td><td>88,175</td><td>73,535</td><td><div class="prog-wrap"><div class="prog-bar-bg"><div class="prog-bar bar-red" style="width:83%"></div></div><span class="prog-pct pct-low">83%</span></div></td><td><span class="yoy up">+1.7%</span></td></tr>
+          <tr><td>GMV</td><td>백만</td><td>56,900</td><td>55,203</td><td><div class="prog-wrap"><div class="prog-bar-bg"><div class="prog-bar bar-green" style="width:97%"></div></div><span class="prog-pct pct-over">97%</span></div></td><td><span class="yoy up">+9.5%</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-title">MTD 달성률 현황</div>
+      <div class="card-sub">6월 목표 대비 달성률 차트</div>
+      <div class="chart-box h260"><canvas id="chart-mtd-achieve"></canvas></div>
+    </div>
+  </div>
+
+  <!-- ④ 채널별 비중 파이차트 -->
+  <div class="sec-hd">
+    <h2>채널별 비중</h2>
+    <span class="sec-note" id="ch-date-note">Daily 기준</span>
+  </div>
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-title">채널별 세션 비중</div>
+      <div class="card-sub">Total 653,019</div>
+      <div class="chart-box h180"><canvas id="chart-ch-sess"></canvas></div>
+      <div class="ch-legend" id="sess-legend"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">채널별 신규가입</div>
+      <div class="card-sub">Total 2,847명</div>
+      <div class="chart-box h180"><canvas id="chart-ch-join"></canvas></div>
+      <div class="ch-legend" id="join-legend"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">채널별 생애첫구매</div>
+      <div class="card-sub">Total 1,527명</div>
+      <div class="chart-box h180"><canvas id="chart-ch-first"></canvas></div>
+      <div class="ch-legend" id="first-legend"></div>
+    </div>
+  </div>
+
+  <!-- ⑤ 광고 KPI 달성현황 -->
+  <div class="sec-hd">
+    <h2>광고 KPI 달성현황</h2>
+    <span class="sec-note">Daily 기준 · 금액단위: 백만원</span>
+  </div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">광고 KPI 상세</div>
+      <div class="card-sub">Daily / MTD일평균</div>
+      <table class="dt">
+        <thead><tr><th>지표</th><th>Daily</th><th>MTD일평균</th></tr></thead>
+        <tbody>
+          <tr><td>광고비 (백만)</td><td>45.9</td><td>62.9</td></tr>
+          <tr><td>보고매출 (백만)</td><td>393.8</td><td>914.2</td></tr>
+          <tr><td>ROAS</td><td><b style="color:#3b82f6">857%</b></td><td><b style="color:#10b981">1,454%</b></td></tr>
+          <tr><td>광고비중 (총수주대비)</td><td>21%</td><td>31%</td></tr>
+          <tr><td>노출</td><td>10,967,121</td><td>16,320,613</td></tr>
+          <tr><td>클릭</td><td>228,140</td><td>363,549</td></tr>
+          <tr><td>CTR</td><td>2.1%</td><td>2.2%</td></tr>
+          <tr><td>CR</td><td>1.6%</td><td>2.0%</td></tr>
+          <tr><td>광고주문건수</td><td>3,665</td><td>7,160</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-title">ROAS / 광고비 추이</div>
+      <div class="card-sub">Daily · MTD일평균 비교</div>
+      <div class="chart-box h200"><canvas id="chart-roas"></canvas></div>
+      <div style="padding-top:12px;border-top:1px solid #f1f5f9;margin-top:8px">
+        <table style="width:100%;font-size:11px">
+          <tr><td style="color:#64748b">광고비용율 (Daily)</td><td style="text-align:right;font-weight:700;color:#ef4444">4.1% <span style="color:#94a3b8;font-weight:400">(MTD 2.9%)</span></td></tr>
+          <tr><td style="color:#64748b">순수주대비 광고비 (MTD)</td><td style="text-align:right;font-weight:700">2.9%</td></tr>
+          <tr><td style="color:#64748b">전년 동기 광고비용율</td><td style="text-align:right;font-weight:700">2.6%</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑥ 신규가입 / 첫구매 채널별 현황 -->
+  <div class="sec-hd">
+    <h2>신규가입 / 첫구매 채널별 현황</h2>
+    <span class="sec-note">Daily 기준</span>
+  </div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">신규가입 채널별 현황</div>
+      <div class="card-sub">Daily 기준</div>
+      <table class="dt">
+        <thead><tr><th>채널</th><th>Daily</th><th>비중</th><th>YoY</th><th>WTD</th><th>MTD일평균</th></tr></thead>
+        <tbody>
+          <tr><td>Organic</td><td>1,128</td><td>40%</td><td class="chg-dn">△49.6%</td><td>1,016</td><td>1,348</td></tr>
+          <tr><td>DA</td><td>644</td><td>23%</td><td class="chg-dn">△1.8%</td><td>578</td><td>676</td></tr>
+          <tr><td>SA</td><td>527</td><td>19%</td><td class="chg-dn">△22.8%</td><td>450</td><td>611</td></tr>
+          <tr><td>PCS</td><td>444</td><td>16%</td><td class="chg-up">+17.5%</td><td>465</td><td>596</td></tr>
+          <tr><td>CRM</td><td>35</td><td>1%</td><td class="chg-up">+1066.7%</td><td>17</td><td>19</td></tr>
+          <tr><td>기타</td><td>67</td><td>2%</td><td class="chg-dn">△93.5%</td><td>103</td><td>143</td></tr>
+          <tr style="background:#f8fafc"><td style="font-weight:700">합계</td><td style="font-weight:700">2,847</td><td>-</td><td class="chg-dn">△42.9%</td><td>2,630</td><td>3,395</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-title">생애첫구매 채널별 현황</div>
+      <div class="card-sub">Daily 기준</div>
+      <table class="dt">
+        <thead><tr><th>채널</th><th>Daily</th><th>비중</th><th>YoY</th><th>WTD</th><th>MTD일평균</th></tr></thead>
+        <tbody>
+          <tr><td>Organic</td><td>806</td><td>53%</td><td class="chg-dn">△32.9%</td><td>794</td><td>1,004</td></tr>
+          <tr><td>DA</td><td>150</td><td>10%</td><td class="chg-up">+32.7%</td><td>120</td><td>137</td></tr>
+          <tr><td>SA</td><td>284</td><td>19%</td><td class="chg-dn">△8.7%</td><td>240</td><td>348</td></tr>
+          <tr><td>PCS</td><td>243</td><td>16%</td><td class="chg-dn">△8.0%</td><td>256</td><td>338</td></tr>
+          <tr><td>CRM</td><td>38</td><td>2%</td><td class="chg-up">+375.0%</td><td>27</td><td>35</td></tr>
+          <tr><td>기타</td><td>6</td><td>0%</td><td class="chg-dn">△98.3%</td><td>10</td><td>13</td></tr>
+          <tr style="background:#f8fafc"><td style="font-weight:700">합계</td><td style="font-weight:700">1,527</td><td>-</td><td class="chg-dn">△32.4%</td><td>1,445</td><td>1,877</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /view-dash -->
+
+<!-- ════════ 연간 월별 뷰 ════════ -->
+<div id="view-annual" style="display:none">
+  <div class="sec-hd" style="margin-top:16px">
+    <h2 style="--before-color:#8b5cf6">2026 연간 월별 달성현황</h2>
+    <span class="sec-note">총수주 · 순수주 · GMV · 단위: 억원</span>
+  </div>
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-title">월별 Target vs Actual (총수주 / 순수주)</div>
+    <div class="card-sub">* 1~5월: 전사 확정 실적 / 6월: 진행중(6/25기준) / 7월~: 목표 미입력</div>
+    <div class="chart-box h260"><canvas id="chart-annual"></canvas></div>
+    <div class="legend-row">
+      <div class="leg"><div class="leg-dot" style="background:rgba(59,130,246,.7)"></div>총수주 목표</div>
+      <div class="leg"><div class="leg-dot" style="background:#3b82f6"></div>총수주 실적</div>
+      <div class="leg"><div class="leg-dot" style="background:rgba(16,185,129,.7)"></div>순수주 목표</div>
+      <div class="leg"><div class="leg-dot" style="background:#10b981"></div>순수주 실적</div>
+    </div>
+  </div>
+  <div class="card" style="overflow-x:auto">
+    <div class="card-title">월별 KPI 달성률</div>
+    <div class="card-sub">* 달성률 색상: <span style="color:#10b981;font-weight:700">녹색 ≥100%</span> / <span style="color:#f59e0b;font-weight:700">노랑 ≥85%</span> / <span style="color:#ef4444;font-weight:700">빨강 &lt;85%</span> / 실적 없는 월은 목표만 표시</div>
+    <table class="annual-table" style="min-width:900px">
+      <thead>
+        <tr>
+          <th rowspan="2" style="text-align:left;vertical-align:bottom">월</th>
+          <th colspan="3" style="text-align:center;border-left:2px solid #e2e8f0;background:#eff6ff;color:#3b82f6">총수주 (억원)</th>
+          <th colspan="3" style="text-align:center;border-left:2px solid #e2e8f0;background:#ecfdf5;color:#10b981">순수주 (억원)</th>
+          <th colspan="3" style="text-align:center;border-left:2px solid #e2e8f0;background:#fffbeb;color:#f59e0b">GMV (억원)</th>
+          <th colspan="2" style="text-align:center;border-left:2px solid #e2e8f0;background:#faf5ff;color:#8b5cf6">신규가입 (명)</th>
+          <th colspan="2" style="text-align:center;border-left:2px solid #e2e8f0;background:#fff1f2;color:#f43f5e">첫구매 (명)</th>
+        </tr>
+        <tr>
+          <th style="border-left:2px solid #e2e8f0">목표</th><th>실적</th><th>달성률</th>
+          <th style="border-left:2px solid #e2e8f0">목표</th><th>실적</th><th>달성률</th>
+          <th style="border-left:2px solid #e2e8f0">목표</th><th>실적</th><th>달성률</th>
+          <th style="border-left:2px solid #e2e8f0">목표</th><th>달성률</th>
+          <th style="border-left:2px solid #e2e8f0">목표</th><th>달성률</th>
+        </tr>
+      </thead>
+      <tbody id="annual-table-body"></tbody>
+    </table>
+  </div>
+</div>
+
+
+<div id="view-realtime" style="display:none">
+<header class="header" style="display:none">
+  <div class="header-left">
+    <div class="logo-dot">W</div>
+    <div>
+      <div class="header-title">W컨셉 실시간 대시보드</div>
+      <div class="header-sub" id="header-date">로딩 중...</div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <span class="updated-at" id="updated-at"></span>
+    <div class="live-badge"><div class="live-dot"></div>LIVE</div>
+  </div>
+</header>
+
+<div class="rt-main">
+
+  <!-- 섹션 타이틀 -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+    <h2 id="rt-summary-title" style="font-size:14px;font-weight:800;color:#0f172a;display:flex;align-items:center;gap:8px;">
+      <span style="display:inline-block;width:3px;height:14px;background:#3b82f6;border-radius:2px;flex-shrink:0"></span>
+      실시간 기준 실적 및 예상 마감
+    </h2>
+    <span style="font-size:11px;color:#94a3b8;" id="rt-summary-note"></span>
+  </div>
+
+  <!-- 필터바 (카드 스타일) -->
+  <div style="display:flex;flex-wrap:nowrap;align-items:center;gap:10px;padding:10px 16px;background:#fff;border-radius:10px;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(0,0,0,.06);">
+    <span style="font-size:11px;color:#94a3b8;font-weight:600;letter-spacing:.05em;text-transform:uppercase">기준일</span>
+    <button class="date-btn active" id="btn-today" onclick="setDatePreset('today')">오늘</button>
+    <div style="width:1px;height:20px;background:#e2e8f0;margin:0 4px"></div>
+    <span style="font-size:12px;color:#94a3b8;">직접선택</span>
+    <input type="date" id="custom-date" onchange="setCustomDate(this.value)" style="background:#fff;border:1px solid #cbd5e1;border-radius:6px;color:#0f172a;padding:5px 10px;font-size:12px;cursor:pointer;outline:none;">
+    <div style="width:1px;height:20px;background:#e2e8f0;margin:0 4px"></div>
+    <span style="font-size:11px;color:#94a3b8;font-weight:600;letter-spacing:.05em;text-transform:uppercase">비교</span>
+    <button class="compare-btn active" id="btn-lw" onclick="toggleCompare('lw')">전주동요일</button>
+    <button class="compare-btn active" id="btn-lm" onclick="toggleCompare('lm')">전월동요일</button>
+    <button class="compare-btn active" id="btn-ly" onclick="toggleCompare('ly')">전년동요일</button>
+  </div>
+
+  <div class="summary-box" id="summary-box"></div>
+
+  <!-- KPI -->
+  <div class="kpi-grid" id="kpi-grid"></div>
+  
+  <!-- Ad Recommendation Panel -->
+  <div class="rec-panel" id="rec-panel" style="display:none;">
+    <div class="rec-header" onclick="toggleRecPanel()">
+      <div class="rec-title">
+        💡 광고비 증액 판단
+        <span class="rec-remain" id="rec-remain"></span>
+      </div>
+      <div class="rec-toggle-btn">
+        <span id="rec-roas-info"></span>
+        <span class="rec-toggle-icon" id="rec-toggle-icon">▼</span>
+      </div>
+    </div>
+    <div class="rec-body" id="rec-body">
+      <div class="rec-scenarios" id="rec-scenarios"></div>
+    </div>
+  </div>
+  
+  <!-- Charts Row 1: Revenue + Net Revenue -->
+  <div class="chart-grid-2">
+    <div class="chart-card" id="card-revenue">
+      <div class="section-header">
+        <div class="section-title"><div class="section-title-dot" style="background:var(--accent2)"></div>시간대별 총수주</div>
+        <div class="legend-row" id="legend-revenue"></div>
+      </div>
+      <div class="chart-wrapper"><canvas id="chart-revenue" height="220"></canvas></div>
+    </div>
+    <div class="chart-card" id="card-netrev">
+      <div class="section-header">
+        <div class="section-title"><div class="section-title-dot" style="background:var(--green)"></div>시간대별 순수주 <span style="font-size:10px;color:var(--text-3);font-weight:400;margin-left:6px;">※ 취소/반품 시차로 음수 발생 가능</span></div>
+        <div class="legend-row" id="legend-netrev"></div>
+      </div>
+      <div class="chart-wrapper"><canvas id="chart-netrev" height="220"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Charts Row 2: DAU + APP DAU -->
+  <div class="chart-grid-2">
+    <div class="chart-card" id="card-dau">
+      <div class="section-header">
+        <div class="section-title"><div class="section-title-dot" style="background:var(--yellow)"></div>시간대별 DAU</div>
+        <div class="legend-row" id="legend-dau"></div>
+      </div>
+      <div class="chart-wrapper"><canvas id="chart-dau" height="220"></canvas></div>
+    </div>
+    <div class="chart-card" id="card-appdau">
+      <div class="section-header">
+        <div class="section-title"><div class="section-title-dot" style="background:#fb923c"></div>시간대별 APP DAU</div>
+        <div class="legend-row" id="legend-appdau"></div>
+      </div>
+      <div class="chart-wrapper"><canvas id="chart-appdau" height="220"></canvas></div>
+    </div>
+  </div>
+
+</div>
+</div><!-- /view-realtime -->
+
+</div><!-- /main -->
+
+<script>
+// ── 날짜 헬퍼 ──────────────────────────────────────────────────────
+const DAYS_KO = ['일','월','화','수','목','금','토'];
+const TODAY = new Date();
+const YESTERDAY = new Date(TODAY); YESTERDAY.setDate(TODAY.getDate()-1);
+const fmtMD  = d => `${d.getMonth()+1}/${d.getDate()}(${DAYS_KO[d.getDay()]})`;
+const fmtISO = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+
+// 날짜 뱃지 동적 설정
+document.getElementById('badge-date').textContent = fmtISO(YESTERDAY);
+document.getElementById('ch-date-note').textContent = `Daily 기준 (${fmtMD(YESTERDAY)})`;
+
+// ── 마감 코멘트 ────────────────────────────────────────────────────
+const MC_KEY = 'wck_mc_v3';
+let mcEditing = false;
+
+function mcInit() {
+  // 날짜 라벨
+  document.getElementById('mc-date-label').textContent = `(${fmtMD(YESTERDAY)} 기준)`;
+  document.getElementById('mc-daily-date').textContent = fmtMD(YESTERDAY);
+  document.getElementById('mc-period-note').textContent = `기준: ${fmtMD(YESTERDAY)}`;
+
+  // localStorage 복원
+  const raw = localStorage.getItem(MC_KEY);
+  if (raw) {
+    try {
+      const d = JSON.parse(raw);
+      const fields = ['mc-total-t','mc-total-a','mc-net-t','mc-net-a','mc-adrate','mc-adrate-mavg','mc-adrate-yavg',
+        'mc-adcost','mc-dau','mc-dau-mavg','mc-appdau','mc-appdau-mavg'];
+      fields.forEach(id => { if (d[id] !== undefined) document.getElementById(id).value = d[id]; });
+      if (d.savedAt) {
+        const dt = new Date(d.savedAt);
+        document.getElementById('mc-saved-time').textContent = `저장: ${dt.toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})}`;
+      }
+    } catch(e) {}
+  }
+  mcUpdateCalc();
+}
+
+function mcUpdateCalc() {
+  const totalT = +document.getElementById('mc-total-t').value;
+  const totalA = +document.getElementById('mc-total-a').value;
+  const netT   = +document.getElementById('mc-net-t').value;
+  const netA   = +document.getElementById('mc-net-a').value;
+  const dau    = +document.getElementById('mc-dau').value;
+  const dauMavg= +document.getElementById('mc-dau-mavg').value;
+  const appDau = +document.getElementById('mc-appdau').value;
+  const appMavg= +document.getElementById('mc-appdau-mavg').value;
+
+  const tPct = totalT ? Math.min(100, Math.round(totalA/totalT*100)) : 0;
+  const nPct = netT   ? Math.min(100, Math.round(netA/netT*100))     : 0;
+
+  const setBar = (barId, pctId, pct) => {
+    const bar = document.getElementById(barId);
+    const pctEl = document.getElementById(pctId);
+    bar.style.width = pct + '%';
+    bar.style.background = pct >= 100 ? 'linear-gradient(90deg,#10b981,#34d399)' : pct >= 80 ? 'linear-gradient(90deg,#f59e0b,#fbbf24)' : 'linear-gradient(90deg,#ef4444,#f87171)';
+    pctEl.textContent = pct + '%';
+    pctEl.className = 'mc-prog-pct ' + (pct >= 100 ? 'pct-over' : pct >= 80 ? 'pct-warn' : 'pct-low');
+  };
+  setBar('mc-pb-total','mc-pct-total', tPct);
+  setBar('mc-pb-net',  'mc-pct-net',   nPct);
+
+  const dauDiff = dauMavg ? Math.round((dau-dauMavg)/dauMavg*100) : 0;
+  const appDiff = appMavg ? Math.round((appDau-appMavg)/appMavg*100) : 0;
+  document.getElementById('mc-dau-diff').textContent = `월평균 대비 ${dauDiff > 0 ? '+' : ''}${dauDiff}%`;
+  document.getElementById('mc-dau-diff').style.color = dauDiff >= 0 ? '#10b981' : '#ef4444';
+  document.getElementById('mc-appdau-diff').textContent = `월평균 대비 ${appDiff > 0 ? '+' : ''}${appDiff}%`;
+  document.getElementById('mc-appdau-diff').style.color = appDiff >= 0 ? '#10b981' : '#ef4444';
+
+}
+
+let mcCollapsed = true;
+function mcToggleCollapse() {
+  mcCollapsed = !mcCollapsed;
+  const body = document.getElementById('mc-body');
+  const footer = document.getElementById('mc-footer');
+  const ch = document.getElementById('mc-chevron');
+  body.style.display = mcCollapsed ? 'none' : '';
+  if (mcCollapsed) footer.style.display = 'none';
+  ch.style.transform = mcCollapsed ? '' : 'rotate(180deg)';
+}
+
+function mcToggleEdit() {
+  mcEditing = !mcEditing;
+  const wrap = document.getElementById('mc-body');
+  const footer = document.getElementById('mc-footer');
+  const btn = document.getElementById('mc-edit-btn');
+  wrap.classList.toggle('mc-editing', mcEditing);
+  document.querySelectorAll('#mc-body input.mc-num').forEach(el => el.readOnly = !mcEditing);
+  footer.style.display = mcEditing ? 'flex' : 'none';
+  btn.textContent = mcEditing ? '👁 보기' : '✏️ 편집';
+  if (mcEditing) {
+    document.querySelectorAll('#mc-body input.mc-num').forEach(el => el.addEventListener('input', mcUpdateCalc));
+  }
+}
+
+function mcSave() {
+  const fields = ['mc-total-t','mc-total-a','mc-net-t','mc-net-a','mc-adrate','mc-adrate-mavg','mc-adrate-yavg',
+    'mc-adcost','mc-dau','mc-dau-mavg','mc-appdau','mc-appdau-mavg'];
+  const data = { savedAt: new Date().toISOString() };
+  fields.forEach(id => { data[id] = document.getElementById(id).value; });
+  localStorage.setItem(MC_KEY, JSON.stringify(data));
+  const dt = new Date();
+  document.getElementById('mc-saved-time').textContent = `저장: ${dt.toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})}`;
+  mcToggleEdit();
+  const btn = document.getElementById('mc-edit-btn');
+  btn.textContent = '✅ 저장완료';
+  setTimeout(() => { btn.textContent = '✏️ 편집'; }, 1500);
+}
+
+mcInit();
+
+// ── 핵심지표 (Daily 고정) ──────────────────────────────────────────
+const KPI_DAILY = { label:`${fmtISO(YESTERDAY)} Daily 기준`,
+  mau:{val:'1,864,932',sub:'일 기준',yoy:'+10.8%',up:true},
+  dau:{val:'273,709',  sub:'일 기준',yoy:'△22.5%',up:false},
+  join:{val:'2,847',   sub:'일 기준',yoy:'△42.9%',up:false},
+  visit:{val:'14,965', sub:'일 기준',yoy:'△16.1%',up:false},
+  first:{val:'1,792',  sub:'일 기준',yoy:'△26.9%',up:false},
+  net:{val:'1,138',    sub:'일 기준(백만)',yoy:'△18.9%',up:false},
+};
+
+(function initKPI() {
+  const d = KPI_DAILY;
+  document.getElementById('kpi-period-label').textContent = d.label;
+  ['mau','dau','join','visit','first','net'].forEach((k,i) => {
+    const v = d[k]; const id = ['k-mau','k-dau','k-join','k-visit','k-first','k-net'][i];
+    document.getElementById(id).textContent = v.val;
+    document.getElementById(id+'-sub').textContent = v.sub;
+    const yEl = document.getElementById(id+'-yoy');
+    yEl.textContent = v.up===null ? v.yoy : (v.up ? '▲ ' : '▼ ') + v.yoy.replace('△','').replace('+','');
+    yEl.className = 'yoy ' + (v.up===null ? 'flat' : v.up ? 'up' : 'dn');
+  });
+})();
+
+
+function setRealtimeView(el) {
+  document.getElementById('view-dash').style.display = 'none';
+  document.getElementById('view-annual').style.display = 'none';
+  document.getElementById('view-realtime').style.display = '';
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function setAnnualView(el) {
+  document.getElementById('view-dash').style.display = 'none';
+  document.getElementById('view-annual').style.display = '';
+  document.getElementById('view-realtime').style.display = 'none';
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+}
+
+document.getElementById('tab-daily').addEventListener('click', function() {
+  document.getElementById('view-dash').style.display = '';
+  document.getElementById('view-annual').style.display = 'none';
+  document.getElementById('view-realtime').style.display = 'none';
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  this.classList.add('active');
+});
+
+// ── 채널 색상 ──────────────────────────────────────────────────────
+const CH_COLORS = { Organic:'#3b82f6', Ads:'#8b5cf6', DA:'#06b6d4', SA:'#10b981', CRM:'#f59e0b', PCS:'#f43f5e', OwnedMedia:'#94a3b8', 기타:'#cbd5e1' };
+
+function mkDonut(canvasId, data, legendId) {
+  new Chart(document.getElementById(canvasId), {
+    type:'doughnut',
+    data:{ labels:data.map(d=>d.label), datasets:[{ data:data.map(d=>d.val), backgroundColor:data.map(d=>CH_COLORS[d.label]||'#94a3b8'), borderWidth:2, borderColor:'#fff', hoverOffset:6 }] },
+    options:{ responsive:true, maintainAspectRatio:false, cutout:'68%', plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${ctx.parsed.toLocaleString()} (${data[ctx.dataIndex].pct}%)`}} } }
+  });
+  const leg = document.getElementById(legendId);
+  data.slice(0,5).forEach(d => {
+    leg.innerHTML += `<div class="ch-item"><div class="ch-dot" style="background:${CH_COLORS[d.label]||'#94a3b8'}"></div><span>${d.label}</span><div class="ch-bar-bg"><div class="ch-bar-fill" style="width:${d.pct}%;background:${CH_COLORS[d.label]||'#94a3b8'}"></div></div><span class="ch-pct">${d.pct}%</span></div>`;
+  });
+}
+
+mkDonut('chart-ch-sess', [
+  {label:'Organic',val:326406,pct:60},{label:'Ads',val:134869,pct:25},{label:'CRM',val:59498,pct:11},{label:'PCS',val:12131,pct:2},{label:'기타',val:7705,pct:1}
+], 'sess-legend');
+
+mkDonut('chart-ch-join', [
+  {label:'Organic',val:1128,pct:40},{label:'Ads',val:1171,pct:41},{label:'PCS',val:444,pct:16},{label:'CRM',val:35,pct:1},{label:'기타',val:67,pct:2}
+], 'join-legend');
+
+mkDonut('chart-ch-first', [
+  {label:'Organic',val:806,pct:53},{label:'Ads',val:434,pct:28},{label:'PCS',val:243,pct:16},{label:'CRM',val:38,pct:2},{label:'기타',val:6,pct:0}
+], 'first-legend');
+
+// ── MTD 달성률 가로 바차트 ──
+new Chart(document.getElementById('chart-mtd-achieve'), {
+  type: 'bar',
+  data: {
+    labels: ['APP MAU','APP DAU','신규가입','방문자수','첫구매','순주문','총수주','GMV'],
+    datasets: [{
+      label: '달성률',
+      data: [109, 82, 84, 90, 87, 89, 83, 97],
+      backgroundColor: [
+        'rgba(16,185,129,0.8)',  // 109% green
+        'rgba(245,158,11,0.8)', // 82% yellow
+        'rgba(245,158,11,0.8)', // 84%
+        'rgba(245,158,11,0.8)', // 90%
+        'rgba(245,158,11,0.8)', // 87%
+        'rgba(245,158,11,0.8)', // 89%
+        'rgba(239,68,68,0.8)',  // 83% red
+        'rgba(16,185,129,0.8)', // 97% green
+      ],
+      borderRadius: 4,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: ctx => `달성률: ${ctx.parsed.x}%` } },
+      annotation: {}
+    },
+    scales: {
+      x: {
+        min: 0, max: 115,
+        grid: { color: '#f1f5f9' },
+        ticks: { color: '#94a3b8', font: { size: 10 }, callback: v => v + '%' },
+        border: { display: false }
+      },
+      y: { grid: { display: false }, ticks: { color: '#475569', font: { size: 11, weight: '600' } } }
+    }
+  }
+});
+
+// ── ROAS / 광고비 차트 ──
+new Chart(document.getElementById('chart-roas'), {
+  type: 'bar',
+  data: {
+    labels: ['Daily', 'MTD 일평균'],
+    datasets: [
+      { label: 'ROAS(%)', data: [857, 1454], backgroundColor: ['rgba(59,130,246,0.75)','rgba(16,185,129,0.75)'], borderRadius: 4, yAxisID: 'y' },
+      { label: '광고비(백만)', data: [45.9, 62.9], backgroundColor: ['rgba(245,158,11,0.4)','rgba(245,158,11,0.4)'], borderRadius: 4, yAxisID: 'y2', type: 'line', borderColor: '#f59e0b', pointBackgroundColor: '#f59e0b', tension: 0.3 }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: true, position: 'top', labels: { font: { size: 10 }, boxWidth: 10 } }, tooltip: { mode: 'index', intersect: false } },
+    scales: {
+      x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 11 } } },
+      y: { grid: { color: '#f1f5f9' }, ticks: { color: '#3b82f6', font: { size: 10 }, callback: v => v + '%' }, border: { display: false }, position: 'left' },
+      y2: { ticks: { color: '#f59e0b', font: { size: 10 }, callback: v => v + '백만' }, border: { display: false }, position: 'right', grid: { display: false } }
+    }
+  }
+});
+
+// ── 연간 월별 데이터 (99_Target 시트 기준) ───────────────────────
+// 금액: 억원 / 신규가입·첫구매: 명 / 실적은 확정분만 입력
+const ANNUAL = [
+  { m:'1월', tT:634.8, tA:673.98, nT:450.0, nA:454.64, gmvT:460.0, gmvA:459.48, joinT:87183,  joinA:59989,  firstT:43506, firstA:34513 },
+  { m:'2월', tT:575.3, tA:511.69, nT:410.0, nA:358.15, gmvT:395.0, gmvA:352.52, joinT:89460,  joinA:49017,  firstT:46981, firstA:27892 },
+  { m:'3월', tT:879.0, tA:845.20, nT:625.0, nA:602.69, gmvT:595.0, gmvA:544.76, joinT:103642, joinA:85156,  firstT:49876, firstA:50250 },
+  { m:'4월', tT:715.1, tA:693.70, nT:515.0, nA:475.21, gmvT:555.0, gmvA:527.95, joinT:100612, joinA:100136, firstT:53782, firstA:49072 },
+  { m:'5월', tT:699.4, tA:660.83, nT:515.0, nA:481.66, gmvT:530.0, gmvA:462.82, joinT:83492,  joinA:87319,  firstT:50826, firstA:47924 },
+  { m:'6월', tT:997.5, tA:735.35, nT:685.0, nA:533.28, gmvT:650.0, gmvA:552.03, joinT:111589, joinA:84863,  firstT:59642, firstA:46928, note:'6/25기준(진행중)' },
+  { m:'7월', tT:null,  tA:null,   nT:524.8, nA:null,   gmvT:554.8, gmvA:null,   joinT:76377,  joinA:null,   firstT:null,  firstA:null },
+  { m:'8월', tT:null,  tA:null,   nT:null,  nA:null,   gmvT:null,  gmvA:null,   joinT:62918,  joinA:null,   firstT:null,  firstA:null },
+  { m:'9월', tT:null,  tA:null,   nT:null,  nA:null,   gmvT:null,  gmvA:null,   joinT:80126,  joinA:null,   firstT:null,  firstA:null },
+  { m:'10월',tT:null,  tA:null,   nT:null,  nA:null,   gmvT:null,  gmvA:null,   joinT:84546,  joinA:null,   firstT:null,  firstA:null },
+  { m:'11월',tT:null,  tA:null,   nT:null,  nA:null,   gmvT:null,  gmvA:null,   joinT:116066, joinA:null,   firstT:null,  firstA:null },
+  { m:'12월',tT:null,  tA:null,   nT:null,  nA:null,   gmvT:null,  gmvA:null,   joinT:75418,  joinA:null,   firstT:null,  firstA:null },
+];
+
+// 현재 진행중인 월 note 동적 설정 (어제 날짜 기준)
+const curMonIdx = TODAY.getMonth(); // 0-indexed, 6월=5
+if (curMonIdx < ANNUAL.length) ANNUAL[curMonIdx].note = `${YESTERDAY.getMonth()+1}/${YESTERDAY.getDate()}기준(진행중)`;
+
+// 연간 차트
+new Chart(document.getElementById('chart-annual'), {
+  type:'bar',
+  data:{
+    labels: ANNUAL.map(d=>d.m),
+    datasets:[
+      { label:'총수주 목표', data: ANNUAL.map(d=>d.tT), backgroundColor:'rgba(59,130,246,0.3)', borderRadius:4 },
+      { label:'총수주 실적', data: ANNUAL.map(d=>d.tA), backgroundColor:'rgba(59,130,246,0.85)', borderRadius:4 },
+      { label:'순수주 목표', data: ANNUAL.map(d=>d.nT), backgroundColor:'rgba(16,185,129,0.3)', borderRadius:4 },
+      { label:'순수주 실적', data: ANNUAL.map(d=>d.nA), backgroundColor:'rgba(16,185,129,0.85)', borderRadius:4 },
+    ]
+  },
+  options:{ responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{display:false}, tooltip:{mode:'index',intersect:false, backgroundColor:'#1e293b',titleColor:'#e2e8f0',bodyColor:'#cbd5e1', callbacks:{label:ctx=>`  ${ctx.dataset.label}: ${ctx.parsed.y!=null?ctx.parsed.y.toFixed(1)+'억':'-'}`}} },
+    scales:{ x:{grid:{display:false},ticks:{color:'#94a3b8',font:{size:11}}}, y:{grid:{color:'#f1f5f9'},ticks:{color:'#94a3b8',font:{size:10},callback:v=>v+'억'},border:{display:false}} }
+  }
+});
+
+// 연간 테이블 (월 행 × KPI 달성률 열)
+const tbody = document.getElementById('annual-table-body');
+const na = '<span style="color:#cbd5e1">—</span>';
+const fmtBil = v => v != null ? v.toFixed(1) : na;
+const fmtNum = v => v != null ? v.toLocaleString() : na;
+const pct = (t, a) => {
+  if (t == null || a == null) return na;
+  const p = Math.round(a / t * 100);
+  const cls = p >= 100 ? 'over' : p >= 85 ? 'warn' : 'low';
+  return `<span class="ann-pct ${cls}">${p}%</span>`;
+};
+const bl = 'border-left:2px solid #e2e8f0';
+ANNUAL.forEach((d, i) => {
+  const isCur = i === 5;
+  const tr = document.createElement('tr');
+  if (isCur) tr.classList.add('cur-month');
+  tr.innerHTML =
+    `<td style="font-weight:700;white-space:nowrap">${d.m}${d.note ? `<br><span style="font-size:10px;color:#94a3b8;font-weight:400">${d.note}</span>` : ''}</td>` +
+    `<td style="${bl}">${fmtBil(d.tT)}</td><td>${fmtBil(d.tA)}</td><td>${pct(d.tT, d.tA)}</td>` +
+    `<td style="${bl}">${fmtBil(d.nT)}</td><td>${fmtBil(d.nA)}</td><td>${pct(d.nT, d.nA)}</td>` +
+    `<td style="${bl}">${fmtBil(d.gmvT)}</td><td>${fmtBil(d.gmvA)}</td><td>${pct(d.gmvT, d.gmvA)}</td>` +
+    `<td style="${bl}">${fmtNum(d.joinT)}</td><td>${pct(d.joinT, d.joinA)}</td>` +
+    `<td style="${bl}">${fmtNum(d.firstT)}</td><td>${pct(d.firstT, d.firstA)}</td>`;
+  tbody.appendChild(tr);
+});
+
+// ═══ 실시간 대시보드 JS ═══
+// ═══════════════════════════════════════════════
+// DATA  (자동갱신: 2026-06-29 14:31)  (자동갱신: 2026-06-29 12:37)  (자동갱신: 2026-06-29 12:35)  (자동갱신: 2026-06-29 12:35)  (자동갱신: 2026-06-29 12:23)  (자동갱신: 2026-06-29 11:52)  (자동갱신: 2026-06-29 11:15)  (자동갱신: 2026-06-29 11:05)
+// ═══════════════════════════════════════════════
+let RAW = {};
+
+// State
+let selectedDate = '';
+let compareFlags = { lw: true, lm: true, ly: true };
+let charts = {};
+
+// ═══════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════
+const fmt_num = v => v >= 1e8 ? (v/1e8).toFixed(1)+'억' : v >= 1e4 ? (v/1e4).toFixed(0)+'만' : v.toLocaleString();
+const fmt_rev = v => v >= 1e8 ? (v/1e8).toFixed(1)+'억' : v >= 1e6 ? (v/1e6).toFixed(1)+'백만' : (v/1e4).toFixed(0)+'만';
+const fmt_pct = v => (v >= 0 ? '+' : '') + v.toFixed(1) + '%';
+
+function getAvailableDates() {
+  return Object.keys(RAW).sort();
+}
+
+function getLastDate() {
+  const dates = getAvailableDates();
+  // 실데이터(주문건수)가 있는 마지막 날짜 반환
+  for (let i = dates.length - 1; i >= 0; i--) {
+    const d = dates[i];
+    const rows = RAW[d];
+    if (rows && rows.some(r => r[0] !== null && r[0] > 0)) return d;
+  }
+  return dates[dates.length - 1];
+}
+
+// ── 날짜 유틸: ISO string("YYYY-MM-DD")을 UTC가 아닌 로컬 기준으로 파싱 ──
+function parseLocalDate(dateStr) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(y, m - 1, d); // month 0-indexed, 로컬 time
+}
+
+function localDateToStr(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function getDateByOffset(baseDate, days) {
+  const d = parseLocalDate(baseDate);
+  d.setDate(d.getDate() + days);
+  return localDateToStr(d);
+}
+
+// 전월/전년 동요일: 대상 월에서 기준일과 같은 주차(N번째) + 같은 요일
+function findSameWeekdayNth(baseDate, targetYear, targetMonth) {
+  const base = parseLocalDate(baseDate);
+  const wday = base.getDay();                          // 0=일 ~ 6=토
+  const nth = Math.floor((base.getDate() - 1) / 7);   // 0-based 주차
+
+  let count = -1;
+  for (let day = 1; day <= 31; day++) {
+    const c = new Date(targetYear, targetMonth, day);
+    if (c.getMonth() !== targetMonth) break;           // 월 넘어가면 종료
+    if (c.getDay() === wday) {
+      count++;
+      if (count === nth) return localDateToStr(c);
+    }
+  }
+  // 해당 주차가 없으면(5주차 등) 마지막 같은 요일 반환
+  let last = null;
+  for (let day = 1; day <= 31; day++) {
+    const c = new Date(targetYear, targetMonth, day);
+    if (c.getMonth() !== targetMonth) break;
+    if (c.getDay() === wday) last = localDateToStr(c);
+  }
+  return last;
+}
+
+function getComparisonDates(date) {
+  return {
+    lw: getDateByOffset(date, -7),   // 전주동요일: -7일
+    lm: getDateByOffset(date, -28),  // 전월동요일: -28일
+    ly: getDateByOffset(date, -364), // 전년동요일: -364일 (52주)
+  };
+}
+
+// RAW 구조: [orders(0), revenue(1), net_rev(2, null가능), dau(3), appdau(4)]
+function getHourlyData(date) {
+  const rows = RAW[date];
+  if (!rows) return Array(24).fill([0,0,null,0,0]);
+  return rows.map(r => r || [0,0,null,0,0]);
+}
+
+function getDailyTotal(date) {
+  const rows = getHourlyData(date);
+  const netRows = rows.filter(r => r[2] !== null);
+  return {
+    orders:    rows.reduce((a,r)=>a+r[0],0),
+    revenue:   rows.reduce((a,r)=>a+r[1],0),
+    net_rev:   netRows.length ? netRows.reduce((a,r)=>a+r[2],0) : null,
+    dau:       Math.max(...rows.map(r=>r[3])),
+    appdau:    Math.max(...rows.map(r=>r[4]))
+  };
+}
+
+// 순수주 누적 (null 시간대 제외)
+function getNetCumul(date, upToH) {
+  const rows = getHourlyData(date);
+  let s = 0, hasData = false;
+  for (let h = 0; h <= upToH; h++) {
+    if (rows[h] && rows[h][2] !== null) { s += rows[h][2]; hasData = true; }
+  }
+  return hasData ? s : null;
+}
+
+// 마지막 유효 시간 (총수주 기준 / 순수주 기준 분리)
+function getCurrentHour(date) {
+  const rows = getHourlyData(date);
+  for (let h = 23; h >= 0; h--) {
+    if (rows[h] && rows[h][0] > 0) return h;
+  }
+  return 0;
+}
+
+function getCurrentNetHour(date) {
+  const rows = getHourlyData(date);
+  for (let h = 23; h >= 0; h--) {
+    if (rows[h] && rows[h][2] !== null) return h;
+  }
+  return -1;
+}
+
+// 차트용: 필드별 마지막 유효 시간 (오늘 날짜면 현재 진행 중인 시간 제외)
+function getCurrentFieldHour(date, fieldIdx) {
+  const rows = getHourlyData(date);
+  const isToday = date === getLastDate();
+  const maxH = isToday ? new Date().getHours() - 1 : 23;
+  for (let h = Math.min(23, maxH); h >= 0; h--) {
+    if (!rows[h]) continue;
+    const v = rows[h][fieldIdx];
+    if (v !== null && v !== undefined) return h;
+  }
+  return -1;
+}
+
+// 예상마감 (총수주 + 순수주 각각)
+function getForecast(date) {
+  const curHour    = getCurrentHour(date);
+  const curNetHour = getCurrentNetHour(date);
+  const rows = getHourlyData(date);
+  const accum_orders = rows.slice(0,curHour+1).reduce((a,r)=>a+r[0],0);
+  const accum_rev    = rows.slice(0,curHour+1).reduce((a,r)=>a+r[1],0);
+  const accum_net    = curNetHour >= 0 ? getNetCumul(date, curNetHour) : null;
+
+  const comps = getComparisonDates(date);
+  const compDates = [comps.lw, comps.lm, comps.ly].filter(d => d && RAW[d]);
+
+  if (compDates.length === 0) {
+    return { orders: accum_orders, revenue: accum_rev, net_rev: accum_net, curHour, curNetHour };
+  }
+
+  // 총수주·주문 예상마감 비율
+  let ratios_o = [], ratios_r = [], ratios_n = [];
+  compDates.forEach(cd => {
+    const cr = getHourlyData(cd);
+    const acc_o = cr.slice(0,curHour+1).reduce((a,r)=>a+r[0],0);
+    const acc_r = cr.slice(0,curHour+1).reduce((a,r)=>a+r[1],0);
+    const tot_o = cr.reduce((a,r)=>a+r[0],0);
+    const tot_r = cr.reduce((a,r)=>a+r[1],0);
+    if (acc_o > 0) ratios_o.push(tot_o / acc_o);
+    if (acc_r > 0) ratios_r.push(tot_r / acc_r);
+
+    // 순수주 비율 (curNetHour 기준)
+    if (curNetHour >= 0) {
+      const acc_n = getNetCumul(cd, curNetHour);
+      const tot_n = getDailyTotal(cd).net_rev;
+      if (acc_n && acc_n > 0 && tot_n !== null) ratios_n.push(tot_n / acc_n);
+    }
+  });
+
+  const avg_o = ratios_o.length ? ratios_o.reduce((a,b)=>a+b)/ratios_o.length : 1;
+  const avg_r = ratios_r.length ? ratios_r.reduce((a,b)=>a+b)/ratios_r.length : 1;
+  const avg_n = ratios_n.length ? ratios_n.reduce((a,b)=>a+b)/ratios_n.length : null;
+
+  return {
+    orders:   Math.round(accum_orders * avg_o),
+    revenue:  Math.round(accum_rev    * avg_r),
+    net_rev:  avg_n !== null && accum_net !== null ? Math.round(accum_net * avg_n) : null,
+    curHour, curNetHour,
+    accum_orders, accum_rev, accum_net,
+  };
+}
+
+// 일자별 타겟 (총수주 / 순수주)
+const DAILY_TARGETS = {
+  "2026-06-01":{"event":"더블유위크","revenue":4411465188,"net_revenue":2900000000},
+  "2026-06-02":{"event":"더블유위크","revenue":4259345699,"net_revenue":2800000000},
+  "2026-06-03":{"event":"더블유위크","revenue":3354958165,"net_revenue":3000000000},
+  "2026-06-04":{"event":"더블유위크","revenue":3830628665,"net_revenue":2700000000},
+  "2026-06-05":{"event":"더블유위크","revenue":3798813498,"net_revenue":2700000000},
+  "2026-06-06":{"event":"더블유위크","revenue":3583435750,"net_revenue":3100000000},
+  "2026-06-07":{"event":"더블유위크","revenue":4098938366,"net_revenue":3600000000},
+  "2026-06-08":{"event":"더블유위크","revenue":4385677025,"net_revenue":2900000000},
+  "2026-06-09":{"event":"더블유위크","revenue":4017164268,"net_revenue":2700000000},
+  "2026-06-10":{"event":"더블유위크","revenue":4280750933,"net_revenue":2900000000},
+  "2026-06-11":{"event":"더블유위크","revenue":4361916703,"net_revenue":3000000000},
+  "2026-06-12":{"event":"더블유위크","revenue":3623358974,"net_revenue":2500000000},
+  "2026-06-13":{"event":"더블유위크","revenue":3327568454,"net_revenue":3000000000},
+  "2026-06-14":{"event":"더블유위크","revenue":5517321944,"net_revenue":5000000000},
+  "2026-06-15":{"event":"여름 잡화/액티브페스타","revenue":6970373661,"net_revenue":2800000000},
+  "2026-06-16":{"event":"여름 잡화/액티브페스타","revenue":2800996782,"net_revenue":1100000000},
+  "2026-06-17":{"event":"여름 잡화/액티브페스타/원피스","revenue":2137159378,"net_revenue":1100000000},
+  "2026-06-18":{"event":"여름 잡화/액티브페스타/원피스","revenue":2022339706,"net_revenue":1100000000},
+  "2026-06-19":{"event":"여름 잡화/액티브페스타/원피스","revenue":2076342095,"net_revenue":1100000000},
+  "2026-06-20":{"event":"여름 잡화/액티브페스타/원피스","revenue":1793908976,"net_revenue":1600000000},
+  "2026-06-21":{"event":"여름 잡화/액티브페스타/원피스","revenue":2368084715,"net_revenue":2100000000},
+  "2026-06-22":{"event":"여름대비템/액티브페스타/원피스","revenue":3516556146,"net_revenue":1600000000},
+  "2026-06-23":{"event":"여름대비템/액티브페스타/원피스","revenue":2529092826,"net_revenue":1400000000},
+  "2026-06-24":{"event":"여름대비템/액티브페스타/원피스","revenue":2652893709,"net_revenue":1800000000},
+  "2026-06-25":{"event":"여름대비템","revenue":2455694712,"net_revenue":1600000000},
+  "2026-06-26":{"event":"여름대비템","revenue":1921276678,"net_revenue":1200000000},
+  "2026-06-27":{"event":"여름대비템","revenue":1984857784,"net_revenue":1800000000},
+  "2026-06-28":{"event":"여름대비템","revenue":2569636972,"net_revenue":2300000000},
+  "2026-06-29":{"event":"여름대비템","revenue":2533106164,"net_revenue":1500000000},
+  "2026-06-30":{"event":"여름대비템","revenue":2565032489,"net_revenue":1600000000},
+};
+
+function getTargets(date) {
+  const t = DAILY_TARGETS[date];
+  if (t) {
+    return { revenue: t.revenue, net_revenue: t.net_revenue, event: t.event, isReal: true };
+  }
+  // 타겟 없는 날짜: 전주동요일 실적 기준 참고값
+  const lw = getDateByOffset(date, -7);
+  const base = lw && RAW[lw] ? getDailyTotal(lw) : null;
+  if (!base) return { revenue: 0, net_revenue: 0, event: null, isReal: false };
+  return { revenue: Math.round(base.revenue * 1.05), net_revenue: 0, event: null, isReal: false };
+}
+
+// ── 광고비 증액 판단 ──────────────────────────────
+function getAdRecommendation(date) {
+  const targets = getTargets(date);
+  if (!targets.isReal) return null;
+
+  const forecast = getForecast(date);
+  const curHour  = getCurrentHour(date);
+  if (curHour < 0) return null;
+
+  const rows      = getHourlyData(date);
+  const accumNet  = forecast.accum_net;
+  const forecastNet = forecast.net_rev;
+  const accumAdcost = rows.slice(0, curHour + 1).reduce((a, r) => a + (r[5] || 0), 0);
+
+  const curAchieve  = accumNet && targets.net_revenue > 0
+    ? accumNet / targets.net_revenue * 100 : 0;
+  const fcAchieve   = forecastNet && targets.net_revenue > 0
+    ? forecastNet / targets.net_revenue * 100 : null;
+
+  // ROAS: 당일 실적 기준만 사용 (비교일 광고비는 채널 일부만 집계돼 과대 추정 위험)
+  const MIN_AD = 3000000; // 300만원 이상 있어야 신뢰
+  let roas = null, roasSource = '';
+  if (accumAdcost >= MIN_AD && accumNet > 0) {
+    roas = accumNet / accumAdcost;
+    roasSource = '당일 실적';
+  }
+
+  const remainHours  = 23 - curHour;
+  const gapToTarget  = forecastNet != null ? targets.net_revenue - forecastNet : null;
+
+  // 시나리오: gapToTarget 크기에 따라 단계 동적 결정
+  let scenarios = [];
+  if (roas && gapToTarget != null) {
+    const adToClose = gapToTarget > 0 ? gapToTarget / roas : 0;
+    let baseSteps;
+    if      (adToClose <= 0)         baseSteps = [500, 1000, 2000, 3000];
+    else if (adToClose < 5e6)        baseSteps = [500, 1000, 2000, 3000];
+    else if (adToClose < 2e7)        baseSteps = [1000, 2000, 5000, 10000];
+    else if (adToClose < 5e7)        baseSteps = [3000, 5000, 10000, 20000];
+    else                              baseSteps = [5000, 10000, 20000, 30000];
+
+    scenarios = baseSteps.map(stepMan => {
+      const adWon   = stepMan * 10000;
+      const addNet  = adWon * roas;
+      const newFc   = (forecastNet || 0) + addNet;
+      const newPct  = targets.net_revenue > 0 ? newFc / targets.net_revenue * 100 : 0;
+      return {
+        adLabel : stepMan >= 10000 ? `+${stepMan/10000}천만원` : `+${stepMan}만원`,
+        addNet,
+        newPct,
+        hit100   : newPct >= 100,
+      };
+    });
+  }
+
+  return {
+    curAchieve, fcAchieve, forecastNet, accumNet, accumAdcost,
+    roas, roasSource, gapToTarget, remainHours,
+    scenarios, targetNet: targets.net_revenue, event: targets.event,
+    hasAdData: accumAdcost >= MIN_AD,
+  };
+}
+
+// ═══════════════════════════════════════════════
+// UI
+// ═══════════════════════════════════════════════
+const COLORS = {
+  today: '#3b82f6',
+  lw: '#a78bfa',
+  lm: '#34d399',
+  ly: '#fb923c',
+};
+
+const LABELS = { today:'오늘', lw:'전주동요일(-7일)', lm:'전월동요일(-28일)', ly:'전년동요일(-364일)' };
+
+function getWeekdayLabel(date) {
+  if (!date) return '';
+  const days = ['일','월','화','수','목','금','토'];
+  return days[parseLocalDate(date).getDay()];
+}
+
+function setDatePreset(preset) {
+  const lastDate = getLastDate();
+  selectedDate = lastDate;
+  document.getElementById('custom-date').value = lastDate;
+  document.getElementById('btn-today').classList.add('active');
+  render();
+}
+
+function setCustomDate(val) {
+  if (!val) return;
+  document.getElementById('btn-today').classList.remove('active');
+  selectedDate = val;
+  render();
+}
+
+function toggleCompare(key) {
+  compareFlags[key] = !compareFlags[key];
+  const btn = document.getElementById('btn-'+key);
+  btn.classList.toggle('active', compareFlags[key]);
+  render();
+}
+
+// ═══════════════════════════════════════════════
+// RENDER KPI
+// ═══════════════════════════════════════════════
+function renderKPI(date) {
+  const curHour = getCurrentHour(date);
+  const total = getDailyTotal(date);
+  const forecast = getForecast(date);
+  const targets = getTargets(date);
+  const comps = getComparisonDates(date);
+  const lw_total = comps.lw && RAW[comps.lw] ? getDailyTotal(comps.lw) : null;
+
+  const rows = getHourlyData(date);
+  const accum = {
+    orders:  rows.slice(0, curHour+1).reduce((a,r)=>a+r[0],0),
+    revenue: rows.slice(0, curHour+1).reduce((a,r)=>a+r[1],0),
+  };
+  const lw_accum = comps.lw && RAW[comps.lw] ? {
+    orders:  getHourlyData(comps.lw).slice(0,curHour+1).reduce((a,r)=>a+r[0],0),
+    revenue: getHourlyData(comps.lw).slice(0,curHour+1).reduce((a,r)=>a+r[1],0),
+  } : null;
+
+  // 달성률: 예상마감 / 타겟
+  const rev_pct = targets.revenue     > 0 ? (forecast.revenue  / targets.revenue     * 100) : 0;
+  const net_pct = targets.net_revenue > 0 && forecast.net_rev !== null
+                ? (forecast.net_rev  / targets.net_revenue * 100) : null;
+
+  const ord_yoy = lw_accum && lw_accum.orders  > 0 ? (accum.orders  - lw_accum.orders)  / lw_accum.orders  * 100 : 0;
+  const rev_yoy = lw_accum && lw_accum.revenue > 0 ? (accum.revenue - lw_accum.revenue) / lw_accum.revenue * 100 : 0;
+
+  const isRevAlert = targets.isReal && rev_pct < 85;
+  const isNetAlert = targets.isReal && net_pct !== null && net_pct < 85;
+  const targetLabel = targets.isReal ? '타겟' : '참고타겟(전주+5%)';
+
+  // 현재 누적 순수주
+  const curNetH   = getCurrentNetHour(date);
+  const accum_net = curNetH >= 0 ? getNetCumul(date, curNetH) : null;
+
+  const kpis = [
+    {
+      label: '당일 누적 주문',
+      colorClass: 'blue',
+      value: accum.orders.toLocaleString() + '건',
+      alert: false,
+      sub: `전주동요일(동시간) 대비 ${fmt_pct(ord_yoy)}`,
+      badge: ord_yoy,
+      progress: 0,
+      progressClass: 'blue',
+      forecast: `예상마감 ${forecast.orders.toLocaleString()}건`,
+      target: `전주동요일 ${lw_total ? lw_total.orders.toLocaleString()+'건' : '-'}`,
+    },
+    {
+      label: '당일 누적 총수주',
+      colorClass: 'indigo',
+      value: fmt_rev(accum.revenue),
+      alert: isRevAlert,
+      sub: `전주동요일(동시간) 대비 ${fmt_pct(rev_yoy)}`,
+      badge: rev_yoy,
+      progress: Math.min(rev_pct, 100),
+      progressClass: rev_pct >= 100 ? 'green' : rev_pct >= 85 ? 'indigo' : 'red',
+      forecast: `예상마감 ${fmt_rev(forecast.revenue)}`,
+      target: `${targetLabel} ${fmt_rev(targets.revenue)} | 달성률 ${rev_pct.toFixed(1)}%`,
+    },
+    {
+      label: '당일 누적 순수주',
+      colorClass: 'green',
+      value: accum_net !== null ? fmt_rev(accum_net) : '-',
+      alert: isNetAlert,
+      sub: targets.isReal ? `순수주 타겟 ${fmt_rev(targets.net_revenue)}` : `예상마감 ${forecast.net_rev !== null ? fmt_rev(forecast.net_rev) : '-'}`,
+      badge: net_pct !== null ? net_pct - 100 : null,
+      progress: net_pct !== null ? Math.min(net_pct, 100) : 0,
+      progressClass: net_pct === null ? 'blue' : net_pct >= 100 ? 'green' : net_pct >= 85 ? 'yellow' : 'red',
+      forecast: `예상마감 ${forecast.net_rev !== null ? fmt_rev(forecast.net_rev) : '-'}`,
+      target: targets.isReal && net_pct !== null ? `${targetLabel}(순) ${fmt_rev(targets.net_revenue)} | 달성률 ${net_pct.toFixed(1)}%` : '-',
+    },
+    {
+      label: '기준 시간대',
+      colorClass: 'yellow',
+      value: `${curHour}시`,
+      alert: false,
+      sub: `${date} (${getWeekdayLabel(date)})`,
+      badge: null,
+      progress: ((curHour+1)/24*100),
+      progressClass: 'yellow',
+      forecast: `일 진행률 ${((curHour+1)/24*100).toFixed(0)}%`,
+      target: `24시간 중 ${curHour+1}시간 경과`,
+    },
+  ];
+
+  document.getElementById('kpi-grid').innerHTML = kpis.map(k => `
+    <div class="kpi-card ${k.colorClass} ${k.alert ? 'alert' : ''}">
+      <div class="kpi-label">${k.label} ${k.alert ? '<span class="alert-badge">⚠ 주의</span>' : ''}</div>
+      <div class="kpi-value ${k.alert ? 'alert-text' : ''}">${k.value}</div>
+      <div class="kpi-row">
+        <span class="kpi-target">${k.sub}</span>
+        ${k.badge !== null ? `<span class="kpi-badge ${k.badge >= 0 ? 'up' : 'down'}">${k.badge >= 0 ? '▲' : '▼'} ${Math.abs(k.badge).toFixed(1)}%</span>` : ''}
+      </div>
+      ${k.progress > 0 ? `
+      <div class="kpi-progress-wrap">
+        <div class="kpi-progress-bar"><div class="kpi-progress-fill ${k.progressClass}" style="width:${k.progress}%"></div></div>
+        <div class="kpi-progress-pct" style="color:${k.progressClass==='red'?'var(--red)':k.progressClass==='green'?'var(--green)':'var(--text-2)'}">${k.target}</div>
+      </div>` : `<div style="margin-top:8px;font-size:11px;color:var(--text-3)">${k.target}</div>`}
+      <div class="forecast-row"><span class="forecast-chip">${k.forecast}</span></div>
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════════════════════════
+// RENDER SUMMARY BOX
+// ═══════════════════════════════════════════════
+function renderSummary(date) {
+  const curHour    = getCurrentHour(date);
+  const curNetHour = getCurrentNetHour(date);
+  const targets    = getTargets(date);
+  const comps      = getComparisonDates(date);
+  const forecast   = getForecast(date);
+  const rows       = getHourlyData(date);
+
+  const accum_rev = rows.slice(0, curHour+1).reduce((a,r)=>a+r[1], 0);
+  const accum_net = curNetHour >= 0 ? getNetCumul(date, curNetHour) : null;
+
+  const lw_rows = comps.lw && RAW[comps.lw] ? getHourlyData(comps.lw) : null;
+  const lm_rows = comps.lm && RAW[comps.lm] ? getHourlyData(comps.lm) : null;
+  const ly_rows = comps.ly && RAW[comps.ly] ? getHourlyData(comps.ly) : null;
+  const lw_accum_rev = lw_rows ? lw_rows.slice(0,curHour+1).reduce((a,r)=>a+r[1],0) : 0;
+  const lw_accum_net = lw_rows ? getNetCumul(comps.lw, Math.min(curNetHour, curHour)) : null;
+
+  const lw_tot = lw_rows ? getDailyTotal(comps.lw) : null;
+  const lm_tot = lm_rows ? getDailyTotal(comps.lm) : null;
+  const ly_tot = ly_rows ? getDailyTotal(comps.ly) : null;
+
+  const rev_yoy = ly_tot && ly_tot.revenue > 0 ? (forecast.revenue - ly_tot.revenue) / ly_tot.revenue * 100 : null;
+  const ord_yoy = ly_tot && ly_tot.orders  > 0 ? (forecast.orders  - ly_tot.orders)  / ly_tot.orders  * 100 : null;
+  const net_yoy = ly_tot && ly_tot.net_rev !== null && ly_tot.net_rev > 0 && forecast.net_rev !== null
+                  ? (forecast.net_rev - ly_tot.net_rev) / ly_tot.net_rev * 100 : null;
+
+  const rev_ach = targets.revenue     > 0 ? forecast.revenue  / targets.revenue     * 100 : null;
+  const net_ach = targets.net_revenue > 0 && forecast.net_rev !== null
+                  ? forecast.net_rev / targets.net_revenue * 100 : null;
+
+
+  function nr(v)   { return `<span class="s-num">${fmt_rev(v)}</span>`; }
+  function nord(v) { return `<span class="s-num">${v.toLocaleString()}건</span>`; }
+  function pct(v)  {
+    if (v === null) return '<span class="s-num warn">-</span>';
+    const c = v >= 0 ? 'good' : 'bad';
+    return `<span class="s-num ${c}">${v >= 0 ? '+' : ''}${v.toFixed(1)}%</span>`;
+  }
+  function ach(v) {
+    if (v === null) return '<span class="s-num warn">-</span>';
+    const c = v >= 100 ? 'good' : v >= 85 ? 'warn' : 'bad';
+    return `<span class="s-num ${c}">${v.toFixed(0)}%</span>`;
+  }
+  const dim = s => `<span style="color:var(--text-3)">${s}</span>`;
+
+  const todayLabel = `${date.slice(5).replace('-','/')}(${getWeekdayLabel(date)})`;
+  const lwLabel = comps.lw ? `${comps.lw.slice(5).replace('-','/')}(${getWeekdayLabel(comps.lw)})` : '-';
+  const lyLabel = comps.ly ? `${comps.ly.slice(5).replace('-','/')}(${getWeekdayLabel(comps.ly)})` : '-';
+
+  const lines = [];
+
+  // ① 타겟
+  lines.push(
+    `<span class="s-idx">①</span> <b>${todayLabel}</b> ${dim('타겟')} 총수주 ${nr(targets.revenue)} · 순수주 ${nr(targets.net_revenue)}`
+  );
+
+  // ② 현재 누적
+  lines.push(
+    `<span class="s-idx">②</span> ${dim((curHour+1)+'시 기준')} 총수주 ${nr(accum_rev)}`
+    + (accum_net !== null ? ` · 순수주 ${nr(accum_net)}` : '')
+    + (lw_accum_rev > 0 ? `  ${dim('전주동요일 동시간')} 총수주 ${nr(lw_accum_rev)}` + (lw_accum_net !== null ? ` · 순수주 ${nr(lw_accum_net)}` : '') : '')
+  );
+
+  // ③ 예상마감
+  lines.push(
+    `<span class="s-idx">③</span> ${dim('예상마감')} 총수주 ${nr(forecast.revenue)} ${dim('달성률')} ${ach(rev_ach)} ${dim('YoY')} ${pct(rev_yoy)}`
+    + (forecast.net_rev !== null ? ` ${dim('| 순수주')} ${nr(forecast.net_rev)} ${dim('달성률')} ${ach(net_ach)} ${dim('YoY')} ${pct(net_yoy)}` : '')
+    + ` ${dim('| 주문건수')} ${nord(forecast.orders)} ${dim('YoY')} ${pct(ord_yoy)}`
+  );
+
+  // ④ 비교일 마감
+  lines.push(
+    `<span class="s-idx">④</span> ${dim('비교일 마감')} —`
+    + (lw_tot ? ` ${dim('전주동요일')} ${dim('('+lwLabel+')')} 총수주 ${nr(lw_tot.revenue)}` + (lw_tot.net_rev !== null ? ` / 순수주 ${nr(lw_tot.net_rev)}` : '') : '')
+    + (ly_tot ? ` ${dim('| 전년동요일')} ${dim('('+lyLabel+')')} 총수주 ${nr(ly_tot.revenue)}` + (ly_tot.net_rev !== null ? ` / 순수주 ${nr(ly_tot.net_rev)}` : '') : '')
+  );
+
+  document.getElementById('summary-box').innerHTML = lines.map((r, i) =>
+    `<div class="summary-row">${r}</div>` + (i < lines.length-1 ? '<div class="summary-divider"></div>' : '')
+  ).join('');
+
+  // 섹션 타이틀 동적 업데이트
+  const titleEl = document.getElementById('rt-summary-title');
+  const noteEl  = document.getElementById('rt-summary-note');
+  if (titleEl) {
+    const h = curHour + 1;
+    titleEl.innerHTML = `<span style="display:inline-block;width:3px;height:14px;background:#3b82f6;border-radius:2px;flex-shrink:0"></span>${h}시 기준 실적 및 예상 마감`;
+  }
+  if (noteEl) noteEl.textContent = date.slice(5).replace('-','/') + '(' + getWeekdayLabel(date) + ')';
+}
+
+// ═══════════════════════════════════════════════
+// RENDER AD RECOMMENDATION
+// ═══════════════════════════════════════════════
+function toggleRecPanel() {
+  const body = document.getElementById('rec-body');
+  const icon = document.getElementById('rec-toggle-icon');
+  const isOpen = body.classList.toggle('open');
+  icon.classList.toggle('open', isOpen);
+}
+
+function renderAdRecommendation(date) {
+  const panel = document.getElementById('rec-panel');
+  if (date !== getLastDate()) { panel.style.display = 'none'; return; }
+  const rec = getAdRecommendation(date);
+  if (!rec) { panel.style.display = 'none'; return; }
+  panel.style.display = 'block';
+
+  document.getElementById('rec-remain').textContent = `잔여 ${rec.remainHours}시간`;
+  document.getElementById('rec-roas-info').innerHTML = rec.roas
+    ? `ROAS <strong>${Math.round(rec.roas * 100)}%</strong>&nbsp;·&nbsp;${rec.roasSource}`
+    : `<span style="color:var(--yellow)">⚠ 광고비 데이터 없음</span>`;
+
+  const scEl = document.getElementById('rec-scenarios');
+
+  if (!rec.roas) {
+    scEl.innerHTML = `<div style="font-size:12px;color:var(--text-3);padding:4px 0">광고비(Airbridge) 데이터 없음 — 연동 후 자동 활성화</div>`;
+    return;
+  }
+
+  const gapStr = rec.gapToTarget > 0
+    ? `<span style="color:var(--red)">⚠ 달성 미달 예상 &nbsp;—&nbsp; ${fmt_rev(rec.gapToTarget)} 부족</span>`
+    : `<span style="color:var(--green)">✅ 달성 순항 중${rec.gapToTarget < 0 ? '&nbsp;(' + fmt_rev(Math.abs(rec.gapToTarget)) + ' 초과 예상)' : ''}</span>`;
+
+  const rows = rec.scenarios.map(s => {
+    const pctC = s.hit100 ? 'var(--green)' : s.newPct >= 90 ? 'var(--yellow)' : 'var(--text-2)';
+    return `<div class="rec-scenario-row">
+      <div class="rec-scenario-ad">${s.adLabel}</div>
+      <div class="rec-scenario-addrev">순수주 +${fmt_rev(s.addNet)} 추가 기대</div>
+      <div class="rec-scenario-pct" style="color:${pctC}">${s.newPct.toFixed(1)}%${s.hit100 ? ' ✅' : ''}</div>
+    </div>`;
+  }).join('');
+
+  // 산출 근거 텍스트
+  const roasPct   = Math.round(rec.roas * 100);
+  const adToClose = rec.gapToTarget > 0 ? Math.ceil(rec.gapToTarget / rec.roas / 10000) : 0;
+  const adCloseLbl = adToClose >= 10000 ? `${(adToClose/10000).toFixed(1)}천만원` : `${adToClose}만원`;
+  const logicLines = [
+    `산출 근거: 당일 누적 순수주 ${fmt_rev(rec.accumNet)} ÷ 광고비 ${fmt_rev(rec.accumAdcost)} = ROAS ${roasPct}% (${rec.roasSource})`,
+    rec.gapToTarget > 0
+      ? `예상마감 ${fmt_rev(rec.forecastNet)} → 타겟 ${fmt_rev(rec.targetNet)} 대비 ${fmt_rev(rec.gapToTarget)} 부족 / 이론적 추가 집행 필요액 약 ${adCloseLbl}`
+      : `예상마감 ${fmt_rev(rec.forecastNet)} → 타겟 ${fmt_rev(rec.targetNet)} 초과 달성 예상`,
+    `※ ROAS 일정 유지 가정 / 잔여 ${rec.remainHours}시간 집행 가능 매체 우선 배분 권장`,
+  ].join('<br>');
+
+  scEl.innerHTML = `
+    <div class="rec-gap-label">${gapStr}</div>
+    <div class="rec-roas-note">증액 시나리오 — ROAS ${roasPct}% 적용 시 예상</div>
+    ${rows}
+    <div class="rec-logic-note">${logicLines}</div>`;
+}
+
+// ═══════════════════════════════════════════════
+// RENDER CHARTS
+// ═══════════════════════════════════════════════
+const HOURS = Array.from({length:24}, (_,i) => `${i}시`);
+
+function buildDatasets(date, fieldIdx) {
+  const comps = getComparisonDates(date);
+  const datasets = [];
+  const todayRows = getHourlyData(date);
+
+  // 필드별 마지막 유효 시간 (오늘이면 진행 중인 시간 제외)
+  const curH = getCurrentFieldHour(date, fieldIdx);
+
+  // ── 실적 라인 ──
+  const todayData = todayRows.map((r, h) => {
+    if (h > curH) return null;
+    const v = r[fieldIdx];
+    return (v !== null && v !== undefined) ? v : null;
+  });
+  datasets.push({
+    label: '실적 (' + date + ')',
+    data: todayData,
+    borderColor: COLORS.today,
+    backgroundColor: 'rgba(59,130,246,0.10)',
+    borderWidth: 2.5,
+    pointRadius: todayData.map((v,h) => v !== null && h === curH ? 5 : 2),
+    pointBackgroundColor: todayData.map((v,h) => v !== null && h === curH ? COLORS.today : 'transparent'),
+    spanGaps: false,
+    tension: 0.3, fill: true,
+  });
+
+  // ── 예상마감 추이 (현재시간 이후, 비교일 평균 패턴 × 스케일) ──
+  const compDates = [comps.lw, comps.lm, comps.ly].filter(d => d && RAW[d]);
+  if (compDates.length > 0 && curH >= 0 && curH < 23) {
+    // 비교일별 시간대 평균 (음수도 그대로 사용)
+    const compAvg = Array(24).fill(null);
+    for (let h = 0; h < 24; h++) {
+      const vals = compDates.map(cd => {
+        const r = getHourlyData(cd)[h];
+        return r !== null ? r[fieldIdx] : null;
+      }).filter(v => v !== null);
+      if (vals.length) compAvg[h] = vals.reduce((a,b) => a+b, 0) / vals.length;
+    }
+    // 스케일: 현재시간까지 누적 실적 / 비교일 평균 누적
+    const accumReal = todayData.slice(0, curH+1).reduce((a,v) => a + (v||0), 0);
+    const accumComp = compAvg.slice(0, curH+1).reduce((a,v) => a + (v||0), 0);
+    const scale = accumComp !== 0 ? accumReal / accumComp : 1;
+
+    const forecastData = Array(24).fill(null);
+    forecastData[curH] = todayData[curH]; // 현재시점에서 연결
+    for (let h = curH + 1; h < 24; h++) {
+      if (compAvg[h] !== null) forecastData[h] = Math.round(compAvg[h] * scale);
+    }
+    datasets.push({
+      label: '예상마감 추이',
+      data: forecastData,
+      borderColor: 'rgba(59,130,246,0.7)',
+      backgroundColor: 'transparent',
+      borderWidth: 1.5,
+      borderDash: [6, 4],
+      pointRadius: 0,
+      spanGaps: false,
+      tension: 0.3, fill: false,
+    });
+  }
+
+  // ── 비교일 라인 ──
+  const compMap  = { lw: comps.lw, lm: comps.lm, ly: comps.ly };
+  const colorMap = { lw: COLORS.lw, lm: COLORS.lm, ly: COLORS.ly };
+  Object.entries(compMap).forEach(([key, d]) => {
+    if (!compareFlags[key] || !d || !RAW[d]) return;
+    const rows = getHourlyData(d);
+    datasets.push({
+      label: LABELS[key] + ' (' + d + ')',
+      data: rows.map(r => r !== null ? r[fieldIdx] : null),
+      borderColor: colorMap[key],
+      backgroundColor: 'transparent',
+      borderWidth: 1.5,
+      borderDash: [4, 3],
+      pointRadius: 0,
+      spanGaps: false,
+      tension: 0.3, fill: false,
+    });
+  });
+
+  return datasets;
+}
+
+
+const chartOpts = (formatter) => ({
+  responsive: true,
+  maintainAspectRatio: false,
+  interaction: { mode: 'index', intersect: false },
+  plugins: {
+    legend: { display: false },
+    tooltip: {
+      backgroundColor: '#1e293b',
+      borderColor: '#2d4160',
+      borderWidth: 1,
+      titleColor: '#f1f5f9',
+      bodyColor: '#94a3b8',
+      padding: 10,
+      callbacks: {
+        label: ctx => {
+          const v = ctx.parsed.y;
+          if (v === null || v === undefined) return null;
+          return ` ${ctx.dataset.label}: ${formatter(v)}`;
+        }
+      }
+    }
+  },
+  scales: {
+    x: {
+      ticks: { color: '#475569', font: { size: 10 }, maxTicksLimit: 12 },
+      grid: { color: 'rgba(0,0,0,0.06)' },
+    },
+    y: {
+      ticks: { color: '#475569', font: { size: 10 }, callback: v => formatter(v) },
+      grid: { color: 'rgba(0,0,0,0.06)' },
+    }
+  }
+});
+
+function renderChart(id, date, fieldIdx, formatter) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const datasets = buildDatasets(date, fieldIdx);
+  if (charts[id]) charts[id].destroy();
+  charts[id] = new Chart(el.getContext('2d'), {
+    type: 'line',
+    data: { labels: HOURS, datasets },
+    options: chartOpts(formatter),
+  });
+  // legend
+  const legendEl = document.getElementById('legend-' + id.replace('chart-', ''));
+  if (legendEl) {
+    legendEl.innerHTML = datasets.map(ds => `
+      <div class="legend-item">
+        <div class="legend-dot" style="background:${ds.borderColor};opacity:${ds.borderDash ? 0.8 : 1}"></div>
+        ${ds.label}
+      </div>`).join('');
+  }
+}
+
+
+function renderCharts(date) {
+  renderChart('chart-revenue', date, 1, v => fmt_rev(v));
+  renderChart('chart-netrev',  date, 2, v => fmt_rev(v));
+  renderChart('chart-dau',     date, 3, v => v.toLocaleString());
+  renderChart('chart-appdau',  date, 4, v => v.toLocaleString());
+}
+
+// ═══════════════════════════════════════════════
+// MAIN RENDER
+// ═══════════════════════════════════════════════
+function render() {
+  const date = selectedDate;
+  if (!date) return;
+  
+  const dayLabel = getWeekdayLabel(date);
+  document.getElementById('header-date').textContent = `기준일 ${date} (${dayLabel}) · 실시간 시간대별 현황`;
+  document.getElementById('updated-at').textContent = `업데이트 ${new Date().toLocaleTimeString('ko-KR')}`;
+  
+  renderSummary(date);
+  renderKPI(date);
+  renderAdRecommendation(date);
+  renderCharts(date);
+}
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+function init() {
+  const lastDate = getLastDate();
+  selectedDate = lastDate;
+  document.getElementById('custom-date').value = lastDate;
+  document.getElementById('btn-today').classList.add('active');
+  render();
+  setInterval(() => {
+    document.getElementById('updated-at').textContent = `업데이트 ${new Date().toLocaleTimeString('ko-KR')}`;
+  }, 60000);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const loadingEl = document.createElement('div');
+  loadingEl.id = 'rt-loading';
+  loadingEl.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);font-size:14px;color:#94a3b8;z-index:999';
+  loadingEl.textContent = '데이터 로딩 중...';
+  document.body.appendChild(loadingEl);
+
+  fetch('pmkt_kpi_data.json?v=' + Date.now())
+    .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(data => {
+      RAW = data.RAW;
+      document.getElementById('rt-loading')?.remove();
+      init();
+    })
+    .catch(() => {
+      document.getElementById('rt-loading').textContent = '⚠️ 데이터 로드 실패 — 새로고침 해주세요.';
+    });
+});
+</script>
+</body>
+</html>
