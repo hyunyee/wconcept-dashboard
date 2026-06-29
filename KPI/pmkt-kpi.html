@@ -2098,7 +2098,10 @@ document.addEventListener('DOMContentLoaded', () => {
       // 99_Target 월별 마감실적 반영 (전월 마감 + 당월 누적)
       if (data.ANNUAL_ACT && Array.isArray(data.ANNUAL_ACT)) {
         data.ANNUAL_ACT.forEach((act, i) => {
-          if (i < ANNUAL.length) Object.assign(ANNUAL[i], act);
+          if (i < ANNUAL.length) {
+            // null인 값은 무시 — HTML 하드코딩값 유지
+            Object.entries(act).forEach(([k, v]) => { if (v != null) ANNUAL[i][k] = v; });
+          }
         });
       }
       document.getElementById('rt-loading')?.remove();
