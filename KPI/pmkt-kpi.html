@@ -1188,18 +1188,21 @@ function initAnnualChart() {
           type: 'bar', label: '실적',
           data: actuals,
           backgroundColor: colors,
-          borderRadius: 6, borderSkipped: false,
+          borderRadius: 8, borderSkipped: false,
+          maxBarThickness: 44,
           datalabels: {
             display: ctx => actuals[ctx.dataIndex] != null,
             formatter: (v, ctx) => {
               const t = targets[ctx.dataIndex];
               if (v == null || t == null || t === 0) return '';
-              return Math.round(v / t * 100) + '%';
+              const pct = Math.round(v / t * 100);
+              return pct + '%';
             },
-            anchor: 'end', align: 'top',
-            font: { size: 10, weight: '700' },
-            color: (ctx) => getBarColor(actuals[ctx.dataIndex], targets[ctx.dataIndex]).replace('0.85)', '1)'),
-            offset: 2,
+            anchor: 'center', align: 'center',
+            font: { size: 12, weight: '700' },
+            color: '#fff',
+            textShadowBlur: 4,
+            textShadowColor: 'rgba(0,0,0,0.25)',
           },
           order: 2,
         }
@@ -1217,12 +1220,17 @@ function initAnnualChart() {
             label: ctx => {
               const v = ctx.parsed.y;
               if (v == null) return null;
-              return `  ${ctx.dataset.label}: ${m.ttFmt(v)}`;
+              if (ctx.dataset.type === 'bar') {
+                const t = targets[ctx.dataIndex];
+                const pct = (t && t > 0) ? ` (${Math.round(v/t*100)}%)` : '';
+                return `  실적: ${m.ttFmt(v)}${pct}`;
+              }
+              return `  목표: ${m.ttFmt(v)}`;
             }
           }
         }
       },
-      layout: { padding: { top: 24 } },
+      layout: { padding: { top: 8 } },
       scales: {
         x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 11 } } },
         y: { grid: { color: '#f1f5f9' }, border: { display: false },
