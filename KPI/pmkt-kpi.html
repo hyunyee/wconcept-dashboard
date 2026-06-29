@@ -1571,12 +1571,10 @@ function getNetCumul(date, upToH) {
   return hasData ? s : null;
 }
 
-// 마지막 유효 시간 (총수주 기준 / 순수주 기준 분리)
+// 마지막 유효 시간 — RAW 데이터 마지막 업데이트 시간 기준 (현재 시각 무관)
 function getCurrentHour(date) {
   const rows = getHourlyData(date);
-  const isToday = date === getLastDate();
-  const maxH = isToday ? new Date().getHours() - 1 : 23;
-  for (let h = Math.min(23, maxH); h >= 0; h--) {
+  for (let h = 23; h >= 0; h--) {
     if (rows[h] && rows[h][0] > 0) return h;
   }
   return 0;
@@ -1584,20 +1582,16 @@ function getCurrentHour(date) {
 
 function getCurrentNetHour(date) {
   const rows = getHourlyData(date);
-  const isToday = date === getLastDate();
-  const maxH = isToday ? new Date().getHours() - 1 : 23;
-  for (let h = Math.min(23, maxH); h >= 0; h--) {
+  for (let h = 23; h >= 0; h--) {
     if (rows[h] && rows[h][2] !== null) return h;
   }
   return -1;
 }
 
-// 차트용: 필드별 마지막 유효 시간 (오늘 날짜면 현재 진행 중인 시간 제외)
+// 차트용: 필드별 마지막 유효 시간 (RAW 데이터 기준)
 function getCurrentFieldHour(date, fieldIdx) {
   const rows = getHourlyData(date);
-  const isToday = date === getLastDate();
-  const maxH = isToday ? new Date().getHours() - 1 : 23;
-  for (let h = Math.min(23, maxH); h >= 0; h--) {
+  for (let h = 23; h >= 0; h--) {
     if (!rows[h]) continue;
     const v = rows[h][fieldIdx];
     if (v !== null && v !== undefined) return h;
