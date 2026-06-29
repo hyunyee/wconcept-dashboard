@@ -1055,7 +1055,7 @@ function mcToggleCollapse() {
   ch.style.transform  = mcCollapsed ? 'rotate(180deg)' : '';
 }
 
-mcInit();
+// mcInit()는 init()에서 RAW 로드 후 호출됨
 
 // ── 핵심지표 (Daily · 수동 업데이트) ─────────────────────────────
 const KPI_DAILY = { label:`${fmtISO(YESTERDAY)} Daily 기준`,
@@ -2385,6 +2385,7 @@ function init() {
   selectedDate = lastDate;
   document.getElementById('custom-date').value = lastDate;
   document.getElementById('btn-today').classList.add('active');
+  mcInit();
   buildMtdPaceChart();
   funnelUpdate();
   render();
