@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>마케팅 KPI 실적 현황 | W CONCEPT</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif;background:#EEF2F7;color:#1e293b;font-size:13px}
@@ -158,6 +159,11 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
 .ann-pct{font-size:11px;font-weight:700}
 .ann-pct.over{color:#10b981}.ann-pct.warn{color:#f59e0b}.ann-pct.low{color:#ef4444}.ann-pct.empty{color:#cbd5e1}
 
+
+/* ─── Annual Metric Dropdown ─── */
+.annual-opt{padding:8px 16px;font-size:12px;color:#475569;cursor:pointer;transition:background .1s}
+.annual-opt:hover{background:#f8fafc}
+.annual-opt.active{color:#10b981;font-weight:700;background:#f0fdf4}
 
 /* ─── Responsive ─── */
 @media(max-width:1200px){.kpi-grid{grid-template-columns:repeat(3,1fr)}.grid-3{grid-template-columns:1fr 1fr}.mc-body{grid-template-columns:1fr}}
@@ -670,17 +676,30 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
   <div class="card" style="margin-bottom:14px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
       <div class="card-title" style="margin-bottom:0">월별 Target vs Actual</div>
-      <div style="display:flex;gap:6px" id="annual-chart-toggles">
-        <button onclick="toggleAnnualMetric('net',this)"   style="padding:4px 12px;border-radius:20px;border:1.5px solid #10b981;background:#10b981;color:#fff;font-size:11px;font-weight:600;cursor:pointer">순수주</button>
-        <button onclick="toggleAnnualMetric('total',this)" style="padding:4px 12px;border-radius:20px;border:1.5px solid #e2e8f0;background:#fff;color:#94a3b8;font-size:11px;font-weight:600;cursor:pointer">총수주</button>
-        <button onclick="toggleAnnualMetric('gmv',this)"   style="padding:4px 12px;border-radius:20px;border:1.5px solid #e2e8f0;background:#fff;color:#94a3b8;font-size:11px;font-weight:600;cursor:pointer">GMV</button>
+      <div style="position:relative" id="annual-metric-wrap">
+        <button id="annual-metric-btn" onclick="toggleAnnualDropdown(event)"
+          style="display:flex;align-items:center;gap:6px;padding:5px 14px;border-radius:20px;border:1.5px solid #10b981;background:#10b981;color:#fff;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">
+          <span id="annual-metric-label">순수주</span>
+          <span style="font-size:9px">▾</span>
+        </button>
+        <div id="annual-metric-list"
+          style="display:none;position:absolute;top:calc(100% + 6px);right:0;background:#fff;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.14);z-index:200;min-width:160px;padding:6px 0;border:1px solid #e2e8f0">
+          <div class="annual-opt active" data-idx="0" onclick="selectAnnualMetric(0,this)">순수주</div>
+          <div class="annual-opt" data-idx="1" onclick="selectAnnualMetric(1,this)">APPMAU</div>
+          <div class="annual-opt" data-idx="2" onclick="selectAnnualMetric(2,this)">신규가입자</div>
+          <div class="annual-opt" data-idx="3" onclick="selectAnnualMetric(3,this)">전체 구매자(월)</div>
+          <div class="annual-opt" data-idx="4" onclick="selectAnnualMetric(4,this)">신규가입자(광고)</div>
+          <div class="annual-opt" data-idx="5" onclick="selectAnnualMetric(5,this)">첫구매자(광고)</div>
+        </div>
       </div>
     </div>
-    <div class="card-sub">* 1~5월: 전사 확정 실적 / 6월: 진행중 / 7월~: 목표 미입력 &nbsp;·&nbsp; 단위: 억원</div>
-    <div class="chart-box h260"><canvas id="chart-annual"></canvas></div>
+    <div class="card-sub" id="annual-chart-sub">* 목표: 26년 전체 / 실적: 확정 또는 누적 기준 &nbsp;·&nbsp; 단위: 억원</div>
+    <div class="chart-box h280"><canvas id="chart-annual"></canvas></div>
     <div class="legend-row" id="annual-legend">
-      <div class="leg"><div class="leg-dot" style="background:rgba(16,185,129,0.35)"></div>순수주 목표</div>
-      <div class="leg"><div class="leg-dot" style="background:#10b981"></div>순수주 실적</div>
+      <div class="leg"><div class="leg-dot" style="width:18px;height:3px;border-radius:0;background:repeating-linear-gradient(90deg,#94a3b8 0,#94a3b8 5px,transparent 5px,transparent 8px)"></div>목표</div>
+      <div class="leg"><div class="leg-dot" style="background:#10b981"></div>달성 ≥100%</div>
+      <div class="leg"><div class="leg-dot" style="background:#f59e0b"></div>달성 ≥85%</div>
+      <div class="leg"><div class="leg-dot" style="background:#ef4444"></div>달성 &lt;85%</div>
     </div>
   </div>
   <div class="card" style="overflow-x:auto">
@@ -1100,53 +1119,142 @@ const ANNUAL = [
 const curMonIdx = TODAY.getMonth(); // 0-indexed, 6월=5
 if (curMonIdx < ANNUAL.length) ANNUAL[curMonIdx].note = `${YESTERDAY.getMonth()+1}/${YESTERDAY.getDate()}기준(진행중)`;
 
-// 연간 차트 (순수주 기본, 총수주/GMV 토글)
-const annualChartDatasets = [
-  { label:'총수주 목표', key:'total', data: ANNUAL.map(d=>d.tT), backgroundColor:'rgba(59,130,246,0.25)', borderRadius:4, hidden:true },
-  { label:'총수주 실적', key:'total', data: ANNUAL.map(d=>d.tA), backgroundColor:'rgba(59,130,246,0.85)', borderRadius:4, hidden:true },
-  { label:'순수주 목표', key:'net',   data: ANNUAL.map(d=>d.nT), backgroundColor:'rgba(16,185,129,0.35)', borderRadius:4, hidden:false },
-  { label:'순수주 실적', key:'net',   data: ANNUAL.map(d=>d.nA), backgroundColor:'rgba(16,185,129,0.85)', borderRadius:4, hidden:false },
-  { label:'GMV 목표',   key:'gmv',   data: ANNUAL.map(d=>d.gmvT), backgroundColor:'rgba(245,158,11,0.25)', borderRadius:4, hidden:true },
-  { label:'GMV 실적',   key:'gmv',   data: ANNUAL.map(d=>d.gmvA), backgroundColor:'rgba(245,158,11,0.85)', borderRadius:4, hidden:true },
-];
-const annualChart = new Chart(document.getElementById('chart-annual'), {
-  type:'bar',
-  data:{ labels: ANNUAL.map(d=>d.m), datasets: annualChartDatasets },
-  options:{ responsive:true, maintainAspectRatio:false,
-    plugins:{ legend:{display:false}, tooltip:{mode:'index',intersect:false, backgroundColor:'#1e293b',titleColor:'#e2e8f0',bodyColor:'#cbd5e1',
-      callbacks:{ label:ctx => ctx.parsed.y != null ? `  ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)}억` : null } } },
-    scales:{ x:{grid:{display:false},ticks:{color:'#94a3b8',font:{size:11}}}, y:{grid:{color:'#f1f5f9'},ticks:{color:'#94a3b8',font:{size:10},callback:v=>v+'억'},border:{display:false}} }
-  }
-});
+// ── 연간 차트 설정 ─────────────────────────────────────────────
+Chart.register(ChartDataLabels);
 
-const METRIC_COLORS = { net:['rgba(16,185,129,0.35)','#10b981'], total:['rgba(59,130,246,0.25)','rgba(59,130,246,0.85)'], gmv:['rgba(245,158,11,0.25)','rgba(245,158,11,0.85)'] };
-const METRIC_LABELS = { net:'순수주', total:'총수주', gmv:'GMV' };
-function toggleAnnualMetric(key, btn) {
-  const isActive = btn.style.background !== 'rgb(255, 255, 255)' && btn.style.background !== '' && !btn.style.background.includes('fff');
-  // 실제 활성 상태는 데이터셋 hidden 기준
-  const ds = annualChartDatasets.filter(d=>d.key===key);
-  const nowHidden = ds[0].hidden;
-  ds.forEach(d => { d.hidden = !nowHidden; });
-  annualChart.update();
-  // 버튼 스타일 업데이트
-  const colors = { net:'#10b981', total:'#3b82f6', gmv:'#f59e0b' };
-  const c = colors[key];
-  if (nowHidden) {
-    btn.style.background = c; btn.style.borderColor = c; btn.style.color = '#fff';
-  } else {
-    btn.style.background = '#fff'; btn.style.borderColor = '#e2e8f0'; btn.style.color = '#94a3b8';
-  }
-  // 범례 갱신
-  const legend = document.getElementById('annual-legend');
-  legend.innerHTML = annualChartDatasets
-    .filter(d => !d.hidden && d.label.includes('목표'))
-    .map(d => `<div class="leg"><div class="leg-dot" style="background:${d.backgroundColor}"></div>${METRIC_LABELS[d.key]} 목표</div>`)
-    .join('') +
-    annualChartDatasets
-    .filter(d => !d.hidden && d.label.includes('실적'))
-    .map(d => `<div class="leg"><div class="leg-dot" style="background:${METRIC_COLORS[d.key][1]}"></div>${METRIC_LABELS[d.key]} 실적</div>`)
-    .join('');
+const ANNUAL_METRICS = [
+  { tKey:'nT',      aKey:'nA',      label:'순수주',          unit:'억원',
+    yFmt: v => v != null ? Math.round(v)+'억' : '',
+    ttFmt: v => v != null ? v.toFixed(1)+'억' : '-' },
+  { tKey:'mauT',    aKey:'mauA',    label:'APPMAU',         unit:'명',
+    yFmt: v => v != null ? Math.round(v/10000)+'만' : '',
+    ttFmt: v => v != null ? v.toLocaleString()+'명' : '-' },
+  { tKey:'joinT',   aKey:'joinA',   label:'신규가입자',      unit:'명',
+    yFmt: v => v != null ? Math.round(v/10000)+'만' : '',
+    ttFmt: v => v != null ? v.toLocaleString()+'명' : '-' },
+  { tKey:'buyersT', aKey:'buyersA', label:'전체 구매자(월)', unit:'명',
+    yFmt: v => v != null ? Math.round(v/10000)+'만' : '',
+    ttFmt: v => v != null ? v.toLocaleString()+'명' : '-' },
+  { tKey:'joinAdT', aKey:'joinAdA', label:'신규가입자(광고)', unit:'명',
+    yFmt: v => v != null ? Math.round(v/1000)+'천' : '',
+    ttFmt: v => v != null ? v.toLocaleString()+'명' : '-' },
+  { tKey:'firstAdT',aKey:'firstAdA',label:'첫구매자(광고)', unit:'명',
+    yFmt: v => v != null ? Math.round(v/1000)+'천' : '',
+    ttFmt: v => v != null ? v.toLocaleString()+'명' : '-' },
+];
+
+let curMetricIdx = 0;
+let annualChart = null;
+
+function getBarColor(a, t) {
+  if (a == null || t == null || t === 0) return 'rgba(0,0,0,0)';
+  const r = a / t;
+  return r >= 1 ? 'rgba(16,185,129,0.85)' : r >= 0.85 ? 'rgba(245,158,11,0.85)' : 'rgba(239,68,68,0.85)';
 }
+
+function buildAnnualChartData(idx) {
+  const m = ANNUAL_METRICS[idx];
+  return {
+    targets: ANNUAL.map(d => d[m.tKey] ?? null),
+    actuals: ANNUAL.map(d => d[m.aKey] ?? null),
+    colors:  ANNUAL.map(d => getBarColor(d[m.aKey], d[m.tKey])),
+  };
+}
+
+function initAnnualChart() {
+  if (annualChart) annualChart.destroy();
+  const m = ANNUAL_METRICS[curMetricIdx];
+  const { targets, actuals, colors } = buildAnnualChartData(curMetricIdx);
+
+  annualChart = new Chart(document.getElementById('chart-annual'), {
+    type: 'bar',
+    data: {
+      labels: ANNUAL.map(d => d.m),
+      datasets: [
+        {
+          type: 'line', label: '목표',
+          data: targets,
+          borderColor: 'rgba(100,116,139,0.6)',
+          borderDash: [5, 4], borderWidth: 2,
+          pointBackgroundColor: 'rgba(100,116,139,0.5)',
+          pointRadius: 4, pointHoverRadius: 5,
+          fill: false, tension: 0,
+          datalabels: { display: false },
+          order: 1,
+        },
+        {
+          type: 'bar', label: '실적',
+          data: actuals,
+          backgroundColor: colors,
+          borderRadius: 6, borderSkipped: false,
+          datalabels: {
+            display: ctx => actuals[ctx.dataIndex] != null,
+            formatter: (v, ctx) => {
+              const t = targets[ctx.dataIndex];
+              if (v == null || t == null || t === 0) return '';
+              return Math.round(v / t * 100) + '%';
+            },
+            anchor: 'end', align: 'top',
+            font: { size: 10, weight: '700' },
+            color: (ctx) => getBarColor(actuals[ctx.dataIndex], targets[ctx.dataIndex]).replace('0.85)', '1)'),
+            offset: 2,
+          },
+          order: 2,
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        datalabels: {},
+        tooltip: {
+          mode: 'index', intersect: false,
+          backgroundColor: '#1e293b', titleColor: '#e2e8f0', bodyColor: '#cbd5e1',
+          callbacks: {
+            label: ctx => {
+              const v = ctx.parsed.y;
+              if (v == null) return null;
+              return `  ${ctx.dataset.label}: ${m.ttFmt(v)}`;
+            }
+          }
+        }
+      },
+      layout: { padding: { top: 24 } },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 11 } } },
+        y: { grid: { color: '#f1f5f9' }, border: { display: false },
+          ticks: { color: '#94a3b8', font: { size: 10 }, callback: v => m.yFmt(v) } }
+      }
+    }
+  });
+
+  // 서브타이틀 단위 업데이트
+  document.getElementById('annual-chart-sub').textContent =
+    `* 목표: 26년 전체 / 실적: 확정 또는 누적 기준 · 단위: ${m.unit}`;
+}
+
+function toggleAnnualDropdown(e) {
+  e.stopPropagation();
+  const list = document.getElementById('annual-metric-list');
+  list.style.display = list.style.display === 'none' ? 'block' : 'none';
+}
+
+function selectAnnualMetric(idx, el) {
+  curMetricIdx = idx;
+  document.querySelectorAll('.annual-opt').forEach(o => o.classList.remove('active'));
+  el.classList.add('active');
+  const label = ANNUAL_METRICS[idx].label;
+  document.getElementById('annual-metric-label').textContent = label;
+  document.getElementById('annual-metric-list').style.display = 'none';
+  initAnnualChart();
+}
+
+// 외부 클릭 시 드롭다운 닫기
+document.addEventListener('click', () => {
+  const list = document.getElementById('annual-metric-list');
+  if (list) list.style.display = 'none';
+});
 
 // 연간 테이블 (월 행 × KPI 달성률 열)
 const tbody = document.getElementById('annual-table-body');
@@ -1960,6 +2068,7 @@ function init() {
   document.getElementById('custom-date').value = lastDate;
   document.getElementById('btn-today').classList.add('active');
   render();
+  initAnnualChart();
   if (location.hash === '#realtime') setRealtimeView(document.getElementById('tab-realtime'));
   setInterval(() => {
     document.getElementById('updated-at').textContent = `업데이트 ${new Date().toLocaleTimeString('ko-KR')}`;
