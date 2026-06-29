@@ -681,22 +681,24 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
   <div class="card" style="overflow-x:auto">
     <div class="card-title">월별 KPI 달성률</div>
     <div class="card-sub">* 달성률 색상: <span style="color:#10b981;font-weight:700">녹색 ≥100%</span> / <span style="color:#f59e0b;font-weight:700">노랑 ≥85%</span> / <span style="color:#ef4444;font-weight:700">빨강 &lt;85%</span> / 실적 없는 월은 목표만 표시</div>
-    <table class="annual-table" style="min-width:900px">
+    <table class="annual-table" style="min-width:1100px">
       <thead>
         <tr>
           <th rowspan="2" style="text-align:left;vertical-align:bottom">월</th>
-          <th colspan="3" style="text-align:center;border-left:2px solid #e2e8f0;background:#eff6ff;color:#3b82f6">총수주 (억원)</th>
-          <th colspan="3" style="text-align:center;border-left:2px solid #e2e8f0;background:#ecfdf5;color:#10b981">순수주 (억원)</th>
-          <th colspan="3" style="text-align:center;border-left:2px solid #e2e8f0;background:#fffbeb;color:#f59e0b">GMV (억원)</th>
-          <th colspan="2" style="text-align:center;border-left:2px solid #e2e8f0;background:#faf5ff;color:#8b5cf6">신규가입 (명)</th>
-          <th colspan="2" style="text-align:center;border-left:2px solid #e2e8f0;background:#fff1f2;color:#f43f5e">첫구매 (명)</th>
+          <th colspan="3" style="text-align:center;border-left:2px solid #e2e8f0;background:#eff6ff;color:#3b82f6">APPMAU (명)</th>
+          <th colspan="3" style="text-align:center;border-left:2px solid #e2e8f0;background:#faf5ff;color:#8b5cf6">신규가입자 (명)</th>
+          <th colspan="3" style="text-align:center;border-left:2px solid #e2e8f0;background:#ecfdf5;color:#10b981">전체 구매자(월) (명)</th>
+          <th colspan="3" style="text-align:center;border-left:2px solid #e2e8f0;background:#fffbeb;color:#f59e0b">신규가입자(광고) (명)</th>
+          <th colspan="3" style="text-align:center;border-left:2px solid #e2e8f0;background:#fff1f2;color:#f43f5e">첫구매자(광고) (명)</th>
+          <th colspan="3" style="text-align:center;border-left:2px solid #e2e8f0;background:#f0fdf4;color:#16a34a">순수주 (억원)</th>
         </tr>
         <tr>
           <th style="border-left:2px solid #e2e8f0">목표</th><th>실적</th><th>달성률</th>
           <th style="border-left:2px solid #e2e8f0">목표</th><th>실적</th><th>달성률</th>
           <th style="border-left:2px solid #e2e8f0">목표</th><th>실적</th><th>달성률</th>
-          <th style="border-left:2px solid #e2e8f0">목표</th><th>달성률</th>
-          <th style="border-left:2px solid #e2e8f0">목표</th><th>달성률</th>
+          <th style="border-left:2px solid #e2e8f0">목표</th><th>실적</th><th>달성률</th>
+          <th style="border-left:2px solid #e2e8f0">목표</th><th>실적</th><th>달성률</th>
+          <th style="border-left:2px solid #e2e8f0">목표</th><th>실적</th><th>달성률</th>
         </tr>
       </thead>
       <tbody id="annual-table-body"></tbody>
@@ -1058,20 +1060,35 @@ new Chart(document.getElementById('chart-roas'), {
 });
 
 // ── 연간 월별 데이터 (99_Target 시트 기준) ───────────────────────
-// 금액: 억원 / 신규가입·첫구매: 명 / 실적은 확정분만 입력
+// 금액: 억원 / 인원: 명 / 실적은 확정분만 입력
+// tT/tA=총수주(차트용), nT/nA=순수주, gmvT/gmvA=GMV(차트용)
+// mauT/mauA=APPMAU, joinT/joinA=신규가입자, buyersT/buyersA=전체구매자(월)
+// joinAdT/joinAdA=신규가입자(광고), firstAdT/firstAdA=첫구매자(광고)
 const ANNUAL = [
-  { m:'1월', tT:634.8, tA:673.98, nT:450.0, nA:454.64, gmvT:460.0, gmvA:459.48, joinT:87183,  joinA:59989,  firstT:43506, firstA:34513 },
-  { m:'2월', tT:575.3, tA:511.69, nT:410.0, nA:358.15, gmvT:395.0, gmvA:352.52, joinT:89460,  joinA:49017,  firstT:46981, firstA:27892 },
-  { m:'3월', tT:879.0, tA:845.20, nT:625.0, nA:602.69, gmvT:595.0, gmvA:544.76, joinT:103642, joinA:85156,  firstT:49876, firstA:50250 },
-  { m:'4월', tT:715.1, tA:693.70, nT:515.0, nA:475.21, gmvT:555.0, gmvA:527.95, joinT:100612, joinA:100136, firstT:53782, firstA:49072 },
-  { m:'5월', tT:699.4, tA:660.83, nT:515.0, nA:481.66, gmvT:530.0, gmvA:462.82, joinT:83492,  joinA:87319,  firstT:50826, firstA:47924 },
-  { m:'6월', tT:997.5, tA:735.35, nT:685.0, nA:533.28, gmvT:650.0, gmvA:552.03, joinT:111589, joinA:84863,  firstT:59642, firstA:46928, note:'6/25기준(진행중)' },
-  { m:'7월', tT:null,  tA:null,   nT:524.8, nA:null,   gmvT:554.8, gmvA:null,   joinT:76377,  joinA:null,   firstT:null,  firstA:null },
-  { m:'8월', tT:null,  tA:null,   nT:null,  nA:null,   gmvT:null,  gmvA:null,   joinT:62918,  joinA:null,   firstT:null,  firstA:null },
-  { m:'9월', tT:null,  tA:null,   nT:null,  nA:null,   gmvT:null,  gmvA:null,   joinT:80126,  joinA:null,   firstT:null,  firstA:null },
-  { m:'10월',tT:null,  tA:null,   nT:null,  nA:null,   gmvT:null,  gmvA:null,   joinT:84546,  joinA:null,   firstT:null,  firstA:null },
-  { m:'11월',tT:null,  tA:null,   nT:null,  nA:null,   gmvT:null,  gmvA:null,   joinT:116066, joinA:null,   firstT:null,  firstA:null },
-  { m:'12월',tT:null,  tA:null,   nT:null,  nA:null,   gmvT:null,  gmvA:null,   joinT:75418,  joinA:null,   firstT:null,  firstA:null },
+  { m:'1월',  tT:634.8, tA:673.98, nT:450.0, nA:454.64, gmvT:460.0, gmvA:459.48,
+    mauT:1616656, mauA:null, joinT:87183,  joinA:59989,  buyersT:297724, buyersA:null, joinAdT:11591, joinAdA:null, firstAdT:2535,  firstAdA:null },
+  { m:'2월',  tT:575.3, tA:511.69, nT:410.0, nA:358.15, gmvT:395.0, gmvA:352.52,
+    mauT:1531418, mauA:null, joinT:89460,  joinA:49017,  buyersT:256221, buyersA:null, joinAdT:10326, joinAdA:null, firstAdT:2618,  firstAdA:null },
+  { m:'3월',  tT:879.0, tA:845.20, nT:625.0, nA:602.69, gmvT:595.0, gmvA:544.76,
+    mauT:1693550, mauA:null, joinT:103642, joinA:85156,  buyersT:356257, buyersA:null, joinAdT:31446, joinAdA:null, firstAdT:12272, firstAdA:null },
+  { m:'4월',  tT:715.1, tA:693.70, nT:515.0, nA:475.21, gmvT:555.0, gmvA:527.95,
+    mauT:1829077, mauA:null, joinT:100612, joinA:100136, buyersT:368949, buyersA:null, joinAdT:49380, joinAdA:null, firstAdT:11691, firstAdA:null },
+  { m:'5월',  tT:699.4, tA:660.83, nT:515.0, nA:481.66, gmvT:530.0, gmvA:462.82,
+    mauT:1699334, mauA:null, joinT:83492,  joinA:87319,  buyersT:349031, buyersA:null, joinAdT:24668, joinAdA:null, firstAdT:7984,  firstAdA:null },
+  { m:'6월',  tT:997.5, tA:735.35, nT:685.0, nA:533.28, gmvT:650.0, gmvA:552.03,
+    mauT:1965839, mauA:null, joinT:111589, joinA:84863,  buyersT:426017, buyersA:null, joinAdT:32190, joinAdA:null, firstAdT:9348,  firstAdA:null, note:'6/25기준(진행중)' },
+  { m:'7월',  tT:null, tA:null, nT:524.8, nA:null, gmvT:554.8, gmvA:null,
+    mauT:1642180, mauA:null, joinT:76377,  joinA:null,   buyersT:357068, buyersA:null, joinAdT:24389, joinAdA:null, firstAdT:8540,  firstAdA:null },
+  { m:'8월',  tT:null, tA:null, nT:null,  nA:null, gmvT:null,  gmvA:null,
+    mauT:1599672, mauA:null, joinT:62918,  joinA:null,   buyersT:295624, buyersA:null, joinAdT:21093, joinAdA:null, firstAdT:7037,  firstAdA:null },
+  { m:'9월',  tT:null, tA:null, nT:null,  nA:null, gmvT:null,  gmvA:null,
+    mauT:1871163, mauA:null, joinT:80126,  joinA:null,   buyersT:317861, buyersA:null, joinAdT:30194, joinAdA:null, firstAdT:9974,  firstAdA:null },
+  { m:'10월', tT:null, tA:null, nT:null,  nA:null, gmvT:null,  gmvA:null,
+    mauT:2033112, mauA:null, joinT:84546,  joinA:null,   buyersT:354807, buyersA:null, joinAdT:30293, joinAdA:null, firstAdT:10355, firstAdA:null },
+  { m:'11월', tT:null, tA:null, nT:null,  nA:null, gmvT:null,  gmvA:null,
+    mauT:2456720, mauA:null, joinT:116066, joinA:null,   buyersT:460927, buyersA:null, joinAdT:47895, joinAdA:null, firstAdT:14766, firstAdA:null },
+  { m:'12월', tT:null, tA:null, nT:null,  nA:null, gmvT:null,  gmvA:null,
+    mauT:1901279, mauA:null, joinT:75418,  joinA:null,   buyersT:334906, buyersA:null, joinAdT:23827, joinAdA:null, firstAdT:7838,  firstAdA:null },
 ];
 
 // 현재 진행중인 월 note 동적 설정 (어제 날짜 기준)
@@ -1109,16 +1126,17 @@ const pct = (t, a) => {
 };
 const bl = 'border-left:2px solid #e2e8f0';
 ANNUAL.forEach((d, i) => {
-  const isCur = i === 5;
+  const isCur = i === TODAY.getMonth();
   const tr = document.createElement('tr');
   if (isCur) tr.classList.add('cur-month');
   tr.innerHTML =
     `<td style="font-weight:700;white-space:nowrap">${d.m}${d.note ? `<br><span style="font-size:10px;color:#94a3b8;font-weight:400">${d.note}</span>` : ''}</td>` +
-    `<td style="${bl}">${fmtBil(d.tT)}</td><td>${fmtBil(d.tA)}</td><td>${pct(d.tT, d.tA)}</td>` +
-    `<td style="${bl}">${fmtBil(d.nT)}</td><td>${fmtBil(d.nA)}</td><td>${pct(d.nT, d.nA)}</td>` +
-    `<td style="${bl}">${fmtBil(d.gmvT)}</td><td>${fmtBil(d.gmvA)}</td><td>${pct(d.gmvT, d.gmvA)}</td>` +
-    `<td style="${bl}">${fmtNum(d.joinT)}</td><td>${pct(d.joinT, d.joinA)}</td>` +
-    `<td style="${bl}">${fmtNum(d.firstT)}</td><td>${pct(d.firstT, d.firstA)}</td>`;
+    `<td style="${bl}">${fmtNum(d.mauT)}</td><td>${fmtNum(d.mauA)}</td><td>${pct(d.mauT, d.mauA)}</td>` +
+    `<td style="${bl}">${fmtNum(d.joinT)}</td><td>${fmtNum(d.joinA)}</td><td>${pct(d.joinT, d.joinA)}</td>` +
+    `<td style="${bl}">${fmtNum(d.buyersT)}</td><td>${fmtNum(d.buyersA)}</td><td>${pct(d.buyersT, d.buyersA)}</td>` +
+    `<td style="${bl}">${fmtNum(d.joinAdT)}</td><td>${fmtNum(d.joinAdA)}</td><td>${pct(d.joinAdT, d.joinAdA)}</td>` +
+    `<td style="${bl}">${fmtNum(d.firstAdT)}</td><td>${fmtNum(d.firstAdA)}</td><td>${pct(d.firstAdT, d.firstAdA)}</td>` +
+    `<td style="${bl}">${fmtBil(d.nT)}</td><td>${fmtBil(d.nA)}</td><td>${pct(d.nT, d.nA)}</td>`;
   tbody.appendChild(tr);
 });
 
