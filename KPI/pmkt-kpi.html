@@ -1096,23 +1096,23 @@ function renderDailyKPI() {
 
   document.getElementById('kpi-period-label').textContent = `${ys} Daily 기준`;
 
-  const setCard = (id, rawVal, sub, diffRatio) => {
+  const setCard = (id, rawVal, sub, achRatio) => {
     const el = document.getElementById(id);
     if (el) el.textContent = rawVal != null ? Number(rawVal).toLocaleString() : '-';
     const subEl = document.getElementById(id+'-sub');
     if (subEl) subEl.textContent = sub;
     const yEl = document.getElementById(id+'-yoy');
     if (!yEl) return;
-    if (diffRatio === null || diffRatio === undefined) {
+    if (achRatio === null || achRatio === undefined) {
       yEl.textContent = '-'; yEl.className = 'yoy flat';
     } else {
-      const pct = (diffRatio * 100).toFixed(1);
-      yEl.textContent = diffRatio >= 0 ? `▲ ${pct}%` : `▼ ${Math.abs(pct)}%`;
-      yEl.className = 'yoy ' + (diffRatio >= 0 ? 'up' : 'dn');
+      const pct = Math.round(achRatio * 100);
+      yEl.textContent = `${pct}%`;
+      yEl.className = 'yoy ' + (pct >= 100 ? 'up' : pct >= 85 ? 'flat' : 'dn');
     }
   };
 
-  const diff = (a, t) => (a && t) ? (a - t) / t : null;
+  const diff = (a, t) => (a && t) ? a / t : null;
 
   // APP MAU: 일별 타겟(DAILY_TGTS K열), 없으면 월 타겟 fallback
   setCard('k-mau', d.mau_app,
