@@ -510,27 +510,24 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
   <div class="grid-2">
     <div class="card">
       <div class="card-title">Target vs Actual</div>
-      <div class="card-sub">월 누적 목표 달성률 (채널ID 기준)</div>
+      <div class="card-sub" id="mtd-table-sub">월 누적 목표 달성률</div>
       <table class="achv-table">
-        <thead><tr><th>지표</th><th>단위</th><th>Target</th><th>Actual</th><th>달성률</th><th>YoY</th></tr></thead>
-        <tbody>
-          <tr><td>APP MAU</td><td>명</td><td>1,712,722</td><td>1,864,932</td><td><div class="prog-wrap"><div class="prog-bar-bg"><div class="prog-bar bar-green" style="width:100%"></div></div><span class="prog-pct pct-over">109%</span></div></td><td><span class="yoy up">+15.1%</span></td></tr>
-          <tr><td>신규가입</td><td>명</td><td>100,888</td><td>84,863</td><td><div class="prog-wrap"><div class="prog-bar-bg"><div class="prog-bar bar-yellow" style="width:84%"></div></div><span class="prog-pct pct-warn">84%</span></div></td><td><span class="yoy up">+3.8%</span></td></tr>
-          <tr><td>첫구매</td><td>명</td><td>53,923</td><td>46,928</td><td><div class="prog-wrap"><div class="prog-bar-bg"><div class="prog-bar bar-yellow" style="width:87%"></div></div><span class="prog-pct pct-warn">87%</span></div></td><td><span class="yoy up">+1.1%</span></td></tr>
-          <tr><td>순수주</td><td>백만</td><td>60,100</td><td>53,328</td><td><div class="prog-wrap"><div class="prog-bar-bg"><div class="prog-bar bar-yellow" style="width:89%"></div></div><span class="prog-pct pct-warn">89%</span></div></td><td><span class="yoy up">+0.5%</span></td></tr>
-          <tr><td>총수주</td><td>백만</td><td>88,175</td><td>73,535</td><td><div class="prog-wrap"><div class="prog-bar-bg"><div class="prog-bar bar-red" style="width:83%"></div></div><span class="prog-pct pct-low">83%</span></div></td><td><span class="yoy up">+1.7%</span></td></tr>
-          <tr><td>GMV</td><td>백만</td><td>56,900</td><td>55,203</td><td><div class="prog-wrap"><div class="prog-bar-bg"><div class="prog-bar bar-green" style="width:97%"></div></div><span class="prog-pct pct-over">97%</span></div></td><td><span class="yoy up">+9.5%</span></td></tr>
-        </tbody>
+        <thead><tr><th>지표</th><th>단위</th><th>MTD 목표</th><th>MTD 실적</th><th>달성률</th><th>GAP</th><th>월 타겟</th><th>예상마감</th></tr></thead>
+        <tbody id="mtd-table-body"><tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:12px">데이터 로딩 중...</td></tr></tbody>
       </table>
     </div>
     <div class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
         <div class="card-title" style="margin-bottom:0">MTD 달성 페이스</div>
-        <div style="display:flex;gap:4px" id="pace-metric-btns">
-          <button class="pace-btn active" data-m="net" onclick="selectPaceMetric(this)">순수주</button>
-          <button class="pace-btn" data-m="gmv" onclick="selectPaceMetric(this)">총수주</button>
-          <button class="pace-btn" data-m="adcost" onclick="selectPaceMetric(this)">광고비</button>
-        </div>
+        <select id="pace-metric-sel" onchange="selectPaceMetric(this.value)"
+          style="font-size:12px;font-weight:600;border:1.5px solid #3b82f6;border-radius:6px;padding:3px 8px;color:#0B1D3A;background:#fff;cursor:pointer;outline:none">
+          <option value="net">순수주</option>
+          <option value="gmv">총수주</option>
+          <option value="adcost">광고비</option>
+          <option value="join">신규가입</option>
+          <option value="first">첫구매</option>
+          <option value="mau_app">APP MAU</option>
+        </select>
       </div>
       <div class="card-sub" id="pace-chart-sub">누적 실적 vs 목표 페이스 (억원)</div>
       <div class="chart-box h260"><canvas id="chart-mtd-pace"></canvas></div>
@@ -540,7 +537,18 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
   <!-- 전환 퍼널 (세션 기준) -->
   <div class="sec-hd">
     <h2>전환 퍼널</h2>
-    <span class="sec-note">전일 기준 · RAW/Tableau 자동 연동 · <span style="color:#f59e0b;font-weight:700">┃</span> 당월평균 · <span style="color:#94a3b8;font-weight:700">┃</span> 26년평균</span>
+    <span class="sec-note" style="display:flex;align-items:center;gap:8px">
+      <select id="funnel-ch-sel" onchange="buildFunnelFromTraffic()"
+        style="font-size:11px;border:1px solid #e2e8f0;border-radius:6px;padding:2px 6px;color:#475569;background:#fff;cursor:pointer;outline:none">
+        <option value="__total__">전체</option>
+        <option value="DA">DA</option>
+        <option value="SA">SA</option>
+        <option value="Organic">Organic</option>
+        <option value="CRM">CRM</option>
+        <option value="PCS">PCS</option>
+      </select>
+      <span>· 전일 기준 · <span style="color:#f59e0b;font-weight:700">┃</span> 당월평균</span>
+    </span>
   </div>
   <div class="card" style="margin-bottom:14px">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px 36px">
@@ -936,13 +944,14 @@ function mcGenerateText() {
   const f8 = v => v>0 ? `${(v/1e8).toFixed(1)}억` : '-';
   const yf = v => v===null?'-': +v>=0?`+${Math.abs(+v).toFixed(1)}%`:`△${Math.abs(+v).toFixed(1)}%`;
 
-  // KPI_DAILY에서 신규가입/첫구매 읽기
-  const joinV   = KPI_DAILY?.join?.val  || '-';
-  const joinYoy = KPI_DAILY?.join?.yoy  || '-';
-  const firstV  = KPI_DAILY?.first?.val || '-';
-  const firstYoy= KPI_DAILY?.first?.yoy || '-';
-  const mauV    = KPI_DAILY?.mau?.val   ? (parseInt(KPI_DAILY.mau.val.replace(/,/g,''))/10000).toFixed(0)+'만' : '-';
-  const mauYoy  = KPI_DAILY?.mau?.yoy   || '-';
+  // DAILY / DAILY_AD에서 신규가입/첫구매 읽기
+  const ys_ = fmtISO(YESTERDAY);
+  const _dy = DAILY[ys_] || {};
+  const _da = DAILY_AD[ys_] || {};
+  const joinV    = _dy.join   ? _dy.join.toLocaleString()   : '-';
+  const firstV   = _dy.first  ? _dy.first.toLocaleString()  : '-';
+  const mauV     = _dy.mau_app ? `${(_dy.mau_app/10000).toFixed(0)}만` : '-';
+  const joinYoy  = '-'; const firstYoy = '-'; const mauYoy = '-';
 
   // ANNUAL_ACT에서 MTD 누적
   const mauMtd    = actM.mauA    ? `${(actM.mauA/10000).toFixed(1)}만` : mauV;
@@ -1008,12 +1017,15 @@ function mcDetectInsights() {
     });
   }
 
-  // 5. KPI_DAILY 신규가입 YoY 이상
-  const joinYoyV = KPI_DAILY?.join?.yoy ? parseFloat(KPI_DAILY.join.yoy.replace(/[△+%]/g,'')) * (KPI_DAILY.join.yoy.includes('△')?-1:1) : null;
-  if (joinYoyV !== null && Math.abs(joinYoyV)>20) {
-    ins.push({ type:joinYoyV>0?'good':'warn', ico:joinYoyV>0?'👥':'👥',
-      text:`신규가입 YoY ${joinYoyV>0?'+':'△'}${Math.abs(joinYoyV).toFixed(1)}% — 전년 대비 ${joinYoyV>0?'큰 증가':'큰 감소'}`
-    });
+  // 5. 신규가입 전주 대비 이상 (DAILY 기반)
+  const ys2 = fmtISO(YESTERDAY);
+  const dy2 = DAILY[ys2] || {};
+  const lwDs2 = getDateByOffset(ys2, -7);
+  const lwDy2 = lwDs2 && DAILY[lwDs2] ? DAILY[lwDs2] : null;
+  if (dy2.join && lwDy2?.join) {
+    const joinWow = (dy2.join - lwDy2.join) / lwDy2.join * 100;
+    if (Math.abs(joinWow) > 20) ins.push({ type:joinWow>0?'good':'warn', ico:'👥',
+      text:`신규가입 전주동요일 대비 ${joinWow>0?'+':''}${joinWow.toFixed(1)}% (${dy2.join.toLocaleString()}명 vs ${lwDy2.join.toLocaleString()}명)` });
   }
 
   if (ins.length === 0) ins.push({ type:'info', ico:'✔️', text:'특이사항 없음 · 정상 범위 내 실적' });
@@ -1057,30 +1069,65 @@ function mcToggleCollapse() {
 
 // mcInit()는 init()에서 RAW 로드 후 호출됨
 
-// ── 핵심지표 (Daily · 수동 업데이트) ─────────────────────────────
-const KPI_DAILY = { label:`${fmtISO(YESTERDAY)} Daily 기준`,
-  mau:     {val:'1,864,932', sub:'일 기준',       yoy:'+10.8%', up:true  },
-  net:     {val:'1,138',     sub:'일 기준(백만)',  yoy:'-18.9%', up:false },
-  join:    {val:'2,847',     sub:'일 기준',        yoy:'-42.9%', up:false },
-  first:   {val:'1,792',     sub:'일 기준',        yoy:'-26.9%', up:false },
-  joinAd:  {val:'-',         sub:'일 기준',        yoy:'-',      up:null  },
-  firstAd: {val:'-',         sub:'일 기준',        yoy:'-',      up:null  },
-};
+// ── 핵심지표 (Daily · JSON 자동 갱신) ───────────────────────────
+function renderDailyKPI() {
+  const ys = fmtISO(YESTERDAY);
+  const d  = DAILY[ys]     || {};
+  const da = DAILY_AD[ys]  || {};
+  const dt = DAILY_TGTS[ys]|| {};
+  const mo = ys.substring(0, 7);
+  const mt = MONTHLY_TGTS[mo] || {};
 
-(function initKPI() {
-  const d = KPI_DAILY;
-  document.getElementById('kpi-period-label').textContent = d.label;
-  const keys = ['mau','net','join','first','joinAd','firstAd'];
-  const ids  = ['k-mau','k-net','k-join','k-first','k-joinad','k-firstad'];
-  keys.forEach((k, i) => {
-    const v = d[k]; const id = ids[i];
-    document.getElementById(id).textContent     = v.val;
-    document.getElementById(id+'-sub').textContent = v.sub;
+  document.getElementById('kpi-period-label').textContent = `${ys} Daily 기준`;
+
+  const setCard = (id, rawVal, sub, diffRatio) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = rawVal != null ? Number(rawVal).toLocaleString() : '-';
+    const subEl = document.getElementById(id+'-sub');
+    if (subEl) subEl.textContent = sub;
     const yEl = document.getElementById(id+'-yoy');
-    yEl.textContent = v.up === null ? v.yoy : (v.up ? '▲ ' : '▼ ') + v.yoy.replace(/^[+\-]/, '');
-    yEl.className = 'yoy ' + (v.up === null ? 'flat' : v.up ? 'up' : 'dn');
-  });
-})();
+    if (!yEl) return;
+    if (diffRatio === null || diffRatio === undefined) {
+      yEl.textContent = '-'; yEl.className = 'yoy flat';
+    } else {
+      const pct = (diffRatio * 100).toFixed(1);
+      yEl.textContent = diffRatio >= 0 ? `▲ ${pct}%` : `▼ ${Math.abs(pct)}%`;
+      yEl.className = 'yoy ' + (diffRatio >= 0 ? 'up' : 'dn');
+    }
+  };
+
+  const diff = (a, t) => (a && t) ? (a - t) / t : null;
+
+  // APP MAU: vs 월 타겟
+  setCard('k-mau',  d.mau_app,
+    mt.mau_app ? `월 타겟 ${Number(mt.mau_app).toLocaleString()}명` : '일 기준',
+    diff(d.mau_app, mt.mau_app));
+
+  // 순수주 (백만 단위로 표시)
+  setCard('k-net',  d.net ? Math.round(d.net / 1e6) : null,
+    dt.net ? `일 타겟 ${Math.round(dt.net/1e6).toLocaleString()}백만` : '일 기준',
+    diff(d.net, dt.net));
+
+  // 신규가입
+  setCard('k-join',    d.join,
+    dt.join  ? `일 타겟 ${Number(dt.join).toLocaleString()}명` : '일 기준',
+    diff(d.join, dt.join));
+
+  // 첫구매
+  setCard('k-first',   d.first,
+    dt.first ? `일 타겟 ${Number(dt.first).toLocaleString()}명` : '일 기준',
+    diff(d.first, dt.first));
+
+  // 신규가입(광고)
+  setCard('k-joinad',  da.join_ad,
+    mt.join_ad ? `월 타겟 ${Number(mt.join_ad).toLocaleString()}명` : '일 기준',
+    null);
+
+  // 첫구매(광고)
+  setCard('k-firstad', da.first_ad,
+    mt.first_ad ? `월 타겟 ${Number(mt.first_ad).toLocaleString()}명` : '일 기준',
+    null);
+}
 
 
 function setAdsView(el) {
@@ -1151,47 +1198,81 @@ mkDonut('chart-ch-first', [
 // ── MTD 순수주 달성 페이스 차트 ──
 // MTD 페이스 차트 — 지표 선택 가능 (net/gmv/adcost)
 let mtdPaceChart = null;
+// src:'raw'  → RAW[date][hour][rawIdx] 누적 ÷ 1e8 (억 단위)
+// src:'daily'→ DAILY[date][dailyKey]   누적 ÷ scale
 const PACE_METRICS = {
-  net:    { rawIdx:2, tgtKey:'nT',  label:'순수주 누적', paceLabel:'순수주 목표 페이스', unit:'억', color:'#10b981', hasPace:true  },
-  gmv:    { rawIdx:1, tgtKey:'tT',  label:'총수주 누적', paceLabel:'총수주 목표 페이스', unit:'억', color:'#3b82f6', hasPace:true  },
-  adcost: { rawIdx:5, tgtKey:null,  label:'광고비 누적', paceLabel:null,                 unit:'억', color:'#f59e0b', hasPace:false },
+  net:     { src:'raw',   rawIdx:2, dailyKey:null,      mTgtKey:'net',     annualKey:'nT',  scale:1e8, unit:'억', label:'순수주 누적', paceLabel:'순수주 목표', color:'#10b981' },
+  gmv:     { src:'raw',   rawIdx:1, dailyKey:null,      mTgtKey:null,      annualKey:'tT',  scale:1e8, unit:'억', label:'총수주 누적', paceLabel:'총수주 목표', color:'#3b82f6' },
+  adcost:  { src:'raw',   rawIdx:5, dailyKey:null,      mTgtKey:'adcost',  annualKey:null,  scale:1e8, unit:'억', label:'광고비 누적', paceLabel:'광고비 목표', color:'#f59e0b' },
+  join:    { src:'daily', rawIdx:null, dailyKey:'join', mTgtKey:'join',    annualKey:'joinT', scale:1, unit:'명', label:'신규가입 누적', paceLabel:'신규가입 목표', color:'#06b6d4' },
+  first:   { src:'daily', rawIdx:null, dailyKey:'first',mTgtKey:null,      annualKey:null,  scale:1, unit:'명', label:'첫구매 누적', paceLabel:'첫구매 목표', color:'#8b5cf6' },
+  mau_app: { src:'daily', rawIdx:null, dailyKey:'mau_app',mTgtKey:'mau_app',annualKey:'mauT',scale:10000, unit:'만', label:'APP MAU', paceLabel:'APP MAU 목표', color:'#0B1D3A' },
 };
 
 function buildMtdPaceChart(metricKey) {
   if (!metricKey) metricKey = 'net';
   const canvas = document.getElementById('chart-mtd-pace');
   if (!canvas) return;
-  const metric = PACE_METRICS[metricKey];
+  const m = PACE_METRICS[metricKey];
+  if (!m) return;
   const year = TODAY.getFullYear(), month = TODAY.getMonth();
   const daysInMonth = new Date(year, month+1, 0).getDate();
   const monthStr = `${year}-${String(month+1).padStart(2,'0')}`;
-  const monthTarget = metric.hasPace && ANNUAL && ANNUAL[month] && ANNUAL[month][metric.tgtKey]
-    ? ANNUAL[month][metric.tgtKey] : null;
+
+  // 월 타겟 결정: MONTHLY_TGTS → ANNUAL fallback
+  let monthTarget = null;
+  const mt = MONTHLY_TGTS[monthStr] || {};
+  if (m.mTgtKey && mt[m.mTgtKey]) {
+    monthTarget = mt[m.mTgtKey] / m.scale;
+  } else if (m.annualKey && ANNUAL && ANNUAL[month] && ANNUAL[month][m.annualKey]) {
+    monthTarget = ANNUAL[month][m.annualKey]; // already in display unit
+  }
 
   const labels = [], paceData = [], actualCum = [];
   let cumVal = 0;
   for (let d = 1; d <= daysInMonth; d++) {
     const ds = `${monthStr}-${String(d).padStart(2,'0')}`;
     labels.push(d === 1 || d % 5 === 0 || d === daysInMonth ? `${month+1}/${d}` : '');
-    if (monthTarget) paceData.push(+(monthTarget * d / daysInMonth).toFixed(1));
-    if (RAW && RAW[ds]) {
-      let dayVal = 0;
-      RAW[ds].forEach(h => { if (h && h[metric.rawIdx]) dayVal += h[metric.rawIdx]; });
-      cumVal += dayVal;
-      actualCum.push(+(cumVal / 1e8).toFixed(1));
-    } else { actualCum.push(d < TODAY.getDate() ? null : undefined); }
+    if (monthTarget !== null) {
+      if (metricKey === 'mau_app') {
+        // MAU target: cumulative from DAILY_TGTS[ds]
+        const dt = DAILY_TGTS[ds];
+        paceData.push(dt && dt.mau_app ? +(dt.mau_app / m.scale).toFixed(1) : null);
+      } else {
+        paceData.push(+(monthTarget * d / daysInMonth).toFixed(1));
+      }
+    }
+    if (m.src === 'raw') {
+      if (RAW && RAW[ds]) {
+        let dayVal = 0;
+        RAW[ds].forEach(h => { if (h && h[m.rawIdx]) dayVal += h[m.rawIdx]; });
+        cumVal += dayVal;
+        actualCum.push(+(cumVal / m.scale).toFixed(1));
+      } else { actualCum.push(d < TODAY.getDate() ? null : undefined); }
+    } else {
+      const day = DAILY[ds];
+      if (day && day[m.dailyKey] != null) {
+        if (metricKey === 'mau_app') {
+          actualCum.push(+(day[m.dailyKey] / m.scale).toFixed(1));
+        } else {
+          cumVal += day[m.dailyKey];
+          actualCum.push(+(cumVal / m.scale).toFixed(1));
+        }
+      } else { actualCum.push(d < TODAY.getDate() ? null : undefined); }
+    }
   }
+
   const filteredActual = actualCum.map(v => v === undefined ? null : v);
   const datasets = [];
-  if (monthTarget) {
-    datasets.push({ label: metric.paceLabel, data: paceData,
+  if (monthTarget !== null) {
+    datasets.push({ label: m.paceLabel, data: paceData,
       borderColor: 'rgba(148,163,184,0.6)', borderWidth: 1.5, borderDash: [5,4],
       pointRadius: 0, fill: false, tension: 0, datalabels: { display: false } });
   }
-  datasets.push({ label: metric.label, data: filteredActual,
-    borderColor: metric.color, borderWidth: 2.5,
+  datasets.push({ label: m.label, data: filteredActual,
+    borderColor: m.color, borderWidth: 2.5,
     pointRadius: 0, pointHoverRadius: 4,
-    fill: monthTarget ? { target: 0, above:`${metric.color}12`, below:'rgba(239,68,68,0.05)' } : false,
+    fill: monthTarget !== null ? { target: 0, above:`${m.color}12`, below:'rgba(239,68,68,0.05)' } : false,
     tension: 0.3, datalabels: { display: false } });
 
   if (mtdPaceChart) { mtdPaceChart.destroy(); mtdPaceChart = null; }
@@ -1201,31 +1282,111 @@ function buildMtdPaceChart(metricKey) {
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: {
-        legend: { display: true, position: 'top', labels: { font: { size: 10 }, boxWidth: 10 } },
+        legend: { display: true, position: 'top', labels: { font:{size:10}, boxWidth:10 } },
         datalabels: { display: false },
-        tooltip: {
-          mode: 'index', intersect: false,
-          callbacks: { label: ctx => ctx.parsed.y != null ? `  ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)}${metric.unit}` : null }
-        }
+        tooltip: { mode:'index', intersect:false,
+          callbacks: { label: ctx => ctx.parsed.y != null ? `  ${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString()}${m.unit}` : null } }
       },
       scales: {
-        x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 9 } } },
-        y: { min: 0, grid: { color: '#f1f5f9' }, border: { display: false },
-          ticks: { color: '#94a3b8', font: { size: 10 }, callback: v => v + metric.unit } }
+        x: { grid:{display:false}, ticks:{color:'#94a3b8',font:{size:9}} },
+        y: { min:0, grid:{color:'#f1f5f9'}, border:{display:false},
+          ticks:{color:'#94a3b8',font:{size:10}, callback: v => v.toLocaleString()+m.unit} }
       }
     }
   });
-  // 부제목 업데이트
   const sub = document.getElementById('pace-chart-sub');
-  if (sub) sub.textContent = monthTarget
-    ? `누적 실적 vs 목표 페이스 (억원) · ${month+1}월`
-    : `누적 실적 (억원) · ${month+1}월 (목표 미설정)`;
+  if (sub) sub.textContent = monthTarget !== null
+    ? `누적 실적 vs 목표 페이스 (${m.unit}) · ${month+1}월`
+    : `누적 실적 (${m.unit}) · ${month+1}월`;
 }
 
-function selectPaceMetric(btn) {
-  document.querySelectorAll('.pace-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  buildMtdPaceChart(btn.dataset.m);
+function selectPaceMetric(metricKey) {
+  buildMtdPaceChart(metricKey);
+}
+
+// ── MTD 달성현황 테이블 (동적 생성) ──────────────────────────────
+function buildMtdTable() {
+  const ys = fmtISO(YESTERDAY);
+  const mo = ys.substring(0, 7);
+  const yr = parseInt(mo.split('-')[0]);
+  const mn = parseInt(mo.split('-')[1]);
+  const daysInMonth = new Date(yr, mn, 0).getDate();
+  const mt = MONTHLY_TGTS[mo] || {};
+
+  // 1일~전일 누적
+  const act = { mau_app:0, join:0, join_ad:0, first:0, first_ad:0, net:0, revenue:0, gmv:0 };
+  const tgt = { mau_app:0, join:0, first:0, net:0, revenue:0, gmv:0 };
+
+  let elapsed = 0;
+  const firstDs = `${mo}-01`;
+  let cur = parseLocalDate(firstDs);
+  const yDate = parseLocalDate(ys);
+  while (cur <= yDate) {
+    const ds = localDateToStr(cur);
+    const day = DAILY[ds]    || {};
+    const da  = DAILY_AD[ds] || {};
+    const dt  = DAILY_TGTS[ds] || {};
+    elapsed++;
+    // 누적 실적
+    if (day.join)    act.join    += day.join;
+    if (day.first)   act.first   += day.first;
+    if (day.net)     act.net     += day.net;
+    if (day.revenue) act.revenue += day.revenue;
+    if (day.gmv)     act.gmv     += day.gmv;
+    if (da.join_ad)  act.join_ad += da.join_ad;
+    if (da.first_ad) act.first_ad+= da.first_ad;
+    // MAU: 누적값 → yesterday 값 사용
+    if (ds === ys && day.mau_app) act.mau_app = day.mau_app;
+    // 누적 목표 (MAU는 전일 기준 cumulative)
+    if (dt.join)    tgt.join    += dt.join;
+    if (dt.first)   tgt.first   += dt.first;
+    if (dt.net)     tgt.net     += dt.net;
+    if (dt.revenue) tgt.revenue += dt.revenue;
+    if (dt.gmv)     tgt.gmv     += dt.gmv;
+    if (ds === ys && dt.mau_app) tgt.mau_app = dt.mau_app;
+    cur.setDate(cur.getDate() + 1);
+  }
+
+  // 예상마감 = 누적실적 × (월 전체 일수 / 경과 일수) — MAU 제외
+  const proj = (v) => elapsed > 0 && v > 0 ? Math.round(v * daysInMonth / elapsed) : null;
+
+  const rows = [
+    { label:'APP MAU',       unit:'명',  actVal:act.mau_app, tgtVal:tgt.mau_app, mTgt:mt.mau_app, prj:act.mau_app, scale:1 },
+    { label:'신규가입',       unit:'명',  actVal:act.join,    tgtVal:tgt.join,    mTgt:mt.join,    prj:proj(act.join),    scale:1 },
+    { label:'신규가입(광고)', unit:'명',  actVal:act.join_ad, tgtVal:null,        mTgt:mt.join_ad, prj:proj(act.join_ad), scale:1 },
+    { label:'첫구매',         unit:'명',  actVal:act.first,   tgtVal:tgt.first,   mTgt:null,       prj:proj(act.first),   scale:1 },
+    { label:'첫구매(광고)',   unit:'명',  actVal:act.first_ad,tgtVal:null,        mTgt:mt.first_ad,prj:proj(act.first_ad),scale:1 },
+    { label:'순수주',         unit:'백만',actVal:act.net,     tgtVal:tgt.net,     mTgt:mt.net,     prj:proj(act.net),     scale:1e6 },
+    { label:'총수주',         unit:'백만',actVal:act.revenue, tgtVal:tgt.revenue, mTgt:null,       prj:proj(act.revenue), scale:1e6 },
+    { label:'GMV',            unit:'백만',actVal:act.gmv,     tgtVal:tgt.gmv,     mTgt:null,       prj:proj(act.gmv),     scale:1e6 },
+  ];
+
+  const fn = (v, s) => v ? Math.round(v/s).toLocaleString() : '-';
+  const pctVal = (a, t) => a && t ? Math.round(a/t*100) : null;
+  const gapVal = (a, t) => a && t ? a - t : null;
+
+  const tbody = document.getElementById('mtd-table-body');
+  if (!tbody) return;
+  tbody.innerHTML = rows.map(r => {
+    const p = pctVal(r.actVal, r.tgtVal);
+    const g = gapVal(r.actVal, r.tgtVal);
+    const pCls = p === null ? '' : p >= 100 ? 'pct-over' : p >= 85 ? 'pct-warn' : 'pct-low';
+    const bCls = p === null ? 'bar-blue' : p >= 100 ? 'bar-green' : p >= 85 ? 'bar-yellow' : 'bar-red';
+    const w = p !== null ? Math.min(p, 100) : 0;
+    return `<tr>
+      <td>${r.label}</td>
+      <td>${r.unit}</td>
+      <td>${fn(r.tgtVal, r.scale)}</td>
+      <td><b>${fn(r.actVal, r.scale)}</b></td>
+      <td>${p !== null ? `<div class="prog-wrap"><div class="prog-bar-bg"><div class="prog-bar ${bCls}" style="width:${w}%"></div></div><span class="prog-pct ${pCls}">${p}%</span></div>` : '-'}</td>
+      <td>${g !== null ? `<span style="color:${g>=0?'#10b981':'#ef4444'}">${g>=0?'+':''}${fn(g, r.scale)}</span>` : '-'}</td>
+      <td>${fn(r.mTgt, r.scale)}</td>
+      <td>${fn(r.prj, r.scale)}</td>
+    </tr>`;
+  }).join('');
+
+  const sub = document.getElementById('mtd-table-sub');
+  if (sub) sub.textContent = `${mo} 1~${ys.substring(8)} 누적 (${elapsed}일 경과 / ${daysInMonth}일)`;
 }
 
 // ── ROAS / 광고비 차트 ──
@@ -1462,6 +1623,7 @@ ANNUAL.forEach((d, i) => {
 // DATA  (자동갱신: 2026-06-29 14:31)  (자동갱신: 2026-06-29 12:37)  (자동갱신: 2026-06-29 12:35)  (자동갱신: 2026-06-29 12:35)  (자동갱신: 2026-06-29 12:23)  (자동갱신: 2026-06-29 11:52)  (자동갱신: 2026-06-29 11:15)  (자동갱신: 2026-06-29 11:05)
 // ═══════════════════════════════════════════════
 let RAW = {};
+let DAILY = {}, DAILY_AD = {}, TRAFFIC = {}, DAILY_TGTS = {}, MONTHLY_TGTS = {};
 
 // State
 let selectedDate = '';
@@ -2302,6 +2464,57 @@ function funnelUpdate() {
   });
 }
 
+// ── TRAFFIC 기반 퍼널 갱신 ──────────────────────────────────────
+function buildFunnelFromTraffic() {
+  const ys  = fmtISO(YESTERDAY);
+  const sel = document.getElementById('funnel-ch-sel');
+  const ch  = sel ? sel.value : '__total__';
+  const mo  = ys.substring(0, 7);
+
+  const getDay = (ds) => (TRAFFIC[ds] || {})[ch] || null;
+
+  const day = getDay(ys);
+  // s2p: purchase / session * 100
+  const s2p = (day && day.s && day.p) ? day.p / day.s * 100 : null;
+  // s2j: join / session * 100 (join from DAILY, not traffic)
+  const dyDay = DAILY[ys] || {};
+  const s2j = (day && day.s && dyDay.join) ? dyDay.join / day.s * 100 : null;
+
+  // 당월 평균 (1일 ~ 전일)
+  let mS=0, mP=0, mJ=0, mDays=0;
+  let curD = parseLocalDate(`${mo}-01`);
+  const yDate = parseLocalDate(ys);
+  while (curD <= yDate) {
+    const ds = localDateToStr(curD);
+    const t = (TRAFFIC[ds] || {})[ch];
+    const dd = DAILY[ds] || {};
+    if (t && t.s) { mS += t.s; mP += (t.p||0); mJ += (dd.join||0); mDays++; }
+    curD.setDate(curD.getDate()+1);
+  }
+  const s2pM = (mS>0 && mP>0) ? mP/mS*100 : null;
+  const s2jM = (mS>0 && mJ>0) ? mJ/mS*100 : null;
+
+  // 광고비용율 — RAW 기반 유지
+  let adrV=null, adrM=null;
+  if (RAW) {
+    let yNet=0, yAd=0;
+    (RAW[ys]||[]).forEach(h=>{ if(h){ if(h[2])yNet+=h[2]; if(h[5])yAd+=h[5]; } });
+    if (yNet>0) adrV = yAd/yNet*100;
+    let mNet=0, mAd=0;
+    for (let i=1; i<=parseInt(ys.substring(8)); i++) {
+      const ds = `${mo}-${String(i).padStart(2,'0')}`;
+      (RAW[ds]||[]).forEach(h=>{ if(h){ if(h[2])mNet+=h[2]; if(h[5])mAd+=h[5]; } });
+    }
+    if (mNet>0) adrM = mAd/mNet*100;
+  }
+
+  funnelUpdateItem('s2p', s2p, s2pM, null, 10,   false, 2);
+  funnelUpdateItem('s2j', s2j, s2jM, null, 2,    false, 3);
+  funnelUpdateItem('adr', adrV, adrM, null, 10,   true,  1);
+  // APP 세션 비중 — TRAFFIC에 app 구분 없으면 유지
+  funnelUpdateItem('app', null, FUNNEL_REF.app?.m, FUNNEL_REF.app?.y, 100, false, 1);
+}
+
 // ── 일별 순수주 추이 (RAW 데이터 기반) ──────────────────────────────
 function buildTrendChart() {
   const canvas = document.getElementById('chart-trend-net');
@@ -2381,7 +2594,6 @@ function init() {
   document.getElementById('btn-today').classList.add('active');
   mcInit();
   buildMtdPaceChart();
-  funnelUpdate();
   render();
   if (location.hash === '#realtime') setRealtimeView(document.getElementById('tab-realtime'));
   setInterval(() => {
@@ -2399,17 +2611,23 @@ document.addEventListener('DOMContentLoaded', () => {
   fetch('pmkt_kpi_data.json?v=' + Date.now())
     .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
     .then(data => {
-      RAW = data.RAW;
-      // 99_Target 월별 마감실적 반영 (전월 마감 + 당월 누적)
+      RAW = data.RAW || {};
       if (data.ANNUAL_ACT && Array.isArray(data.ANNUAL_ACT)) {
         data.ANNUAL_ACT.forEach((act, i) => {
           if (i < ANNUAL.length) {
-            // null인 값은 무시 — HTML 하드코딩값 유지
             Object.entries(act).forEach(([k, v]) => { if (v != null) ANNUAL[i][k] = v; });
           }
         });
       }
+      DAILY        = data.DAILY        || {};
+      DAILY_AD     = data.DAILY_AD     || {};
+      TRAFFIC      = data.TRAFFIC      || {};
+      DAILY_TGTS   = data.DAILY_TGTS   || {};
+      MONTHLY_TGTS = data.MONTHLY_TGTS || {};
       document.getElementById('rt-loading')?.remove();
+      renderDailyKPI();
+      buildMtdTable();
+      buildFunnelFromTraffic();
       init();
     })
     .catch(() => {
