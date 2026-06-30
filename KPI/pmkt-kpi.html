@@ -494,12 +494,12 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
     <span class="sec-note" id="kpi-period-label"></span>
   </div>
   <div class="kpi-grid">
-    <div class="kpi-card c-blue">  <div class="kpi-lbl">APP MAU</div>                                     <div class="kpi-val" id="k-mau">-</div>     <div class="kpi-sub" id="k-mau-sub">-</div>     <span class="yoy" id="k-mau-yoy">-</span></div>
-    <div class="kpi-card c-green"> <div class="kpi-lbl">순수주 <span style="font-size:10px;color:#94a3b8">(백만)</span></div>  <div class="kpi-val" id="k-net">-</div>     <div class="kpi-sub" id="k-net-sub">-</div>     <span class="yoy" id="k-net-yoy">-</span></div>
-    <div class="kpi-card c-teal">  <div class="kpi-lbl">신규가입</div>                                    <div class="kpi-val" id="k-join">-</div>    <div class="kpi-sub" id="k-join-sub">-</div>    <span class="yoy" id="k-join-yoy">-</span></div>
-    <div class="kpi-card c-orange"><div class="kpi-lbl">첫구매</div>                                      <div class="kpi-val" id="k-first">-</div>   <div class="kpi-sub" id="k-first-sub">-</div>   <span class="yoy" id="k-first-yoy">-</span></div>
-    <div class="kpi-card c-indigo"><div class="kpi-lbl">신규가입(광고)</div>                               <div class="kpi-val" id="k-joinad">-</div>  <div class="kpi-sub" id="k-joinad-sub">-</div>  <span class="yoy" id="k-joinad-yoy">-</span></div>
-    <div class="kpi-card c-rose">  <div class="kpi-lbl">첫구매(광고)</div>                                 <div class="kpi-val" id="k-firstad">-</div> <div class="kpi-sub" id="k-firstad-sub">-</div> <span class="yoy" id="k-firstad-yoy">-</span></div>
+    <div class="kpi-card c-blue">  <div class="kpi-lbl">APP MAU</div>                                                    <div class="kpi-val" id="k-mau">-</div>    <div class="kpi-sub" id="k-mau-sub">-</div>    <span class="yoy" id="k-mau-yoy">-</span></div>
+    <div class="kpi-card c-indigo"><div class="kpi-lbl">총수주 <span style="font-size:10px;color:#94a3b8">(백만)</span></div> <div class="kpi-val" id="k-gmv">-</div>    <div class="kpi-sub" id="k-gmv-sub">-</div>    <span class="yoy" id="k-gmv-yoy">-</span></div>
+    <div class="kpi-card c-green"> <div class="kpi-lbl">순수주 <span style="font-size:10px;color:#94a3b8">(백만)</span></div> <div class="kpi-val" id="k-net">-</div>    <div class="kpi-sub" id="k-net-sub">-</div>    <span class="yoy" id="k-net-yoy">-</span></div>
+    <div class="kpi-card c-teal">  <div class="kpi-lbl">구매자수(월)</div>                                               <div class="kpi-val" id="k-buyers">-</div> <div class="kpi-sub" id="k-buyers-sub">-</div> <span class="yoy" id="k-buyers-yoy">-</span></div>
+    <div class="kpi-card c-orange"><div class="kpi-lbl">신규가입</div>                                                    <div class="kpi-val" id="k-join">-</div>   <div class="kpi-sub" id="k-join-sub">-</div>   <span class="yoy" id="k-join-yoy">-</span></div>
+    <div class="kpi-card c-rose">  <div class="kpi-lbl">첫구매</div>                                                      <div class="kpi-val" id="k-first">-</div>  <div class="kpi-sub" id="k-first-sub">-</div>  <span class="yoy" id="k-first-yoy">-</span></div>
   </div>
 
   <!-- ③ MTD 달성현황 -->
@@ -889,9 +889,10 @@ document.getElementById('ch-date-note').textContent = `Daily 기준 (${fmtMD(YES
 // RAW + DAILY_TARGETS + KPI_DAILY에서 직접 계산
 function mcCalcData() {
   if (!RAW) return null;
-  const m = TODAY.getMonth()+1, d = TODAY.getDate()-1;
-  const monthStr = `${TODAY.getFullYear()}-${String(m).padStart(2,'0')}`;
-  const yDate = fmtISO(YESTERDAY);
+  const yDate = getEffectiveDailyDate();
+  const yParsed = new Date(yDate + 'T00:00:00');
+  const m = yParsed.getMonth()+1, d = yParsed.getDate();
+  const monthStr = `${yParsed.getFullYear()}-${String(m).padStart(2,'0')}`;
 
   // 전일 RAW 합산
   const yRows = RAW[yDate] || [];
@@ -1018,7 +1019,7 @@ function mcDetectInsights() {
   }
 
   // 5. 신규가입 전주 대비 이상 (DAILY 기반)
-  const ys2 = fmtISO(YESTERDAY);
+  const ys2 = getEffectiveDailyDate();
   const dy2 = DAILY[ys2] || {};
   const lwDs2 = getDateByOffset(ys2, -7);
   const lwDy2 = lwDs2 && DAILY[lwDs2] ? DAILY[lwDs2] : null;
@@ -1069,11 +1070,25 @@ function mcToggleCollapse() {
 
 // mcInit()는 init()에서 RAW 로드 후 호출됨
 
+// ── 유효 전일 날짜: DAILY에 실제 데이터가 있는 가장 최근 날짜 ──────
+function getEffectiveDailyDate() {
+  const ys = fmtISO(YESTERDAY);
+  const d = DAILY[ys] || {};
+  if (Object.values(d).some(v => v != null)) return ys;
+  // fallback: DAILY에서 오늘 이전 가장 최근 유효 날짜
+  const todayStr = fmtISO(TODAY);
+  const dates = Object.keys(DAILY).filter(k => k < todayStr).sort();
+  for (let i = dates.length - 1; i >= 0; i--) {
+    const dd = DAILY[dates[i]] || {};
+    if (Object.values(dd).some(v => v != null)) return dates[i];
+  }
+  return ys;
+}
+
 // ── 핵심지표 (Daily · JSON 자동 갱신) ───────────────────────────
 function renderDailyKPI() {
-  const ys = fmtISO(YESTERDAY);
+  const ys = getEffectiveDailyDate();
   const d  = DAILY[ys]     || {};
-  const da = DAILY_AD[ys]  || {};
   const dt = DAILY_TGTS[ys]|| {};
   const mo = ys.substring(0, 7);
   const mt = MONTHLY_TGTS[mo] || {};
@@ -1098,35 +1113,36 @@ function renderDailyKPI() {
 
   const diff = (a, t) => (a && t) ? (a - t) / t : null;
 
-  // APP MAU: vs 월 타겟
-  setCard('k-mau',  d.mau_app,
-    mt.mau_app ? `월 타겟 ${Number(mt.mau_app).toLocaleString()}명` : '일 기준',
-    diff(d.mau_app, mt.mau_app));
+  // APP MAU: 일별 타겟(DAILY_TGTS K열), 없으면 월 타겟 fallback
+  setCard('k-mau', d.mau_app,
+    dt.mau_app ? `일 타겟 ${Number(dt.mau_app).toLocaleString()}명`
+               : mt.mau_app ? `월 타겟 ${Number(mt.mau_app).toLocaleString()}명` : '기준 없음',
+    diff(d.mau_app, dt.mau_app || mt.mau_app));
 
-  // 순수주 (백만 단위로 표시)
-  setCard('k-net',  d.net ? Math.round(d.net / 1e6) : null,
+  // 총수주 (백만 단위)
+  setCard('k-gmv', d.revenue ? Math.round(d.revenue / 1e6) : null,
+    dt.revenue ? `일 타겟 ${Math.round(dt.revenue/1e6).toLocaleString()}백만` : '일 기준',
+    diff(d.revenue, dt.revenue));
+
+  // 순수주 (백만 단위)
+  setCard('k-net', d.net ? Math.round(d.net / 1e6) : null,
     dt.net ? `일 타겟 ${Math.round(dt.net/1e6).toLocaleString()}백만` : '일 기준',
     diff(d.net, dt.net));
 
+  // 구매자수(월): 월 타겟과 비교
+  setCard('k-buyers', d.buyers,
+    mt.buyers ? `월 타겟 ${Number(mt.buyers).toLocaleString()}명` : '월 기준',
+    diff(d.buyers, mt.buyers));
+
   // 신규가입
-  setCard('k-join',    d.join,
-    dt.join  ? `일 타겟 ${Number(dt.join).toLocaleString()}명` : '일 기준',
+  setCard('k-join', d.join,
+    dt.join ? `일 타겟 ${Number(dt.join).toLocaleString()}명` : '일 기준',
     diff(d.join, dt.join));
 
   // 첫구매
-  setCard('k-first',   d.first,
+  setCard('k-first', d.first,
     dt.first ? `일 타겟 ${Number(dt.first).toLocaleString()}명` : '일 기준',
     diff(d.first, dt.first));
-
-  // 신규가입(광고)
-  setCard('k-joinad',  da.join_ad,
-    mt.join_ad ? `월 타겟 ${Number(mt.join_ad).toLocaleString()}명` : '일 기준',
-    null);
-
-  // 첫구매(광고)
-  setCard('k-firstad', da.first_ad,
-    mt.first_ad ? `월 타겟 ${Number(mt.first_ad).toLocaleString()}명` : '일 기준',
-    null);
 }
 
 
@@ -1306,7 +1322,7 @@ function selectPaceMetric(metricKey) {
 
 // ── MTD 달성현황 테이블 (동적 생성) ──────────────────────────────
 function buildMtdTable() {
-  const ys = fmtISO(YESTERDAY);
+  const ys = getEffectiveDailyDate();
   const mo = ys.substring(0, 7);
   const yr = parseInt(mo.split('-')[0]);
   const mn = parseInt(mo.split('-')[1]);
@@ -2437,7 +2453,7 @@ function funnelUpdate() {
   // 광고비용율: RAW에서 자동 계산
   let adrV = null, adrM = null;
   if (RAW) {
-    const yDate = fmtISO(YESTERDAY);
+    const yDate = getEffectiveDailyDate();
     let yNet=0, yAd=0;
     (RAW[yDate]||[]).forEach(h=>{ if(h){ if(h[2])yNet+=h[2]; if(h[5])yAd+=h[5]; } });
     if (yNet>0) adrV = yAd/yNet*100;
@@ -2466,7 +2482,7 @@ function funnelUpdate() {
 
 // ── TRAFFIC 기반 퍼널 갱신 ──────────────────────────────────────
 function buildFunnelFromTraffic() {
-  const ys  = fmtISO(YESTERDAY);
+  const ys  = getEffectiveDailyDate();
   const sel = document.getElementById('funnel-ch-sel');
   const ch  = sel ? sel.value : '__total__';
   const mo  = ys.substring(0, 7);
@@ -2625,6 +2641,9 @@ document.addEventListener('DOMContentLoaded', () => {
       DAILY_TGTS   = data.DAILY_TGTS   || {};
       MONTHLY_TGTS = data.MONTHLY_TGTS || {};
       document.getElementById('rt-loading')?.remove();
+      // 헤더 날짜 배지: 실제 데이터 기준일로 갱신
+      const effDate = getEffectiveDailyDate();
+      document.getElementById('badge-date').textContent = effDate;
       renderDailyKPI();
       buildMtdTable();
       buildFunnelFromTraffic();
