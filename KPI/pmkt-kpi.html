@@ -521,12 +521,13 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
         <div class="card-title" style="margin-bottom:0">MTD 달성 페이스</div>
         <select id="pace-metric-sel" onchange="selectPaceMetric(this.value)"
           style="font-size:12px;font-weight:600;border:1.5px solid #3b82f6;border-radius:6px;padding:3px 8px;color:#0B1D3A;background:#fff;cursor:pointer;outline:none">
-          <option value="net">순수주</option>
-          <option value="gmv">총수주</option>
-          <option value="adcost">광고비</option>
+          <option value="mau_app">APP MAU</option>
           <option value="join">신규가입</option>
           <option value="first">첫구매</option>
-          <option value="mau_app">APP MAU</option>
+          <option value="buyers">구매자수(월)</option>
+          <option value="gmv">총수주</option>
+          <option value="net">순수주</option>
+          <option value="gmv_daily">GMV</option>
         </select>
       </div>
       <div class="card-sub" id="pace-chart-sub">누적 실적 vs 목표 페이스 (억원)</div>
@@ -1217,16 +1218,17 @@ let mtdPaceChart = null;
 // src:'raw'  → RAW[date][hour][rawIdx] 누적 ÷ 1e8 (억 단위)
 // src:'daily'→ DAILY[date][dailyKey]   누적 ÷ scale
 const PACE_METRICS = {
-  net:     { src:'raw',   rawIdx:2, dailyKey:null,      mTgtKey:'net',     annualKey:'nT',  scale:1e8, unit:'억', label:'순수주 누적', paceLabel:'순수주 목표', color:'#10b981' },
-  gmv:     { src:'raw',   rawIdx:1, dailyKey:null,      mTgtKey:null,      annualKey:'tT',  scale:1e8, unit:'억', label:'총수주 누적', paceLabel:'총수주 목표', color:'#3b82f6' },
-  adcost:  { src:'raw',   rawIdx:5, dailyKey:null,      mTgtKey:'adcost',  annualKey:null,  scale:1e8, unit:'억', label:'광고비 누적', paceLabel:'광고비 목표', color:'#f59e0b' },
-  join:    { src:'daily', rawIdx:null, dailyKey:'join', mTgtKey:'join',    annualKey:'joinT', scale:1, unit:'명', label:'신규가입 누적', paceLabel:'신규가입 목표', color:'#06b6d4' },
-  first:   { src:'daily', rawIdx:null, dailyKey:'first',mTgtKey:null,      annualKey:null,  scale:1, unit:'명', label:'첫구매 누적', paceLabel:'첫구매 목표', color:'#8b5cf6' },
-  mau_app: { src:'daily', rawIdx:null, dailyKey:'mau_app',mTgtKey:'mau_app',annualKey:'mauT',scale:10000, unit:'만', label:'APP MAU', paceLabel:'APP MAU 목표', color:'#0B1D3A' },
+  mau_app:   { src:'daily', rawIdx:null, dailyKey:'mau_app', mTgtKey:'mau_app', annualKey:'mauT',  scale:10000, unit:'만', label:'APP MAU',      paceLabel:'APP MAU 목표',   color:'#0B1D3A', isSnapshot:true  },
+  join:      { src:'daily', rawIdx:null, dailyKey:'join',    mTgtKey:'join',    annualKey:'joinT', scale:1,     unit:'명', label:'신규가입 누적', paceLabel:'신규가입 목표',  color:'#06b6d4', isSnapshot:false },
+  first:     { src:'daily', rawIdx:null, dailyKey:'first',   mTgtKey:null,      annualKey:null,    scale:1,     unit:'명', label:'첫구매 누적',   paceLabel:'첫구매 목표',    color:'#8b5cf6', isSnapshot:false },
+  buyers:    { src:'daily', rawIdx:null, dailyKey:'buyers',  mTgtKey:'buyers',  annualKey:null,    scale:10000, unit:'만', label:'구매자수(월)',  paceLabel:'구매자수 목표',  color:'#14b8a6', isSnapshot:true  },
+  gmv:       { src:'raw',   rawIdx:1,   dailyKey:null,      mTgtKey:null,      annualKey:'tT',    scale:1e8,   unit:'억', label:'총수주 누적',   paceLabel:'총수주 목표',    color:'#3b82f6', isSnapshot:false },
+  net:       { src:'raw',   rawIdx:2,   dailyKey:null,      mTgtKey:'net',     annualKey:'nT',    scale:1e8,   unit:'억', label:'순수주 누적',   paceLabel:'순수주 목표',    color:'#10b981', isSnapshot:false },
+  gmv_daily: { src:'daily', rawIdx:null, dailyKey:'gmv',    mTgtKey:null,      annualKey:'gmvT',  scale:1e8,   unit:'억', label:'GMV 누적',      paceLabel:'GMV 목표',       color:'#94a3b8', isSnapshot:false },
 };
 
 function buildMtdPaceChart(metricKey) {
-  if (!metricKey) metricKey = 'net';
+  if (!metricKey) metricKey = 'mau_app';
   const canvas = document.getElementById('chart-mtd-pace');
   if (!canvas) return;
   const m = PACE_METRICS[metricKey];
@@ -1244,16 +1246,22 @@ function buildMtdPaceChart(metricKey) {
     monthTarget = ANNUAL[month][m.annualKey]; // already in display unit
   }
 
+  // tooltip용 일자 배열 (항상 월/일 형식)
+  const dayLabels = [];
   const labels = [], paceData = [], actualCum = [];
   let cumVal = 0;
   for (let d = 1; d <= daysInMonth; d++) {
     const ds = `${monthStr}-${String(d).padStart(2,'0')}`;
+    dayLabels.push(`${month+1}/${d}`);
     labels.push(d === 1 || d % 5 === 0 || d === daysInMonth ? `${month+1}/${d}` : '');
     if (monthTarget !== null) {
-      if (metricKey === 'mau_app') {
-        // MAU target: cumulative from DAILY_TGTS[ds]
+      if (m.isSnapshot && metricKey === 'mau_app') {
+        // MAU: 일별 타겟은 DAILY_TGTS에서 누적값 사용
         const dt = DAILY_TGTS[ds];
         paceData.push(dt && dt.mau_app ? +(dt.mau_app / m.scale).toFixed(1) : null);
+      } else if (m.isSnapshot) {
+        // snapshot 지표: 월 타겟을 flat 선으로 표시
+        paceData.push(+monthTarget.toFixed(1));
       } else {
         paceData.push(+(monthTarget * d / daysInMonth).toFixed(1));
       }
@@ -1268,7 +1276,7 @@ function buildMtdPaceChart(metricKey) {
     } else {
       const day = DAILY[ds];
       if (day && day[m.dailyKey] != null) {
-        if (metricKey === 'mau_app') {
+        if (m.isSnapshot) {
           actualCum.push(+(day[m.dailyKey] / m.scale).toFixed(1));
         } else {
           cumVal += day[m.dailyKey];
@@ -1300,8 +1308,13 @@ function buildMtdPaceChart(metricKey) {
       plugins: {
         legend: { display: true, position: 'top', labels: { font:{size:10}, boxWidth:10 } },
         datalabels: { display: false },
-        tooltip: { mode:'index', intersect:false,
-          callbacks: { label: ctx => ctx.parsed.y != null ? `  ${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString()}${m.unit}` : null } }
+        tooltip: {
+          mode:'index', intersect:false,
+          callbacks: {
+            title: ctx => ctx.length ? dayLabels[ctx[0].dataIndex] : '',
+            label: ctx => ctx.parsed.y != null ? `  ${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString()}${m.unit}` : null
+          }
+        }
       },
       scales: {
         x: { grid:{display:false}, ticks:{color:'#94a3b8',font:{size:9}} },
@@ -1330,7 +1343,7 @@ function buildMtdTable() {
   const mt = MONTHLY_TGTS[mo] || {};
 
   // 1일~전일 누적
-  const act = { mau_app:0, join:0, join_ad:0, first:0, first_ad:0, net:0, revenue:0, gmv:0 };
+  const act = { mau_app:0, buyers:0, join:0, first:0, net:0, revenue:0, gmv:0 };
   const tgt = { mau_app:0, join:0, first:0, net:0, revenue:0, gmv:0 };
 
   let elapsed = 0;
@@ -1339,21 +1352,18 @@ function buildMtdTable() {
   const yDate = parseLocalDate(ys);
   while (cur <= yDate) {
     const ds = localDateToStr(cur);
-    const day = DAILY[ds]    || {};
-    const da  = DAILY_AD[ds] || {};
+    const day = DAILY[ds]      || {};
     const dt  = DAILY_TGTS[ds] || {};
     elapsed++;
-    // 누적 실적
     if (day.join)    act.join    += day.join;
     if (day.first)   act.first   += day.first;
     if (day.net)     act.net     += day.net;
     if (day.revenue) act.revenue += day.revenue;
     if (day.gmv)     act.gmv     += day.gmv;
-    if (da.join_ad)  act.join_ad += da.join_ad;
-    if (da.first_ad) act.first_ad+= da.first_ad;
-    // MAU: 누적값 → yesterday 값 사용
+    // MAU·구매자수: snapshot (누적값 → 전일 기준 값 사용)
     if (ds === ys && day.mau_app) act.mau_app = day.mau_app;
-    // 누적 목표 (MAU는 전일 기준 cumulative)
+    if (ds === ys && day.buyers)  act.buyers  = day.buyers;
+    // 누적 목표
     if (dt.join)    tgt.join    += dt.join;
     if (dt.first)   tgt.first   += dt.first;
     if (dt.net)     tgt.net     += dt.net;
@@ -1363,18 +1373,17 @@ function buildMtdTable() {
     cur.setDate(cur.getDate() + 1);
   }
 
-  // 예상마감 = 누적실적 × (월 전체 일수 / 경과 일수) — MAU 제외
+  // 예상마감 = 누적실적 × (월 전체 일수 / 경과 일수) — MAU·구매자수 제외
   const proj = (v) => elapsed > 0 && v > 0 ? Math.round(v * daysInMonth / elapsed) : null;
 
   const rows = [
-    { label:'APP MAU',       unit:'명',  actVal:act.mau_app, tgtVal:tgt.mau_app, mTgt:mt.mau_app, prj:act.mau_app, scale:1 },
-    { label:'신규가입',       unit:'명',  actVal:act.join,    tgtVal:tgt.join,    mTgt:mt.join,    prj:proj(act.join),    scale:1 },
-    { label:'신규가입(광고)', unit:'명',  actVal:act.join_ad, tgtVal:null,        mTgt:mt.join_ad, prj:proj(act.join_ad), scale:1 },
-    { label:'첫구매',         unit:'명',  actVal:act.first,   tgtVal:tgt.first,   mTgt:null,       prj:proj(act.first),   scale:1 },
-    { label:'첫구매(광고)',   unit:'명',  actVal:act.first_ad,tgtVal:null,        mTgt:mt.first_ad,prj:proj(act.first_ad),scale:1 },
-    { label:'순수주',         unit:'백만',actVal:act.net,     tgtVal:tgt.net,     mTgt:mt.net,     prj:proj(act.net),     scale:1e6 },
-    { label:'총수주',         unit:'백만',actVal:act.revenue, tgtVal:tgt.revenue, mTgt:null,       prj:proj(act.revenue), scale:1e6 },
-    { label:'GMV',            unit:'백만',actVal:act.gmv,     tgtVal:tgt.gmv,     mTgt:null,       prj:proj(act.gmv),     scale:1e6 },
+    { label:'APP MAU',      unit:'명',  actVal:act.mau_app, tgtVal:tgt.mau_app, mTgt:mt.mau_app, prj:act.mau_app,       scale:1 },
+    { label:'신규가입',     unit:'명',  actVal:act.join,    tgtVal:tgt.join,    mTgt:mt.join,    prj:proj(act.join),    scale:1 },
+    { label:'첫구매',       unit:'명',  actVal:act.first,   tgtVal:tgt.first,   mTgt:null,       prj:proj(act.first),   scale:1 },
+    { label:'구매자수(월)', unit:'명',  actVal:act.buyers,  tgtVal:null,        mTgt:mt.buyers,  prj:act.buyers,        scale:1 },
+    { label:'총수주',       unit:'백만',actVal:act.revenue, tgtVal:tgt.revenue, mTgt:null,       prj:proj(act.revenue), scale:1e6 },
+    { label:'순수주',       unit:'백만',actVal:act.net,     tgtVal:tgt.net,     mTgt:mt.net,     prj:proj(act.net),     scale:1e6 },
+    { label:'GMV',          unit:'백만',actVal:act.gmv,     tgtVal:tgt.gmv,     mTgt:null,       prj:proj(act.gmv),     scale:1e6 },
   ];
 
   const fn = (v, s) => v ? Math.round(v/s).toLocaleString() : '-';
