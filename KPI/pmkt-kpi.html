@@ -512,8 +512,8 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
       <div class="card-title">Target vs Actual</div>
       <div class="card-sub" id="mtd-table-sub">월 누적 목표 달성률</div>
       <table class="achv-table">
-        <thead><tr><th>지표</th><th>단위</th><th>MTD 목표</th><th>MTD 실적</th><th>달성률</th><th>GAP</th><th>월 타겟</th><th>예상마감</th></tr></thead>
-        <tbody id="mtd-table-body"><tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:12px">데이터 로딩 중...</td></tr></tbody>
+        <thead><tr><th>지표</th><th>단위</th><th>MTD 목표</th><th>MTD 실적</th><th>달성률</th><th>월 타겟</th><th>예상마감</th></tr></thead>
+        <tbody id="mtd-table-body"><tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:12px">데이터 로딩 중...</td></tr></tbody>
       </table>
     </div>
     <div class="card">
@@ -1130,10 +1130,11 @@ function renderDailyKPI() {
     dt.net ? `일 타겟 ${Math.round(dt.net/1e6).toLocaleString()}백만` : '일 기준',
     diff(d.net, dt.net));
 
-  // 구매자수(월): 월 타겟과 비교
+  // 구매자수(월): 일별 누적 타겟(DAILY_TGTS), 없으면 월 타겟 fallback
   setCard('k-buyers', d.buyers,
-    mt.buyers ? `월 타겟 ${Number(mt.buyers).toLocaleString()}명` : '월 기준',
-    diff(d.buyers, mt.buyers));
+    dt.buyers ? `일 타겟 ${Number(dt.buyers).toLocaleString()}명`
+              : mt.buyers ? `월 타겟 ${Number(mt.buyers).toLocaleString()}명` : '기준 없음',
+    diff(d.buyers, dt.buyers || mt.buyers));
 
   // 신규가입
   setCard('k-join', d.join,
@@ -1344,7 +1345,7 @@ function buildMtdTable() {
 
   // 1일~전일 누적
   const act = { mau_app:0, buyers:0, join:0, first:0, net:0, revenue:0, gmv:0 };
-  const tgt = { mau_app:0, join:0, first:0, net:0, revenue:0, gmv:0 };
+  const tgt = { mau_app:0, buyers:0, join:0, first:0, net:0, revenue:0, gmv:0 };
 
   let elapsed = 0;
   const firstDs = `${mo}-01`;
@@ -1369,7 +1370,8 @@ function buildMtdTable() {
     if (dt.net)     tgt.net     += dt.net;
     if (dt.revenue) tgt.revenue += dt.revenue;
     if (dt.gmv)     tgt.gmv     += dt.gmv;
-    if (ds === ys && dt.mau_app) tgt.mau_app = dt.mau_app;
+    if (ds === ys && dt.mau_app)  tgt.mau_app = dt.mau_app;
+    if (ds === ys && dt.buyers)   tgt.buyers  = dt.buyers;
     cur.setDate(cur.getDate() + 1);
   }
 
@@ -1379,8 +1381,8 @@ function buildMtdTable() {
   const rows = [
     { label:'APP MAU',      unit:'명',  actVal:act.mau_app, tgtVal:tgt.mau_app, mTgt:mt.mau_app, prj:act.mau_app,       scale:1 },
     { label:'신규가입',     unit:'명',  actVal:act.join,    tgtVal:tgt.join,    mTgt:mt.join,    prj:proj(act.join),    scale:1 },
-    { label:'첫구매',       unit:'명',  actVal:act.first,   tgtVal:tgt.first,   mTgt:null,       prj:proj(act.first),   scale:1 },
-    { label:'구매자수(월)', unit:'명',  actVal:act.buyers,  tgtVal:null,        mTgt:mt.buyers,  prj:act.buyers,        scale:1 },
+    { label:'첫구매',       unit:'명',  actVal:act.first,   tgtVal:tgt.first,   mTgt:mt.first,   prj:proj(act.first),   scale:1 },
+    { label:'구매자수(월)', unit:'명',  actVal:act.buyers,  tgtVal:tgt.buyers,  mTgt:mt.buyers,  prj:act.buyers,        scale:1 },
     { label:'총수주',       unit:'백만',actVal:act.revenue, tgtVal:tgt.revenue, mTgt:null,       prj:proj(act.revenue), scale:1e6 },
     { label:'순수주',       unit:'백만',actVal:act.net,     tgtVal:tgt.net,     mTgt:mt.net,     prj:proj(act.net),     scale:1e6 },
     { label:'GMV',          unit:'백만',actVal:act.gmv,     tgtVal:tgt.gmv,     mTgt:null,       prj:proj(act.gmv),     scale:1e6 },
@@ -1388,13 +1390,11 @@ function buildMtdTable() {
 
   const fn = (v, s) => v ? Math.round(v/s).toLocaleString() : '-';
   const pctVal = (a, t) => a && t ? Math.round(a/t*100) : null;
-  const gapVal = (a, t) => a && t ? a - t : null;
 
   const tbody = document.getElementById('mtd-table-body');
   if (!tbody) return;
   tbody.innerHTML = rows.map(r => {
     const p = pctVal(r.actVal, r.tgtVal);
-    const g = gapVal(r.actVal, r.tgtVal);
     const pCls = p === null ? '' : p >= 100 ? 'pct-over' : p >= 85 ? 'pct-warn' : 'pct-low';
     const bCls = p === null ? 'bar-blue' : p >= 100 ? 'bar-green' : p >= 85 ? 'bar-yellow' : 'bar-red';
     const w = p !== null ? Math.min(p, 100) : 0;
@@ -1404,7 +1404,6 @@ function buildMtdTable() {
       <td>${fn(r.tgtVal, r.scale)}</td>
       <td><b>${fn(r.actVal, r.scale)}</b></td>
       <td>${p !== null ? `<div class="prog-wrap"><div class="prog-bar-bg"><div class="prog-bar ${bCls}" style="width:${w}%"></div></div><span class="prog-pct ${pCls}">${p}%</span></div>` : '-'}</td>
-      <td>${g !== null ? `<span style="color:${g>=0?'#10b981':'#ef4444'}">${g>=0?'+':''}${fn(g, r.scale)}</span>` : '-'}</td>
       <td>${fn(r.mTgt, r.scale)}</td>
       <td>${fn(r.prj, r.scale)}</td>
     </tr>`;
