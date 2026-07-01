@@ -1834,44 +1834,11 @@ function getForecast(date) {
   };
 }
 
-// 일자별 타겟 (총수주 / 순수주)
-const DAILY_TARGETS = {
-  "2026-06-01":{"event":"더블유위크","revenue":4411465188,"net_revenue":2900000000},
-  "2026-06-02":{"event":"더블유위크","revenue":4259345699,"net_revenue":2800000000},
-  "2026-06-03":{"event":"더블유위크","revenue":3354958165,"net_revenue":3000000000},
-  "2026-06-04":{"event":"더블유위크","revenue":3830628665,"net_revenue":2700000000},
-  "2026-06-05":{"event":"더블유위크","revenue":3798813498,"net_revenue":2700000000},
-  "2026-06-06":{"event":"더블유위크","revenue":3583435750,"net_revenue":3100000000},
-  "2026-06-07":{"event":"더블유위크","revenue":4098938366,"net_revenue":3600000000},
-  "2026-06-08":{"event":"더블유위크","revenue":4385677025,"net_revenue":2900000000},
-  "2026-06-09":{"event":"더블유위크","revenue":4017164268,"net_revenue":2700000000},
-  "2026-06-10":{"event":"더블유위크","revenue":4280750933,"net_revenue":2900000000},
-  "2026-06-11":{"event":"더블유위크","revenue":4361916703,"net_revenue":3000000000},
-  "2026-06-12":{"event":"더블유위크","revenue":3623358974,"net_revenue":2500000000},
-  "2026-06-13":{"event":"더블유위크","revenue":3327568454,"net_revenue":3000000000},
-  "2026-06-14":{"event":"더블유위크","revenue":5517321944,"net_revenue":5000000000},
-  "2026-06-15":{"event":"여름 잡화/액티브페스타","revenue":6970373661,"net_revenue":2800000000},
-  "2026-06-16":{"event":"여름 잡화/액티브페스타","revenue":2800996782,"net_revenue":1100000000},
-  "2026-06-17":{"event":"여름 잡화/액티브페스타/원피스","revenue":2137159378,"net_revenue":1100000000},
-  "2026-06-18":{"event":"여름 잡화/액티브페스타/원피스","revenue":2022339706,"net_revenue":1100000000},
-  "2026-06-19":{"event":"여름 잡화/액티브페스타/원피스","revenue":2076342095,"net_revenue":1100000000},
-  "2026-06-20":{"event":"여름 잡화/액티브페스타/원피스","revenue":1793908976,"net_revenue":1600000000},
-  "2026-06-21":{"event":"여름 잡화/액티브페스타/원피스","revenue":2368084715,"net_revenue":2100000000},
-  "2026-06-22":{"event":"여름대비템/액티브페스타/원피스","revenue":3516556146,"net_revenue":1600000000},
-  "2026-06-23":{"event":"여름대비템/액티브페스타/원피스","revenue":2529092826,"net_revenue":1400000000},
-  "2026-06-24":{"event":"여름대비템/액티브페스타/원피스","revenue":2652893709,"net_revenue":1800000000},
-  "2026-06-25":{"event":"여름대비템","revenue":2455694712,"net_revenue":1600000000},
-  "2026-06-26":{"event":"여름대비템","revenue":1921276678,"net_revenue":1200000000},
-  "2026-06-27":{"event":"여름대비템","revenue":1984857784,"net_revenue":1800000000},
-  "2026-06-28":{"event":"여름대비템","revenue":2569636972,"net_revenue":2300000000},
-  "2026-06-29":{"event":"여름대비템","revenue":2533106164,"net_revenue":1500000000},
-  "2026-06-30":{"event":"여름대비템","revenue":2565032489,"net_revenue":1600000000},
-};
-
+// 일자별 타겟 (총수주 / 순수주) — 마스터파일 99_Target 시트(DAILY_TGTS)에서 로드
 function getTargets(date) {
-  const t = DAILY_TARGETS[date];
-  if (t) {
-    return { revenue: t.revenue, net_revenue: t.net_revenue, event: t.event, isReal: true };
+  const t = DAILY_TGTS[date];
+  if (t && t.revenue > 0) {
+    return { revenue: t.revenue, net_revenue: t.net, event: t.event, isReal: true };
   }
   // 타겟 없는 날짜: 전주동요일 실적 기준 참고값
   const lw = getDateByOffset(date, -7);
