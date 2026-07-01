@@ -1796,7 +1796,10 @@ function getForecast(date) {
   const accum_net    = curNetHour >= 0 ? getNetCumul(date, curNetHour) : null;
 
   const comps = getComparisonDates(date);
-  const compDates = [comps.lw, comps.lm, comps.ly].filter(d => d && RAW[d]);
+  // 상단 전주/전월/전년동요일 토글 버튼으로 켜진 비교일만 예상마감 계산에 반영
+  const compDates = [['lw',comps.lw],['lm',comps.lm],['ly',comps.ly]]
+    .filter(([key,d]) => compareFlags[key] && d && RAW[d])
+    .map(([,d]) => d);
 
   if (compDates.length === 0) {
     return { orders: accum_orders, revenue: accum_rev, net_rev: accum_net, curHour, curNetHour };
