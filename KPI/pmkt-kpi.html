@@ -2050,12 +2050,12 @@ function renderKPI(date) {
       colorClass: 'green',
       value: accum_net !== null ? fmt_rev(accum_net) : '-',
       alert: isNetAlert,
-      sub: targets.isReal ? `순수주 타겟 ${fmt_rev(targets.net_revenue)}` : `예상마감 ${forecast.net_rev !== null ? fmt_rev(forecast.net_rev) : '-'}`,
+      sub: targets.isReal ? `순수주 타겟 ${fmt_rev(targets.net_revenue)}` : '',
       badge: net_pct !== null ? net_pct - 100 : null,
       progress: net_pct !== null ? Math.min(net_pct, 100) : 0,
       progressClass: net_pct === null ? 'blue' : net_pct >= 100 ? 'green' : net_pct >= 85 ? 'yellow' : 'red',
       forecast: `예상마감 ${forecast.net_rev !== null ? fmt_rev(forecast.net_rev) : '-'}`,
-      target: targets.isReal && net_pct !== null ? `${targetLabel}(순) ${fmt_rev(targets.net_revenue)} | 달성률 ${net_pct.toFixed(1)}%` : '-',
+      target: targets.isReal && net_pct !== null ? `${targetLabel}(순) ${fmt_rev(targets.net_revenue)} | 달성률 ${net_pct.toFixed(1)}%` : '',
     },
     {
       label: '기준 시간대',
@@ -2083,7 +2083,7 @@ function renderKPI(date) {
       <div class="kpi-progress-wrap">
         <div class="kpi-progress-bar"><div class="kpi-progress-fill ${k.progressClass}" style="width:${k.progress}%"></div></div>
         <div class="kpi-progress-pct" style="color:${k.progressClass==='red'?'var(--red)':k.progressClass==='green'?'var(--green)':'var(--text-2)'}">${k.target}</div>
-      </div>` : `<div style="margin-top:8px;font-size:11px;color:var(--text-3)">${k.target}</div>`}
+      </div>` : k.target ? `<div style="margin-top:8px;font-size:11px;color:var(--text-3)">${k.target}</div>` : ''}
       <div class="forecast-row"><span class="forecast-chip">${k.forecast}</span></div>
     </div>
   `).join('');
