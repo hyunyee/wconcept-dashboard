@@ -736,13 +736,13 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
     <div class="card-sub" id="annual-chart-sub">* 목표: 26년 전체 / 실적: 확정 또는 누적 기준 &nbsp;·&nbsp; 단위: 억원</div>
     <div class="chart-box h280"><canvas id="chart-annual"></canvas></div>
     <div class="legend-row" id="annual-legend">
-      <div class="leg"><div class="leg-dot" style="background:rgba(203,213,225,0.7)"></div>목표</div>
+      <div class="leg"><div class="leg-dot" style="background:rgba(148,163,184,0.08);border:1.5px dashed rgba(148,163,184,0.9);box-sizing:border-box"></div>목표</div>
       <div class="leg"><div class="leg-dot" style="background:rgba(15,42,107,0.92)"></div>실적</div>
     </div>
   </div>
   <div class="card" style="overflow-x:auto">
     <div class="card-title">월별 KPI 달성률</div>
-    <div class="card-sub">* 달성률 색상: <span style="color:#10b981;font-weight:700">녹색 ≥100%</span> / <span style="color:#f59e0b;font-weight:700">노랑 ≥85%</span> / <span style="color:#ef4444;font-weight:700">빨강 &lt;85%</span> / 실적은 26년 기준, YoY는 25년 동월 대비 (실적 없는 월은 목표만 표시, 당월은 YoY 공란)</div>
+    <div class="card-sub">* 달성률 색상: <span style="color:#10b981;font-weight:700">녹색 ≥100%</span> / <span style="color:#f59e0b;font-weight:700">노랑 ≥90%</span> / <span style="color:#ef4444;font-weight:700">빨강 &lt;90%</span> / 실적은 26년 기준, YoY는 25년 동월 대비 (실적 없는 월은 목표만 표시, 당월은 YoY 공란)</div>
     <table class="annual-table" style="min-width:1300px">
       <thead>
         <tr>
@@ -1520,8 +1520,11 @@ function initAnnualChart() {
         {
           type: 'bar', label: '목표',
           data: targets,
-          backgroundColor: 'rgba(203,213,225,0.7)',
-          borderRadius: 2, borderSkipped: false,
+          backgroundColor: 'rgba(148,163,184,0.08)',
+          borderColor: 'rgba(148,163,184,0.9)',
+          borderWidth: 1.5,
+          borderDash: [4, 3],
+          borderSkipped: false,
           barThickness: 32,
           order: 1,
           datalabels: { display: false },
@@ -1651,7 +1654,7 @@ function buildAnnualTable() {
   const pct = (t, a) => {
     if (t == null || a == null) return na;
     const p = Math.round(a / t * 100);
-    const cls = p >= 100 ? 'over' : p >= 85 ? 'warn' : 'low';
+    const cls = p >= 100 ? 'over' : p >= 90 ? 'warn' : 'low';
     return `<span class="ann-pct ${cls}">${p}%</span>`;
   };
   const bl = 'border-left:2px solid #e2e8f0';
