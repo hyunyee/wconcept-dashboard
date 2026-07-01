@@ -809,6 +809,7 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
     <button class="compare-btn active" id="btn-lw" onclick="toggleCompare('lw')">전주동요일</button>
     <button class="compare-btn active" id="btn-lm" onclick="toggleCompare('lm')">전월동요일</button>
     <button class="compare-btn active" id="btn-ly" onclick="toggleCompare('ly')">전년동요일</button>
+    <span id="compare-outlier-note" style="font-size:11px;color:#f59e0b;font-weight:600;margin-left:auto;text-align:right;flex:1;min-width:0;"></span>
   </div>
 
   <div class="summary-box" id="summary-box"></div>
@@ -1452,7 +1453,7 @@ const ANNUAL = [
   { m:'5월',  tT:699.4, tA:660.83, nT:515.0, nA:481.7, gmvT:530.0, gmvA:462.82,
     mauT:1699334, mauA:1936270, joinT:83492,  joinA:87319,  buyersT:349031, buyersA:318695, joinAdT:24668, joinAdA:38068, firstAdT:7984,  firstAdA:13511 },
   { m:'6월',  tT:997.5, tA:735.35, nT:685.0, nA:null, gmvT:650.0, gmvA:552.03,
-    mauT:1965839, mauA:null, joinT:111589, joinA:null,  buyersT:426017, buyersA:null, joinAdT:32190, joinAdA:null, firstAdT:9348,  firstAdA:null, note:'6/25기준(진행중)' },
+    mauT:1965839, mauA:null, joinT:111589, joinA:null,  buyersT:426017, buyersA:null, joinAdT:32190, joinAdA:null, firstAdT:9348,  firstAdA:null },
   { m:'7월',  tT:null, tA:null, nT:524.8, nA:null, gmvT:554.8, gmvA:null,
     mauT:1642180, mauA:null, joinT:76377,  joinA:null,   buyersT:357068, buyersA:null, joinAdT:24389, joinAdA:null, firstAdT:8540,  firstAdA:null },
   { m:'8월',  tT:null, tA:null, nT:null,  nA:null, gmvT:null,  gmvA:null,
@@ -1467,9 +1468,11 @@ const ANNUAL = [
     mauT:1901279, mauA:null, joinT:75418,  joinA:null,   buyersT:334906, buyersA:null, joinAdT:23827, joinAdA:null, firstAdT:7838,  firstAdA:null },
 ];
 
-// 현재 진행중인 월 note 동적 설정 (어제 날짜 기준)
+// 현재 진행중인 월 note 동적 설정 (어제 날짜가 이번 달에 속할 때만 — 월초에는 전월 날짜를 이번달에 잘못 붙이지 않도록)
 const curMonIdx = TODAY.getMonth(); // 0-indexed, 6월=5
-if (curMonIdx < ANNUAL.length) ANNUAL[curMonIdx].note = `${YESTERDAY.getMonth()+1}/${YESTERDAY.getDate()}기준(진행중)`;
+if (curMonIdx < ANNUAL.length && YESTERDAY.getMonth() === curMonIdx) {
+  ANNUAL[curMonIdx].note = `${YESTERDAY.getMonth()+1}/${YESTERDAY.getDate()}기준(진행중)`;
+}
 
 // ── 연간 차트 설정 ─────────────────────────────────────────────
 // ChartDataLabels는 CDN 로드 시 자동 전역 등록됨 (별도 register 불필요)
@@ -1616,32 +1619,35 @@ document.addEventListener('click', () => {
   if (list) list.style.display = 'none';
 });
 
-// 연간 테이블 (월 행 × KPI 달성률 열)
-const tbody = document.getElementById('annual-table-body');
-const na = '<span style="color:#cbd5e1">—</span>';
-const fmtBil = v => v != null ? v.toFixed(1) : na;
-const fmtNum = v => v != null ? v.toLocaleString() : na;
-const pct = (t, a) => {
-  if (t == null || a == null) return na;
-  const p = Math.round(a / t * 100);
-  const cls = p >= 100 ? 'over' : p >= 85 ? 'warn' : 'low';
-  return `<span class="ann-pct ${cls}">${p}%</span>`;
-};
-const bl = 'border-left:2px solid #e2e8f0';
-ANNUAL.forEach((d, i) => {
-  const isCur = i === TODAY.getMonth();
-  const tr = document.createElement('tr');
-  if (isCur) tr.classList.add('cur-month');
-  tr.innerHTML =
-    `<td style="font-weight:700;white-space:nowrap">${d.m}${d.note ? `<br><span style="font-size:10px;color:#94a3b8;font-weight:400">${d.note}</span>` : ''}</td>` +
-    `<td style="${bl}">${fmtNum(d.mauT)}</td><td>${fmtNum(d.mauA)}</td><td>${pct(d.mauT, d.mauA)}</td>` +
-    `<td style="${bl}">${fmtBil(d.nT)}</td><td>${fmtBil(d.nA)}</td><td>${pct(d.nT, d.nA)}</td>` +
-    `<td style="${bl}">${fmtNum(d.joinT)}</td><td>${fmtNum(d.joinA)}</td><td>${pct(d.joinT, d.joinA)}</td>` +
-    `<td style="${bl}">${fmtNum(d.buyersT)}</td><td>${fmtNum(d.buyersA)}</td><td>${pct(d.buyersT, d.buyersA)}</td>` +
-    `<td style="${bl}">${fmtNum(d.joinAdT)}</td><td>${fmtNum(d.joinAdA)}</td><td>${pct(d.joinAdT, d.joinAdA)}</td>` +
-    `<td style="${bl}">${fmtNum(d.firstAdT)}</td><td>${fmtNum(d.firstAdA)}</td><td>${pct(d.firstAdT, d.firstAdA)}</td>`;
-  tbody.appendChild(tr);
-});
+// 연간 테이블 (월 행 × KPI 달성률 열) — data.json 로드 완료 후 buildAnnualTable()에서 호출
+function buildAnnualTable() {
+  const tbody = document.getElementById('annual-table-body');
+  tbody.innerHTML = '';
+  const na = '<span style="color:#cbd5e1">—</span>';
+  const fmtBil = v => v != null ? v.toFixed(1) : na;
+  const fmtNum = v => v != null ? v.toLocaleString() : na;
+  const pct = (t, a) => {
+    if (t == null || a == null) return na;
+    const p = Math.round(a / t * 100);
+    const cls = p >= 100 ? 'over' : p >= 85 ? 'warn' : 'low';
+    return `<span class="ann-pct ${cls}">${p}%</span>`;
+  };
+  const bl = 'border-left:2px solid #e2e8f0';
+  ANNUAL.forEach((d, i) => {
+    const isCur = i === TODAY.getMonth();
+    const tr = document.createElement('tr');
+    if (isCur) tr.classList.add('cur-month');
+    tr.innerHTML =
+      `<td style="font-weight:700;white-space:nowrap">${d.m}${d.note ? `<br><span style="font-size:10px;color:#94a3b8;font-weight:400">${d.note}</span>` : ''}</td>` +
+      `<td style="${bl}">${fmtNum(d.mauT)}</td><td>${fmtNum(d.mauA)}</td><td>${pct(d.mauT, d.mauA)}</td>` +
+      `<td style="${bl}">${fmtBil(d.nT)}</td><td>${fmtBil(d.nA)}</td><td>${pct(d.nT, d.nA)}</td>` +
+      `<td style="${bl}">${fmtNum(d.joinT)}</td><td>${fmtNum(d.joinA)}</td><td>${pct(d.joinT, d.joinA)}</td>` +
+      `<td style="${bl}">${fmtNum(d.buyersT)}</td><td>${fmtNum(d.buyersA)}</td><td>${pct(d.buyersT, d.buyersA)}</td>` +
+      `<td style="${bl}">${fmtNum(d.joinAdT)}</td><td>${fmtNum(d.joinAdA)}</td><td>${pct(d.joinAdT, d.joinAdA)}</td>` +
+      `<td style="${bl}">${fmtNum(d.firstAdT)}</td><td>${fmtNum(d.firstAdA)}</td><td>${pct(d.firstAdT, d.firstAdA)}</td>`;
+    tbody.appendChild(tr);
+  });
+}
 
 // ═══ 실시간 대시보드 JS ═══
 // ═══════════════════════════════════════════════
@@ -1951,6 +1957,53 @@ function toggleCompare(key) {
   const btn = document.getElementById('btn-'+key);
   btn.classList.toggle('active', compareFlags[key]);
   render();
+}
+
+// 비교일 중 매출 패턴이 튀는(프로모션 등) 이상치 탐지
+// 세 비교일의 "총실적/현재시각까지실적" 배수를 서로 비교, 중앙값 대비 15% 이상 벗어나면 이상치로 판단
+function detectCompareOutliers(date) {
+  const curHour = getCurrentHour(date);
+  const comps = getComparisonDates(date);
+  const keys = ['lw', 'lm', 'ly'];
+  const ratios = {};
+  keys.forEach(k => {
+    const cd = comps[k];
+    if (!cd || !RAW[cd]) return;
+    const cr = getHourlyData(cd);
+    const acc = cr.slice(0, curHour + 1).reduce((a, r) => a + r[1], 0);
+    const tot = cr.reduce((a, r) => a + r[1], 0);
+    if (acc > 0) ratios[k] = tot / acc;
+  });
+  const vals = Object.values(ratios);
+  if (vals.length < 2) return {};
+  const sorted = [...vals].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  const median = sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+  const outliers = {};
+  keys.forEach(k => {
+    if (ratios[k] == null || !median) return;
+    const dev = (ratios[k] - median) / median;
+    if (Math.abs(dev) > 0.15) {
+      const cd = comps[k];
+      outliers[k] = { date: cd, dev, event: (DAILY_TGTS[cd] && DAILY_TGTS[cd].event) || null };
+    }
+  });
+  return outliers;
+}
+
+function renderCompareOutlierNote(date) {
+  const el = document.getElementById('compare-outlier-note');
+  if (!el) return;
+  const outliers = detectCompareOutliers(date);
+  const keys = Object.keys(outliers);
+  if (keys.length === 0) { el.textContent = ''; return; }
+  const parts = keys.map(k => {
+    const o = outliers[k];
+    const dirTxt = o.dev > 0 ? '평소보다 후반 몰림' : '평소보다 초반 몰림';
+    const evtTxt = o.event ? ` (${o.event})` : '';
+    return `${LABELS[k]}${evtTxt} — ${dirTxt}, 배수 ${o.dev > 0 ? '+' : ''}${(o.dev * 100).toFixed(0)}%`;
+  });
+  el.textContent = `⚠ 이상치 감지: ${parts.join(' / ')} → 예상마감 계산에서 기본 제외`;
 }
 
 // ═══════════════════════════════════════════════
@@ -2382,6 +2435,7 @@ function render() {
   renderKPI(date);
   renderAdRecommendation(date);
   renderCharts(date);
+  renderCompareOutlierNote(date);
 }
 
 // ═══════════════════════════════════════════════
@@ -2587,6 +2641,14 @@ function init() {
   selectedDate = lastDate;
   document.getElementById('custom-date').value = lastDate;
   document.getElementById('btn-today').classList.add('active');
+
+  // 초기 진입 시점 기준으로 이상치 비교일은 토글 기본값을 꺼둠 (이후 사용자 토글은 그대로 존중)
+  const outliers = detectCompareOutliers(lastDate);
+  Object.keys(outliers).forEach(k => {
+    compareFlags[k] = false;
+    document.getElementById('btn-' + k)?.classList.remove('active');
+  });
+
   mcInit();
   buildMtdPaceChart();
   render();
@@ -2607,9 +2669,11 @@ document.addEventListener('DOMContentLoaded', () => {
     .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
     .then(data => {
       RAW = data.RAW || {};
+      // 마감된(이번달 이전) 월만 99_Target 시트 실적 스냅샷 반영 — 이번달/미래월은
+      // 스냅샷 영역에 남아있는 값(placeholder)을 실적으로 잘못 표시하지 않도록 제외
       if (data.ANNUAL_ACT && Array.isArray(data.ANNUAL_ACT)) {
         data.ANNUAL_ACT.forEach((act, i) => {
-          if (i < ANNUAL.length) {
+          if (i < ANNUAL.length && i < TODAY.getMonth()) {
             Object.entries(act).forEach(([k, v]) => { if (v != null) ANNUAL[i][k] = v; });
           }
         });
@@ -2619,6 +2683,21 @@ document.addEventListener('DOMContentLoaded', () => {
       TRAFFIC      = data.TRAFFIC      || {};
       DAILY_TGTS   = data.DAILY_TGTS   || {};
       MONTHLY_TGTS = data.MONTHLY_TGTS || {};
+      // 월별 타겟(총수주/순수주/GMV 등)은 99_Target 월별 시트(MONTHLY_TGTS)를 항상 최신값으로 사용
+      ANNUAL.forEach((d, i) => {
+        const mt = MONTHLY_TGTS[`2026-${String(i + 1).padStart(2, '0')}`];
+        if (!mt) return;
+        // 이미 값이 있는 과거 월은 유지, 비어있는 월(주로 미래월)만 시트 값으로 채움
+        if (d.tT      == null && mt.revenue) d.tT      = mt.revenue / 1e8;
+        if (d.nT      == null && mt.net)     d.nT      = mt.net     / 1e8;
+        if (d.gmvT    == null && mt.gmv)     d.gmvT    = mt.gmv     / 1e8;
+        if (d.mauT    == null && mt.mau_app) d.mauT    = mt.mau_app;
+        if (d.joinT   == null && mt.join)    d.joinT   = mt.join;
+        if (d.buyersT == null && mt.buyers)  d.buyersT = mt.buyers;
+        if (d.joinAdT == null && mt.join_ad) d.joinAdT = mt.join_ad;
+        if (d.firstAdT== null && mt.first_ad)d.firstAdT= mt.first_ad;
+      });
+      buildAnnualTable();
       document.getElementById('rt-loading')?.remove();
       // 헤더 날짜 배지: 실제 데이터 기준일로 갱신
       const effDate = getEffectiveDailyDate();
