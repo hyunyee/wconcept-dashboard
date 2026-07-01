@@ -737,32 +737,30 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
     <div class="chart-box h280"><canvas id="chart-annual"></canvas></div>
     <div class="legend-row" id="annual-legend">
       <div class="leg"><div class="leg-dot" style="width:18px;height:3px;border-radius:0;background:repeating-linear-gradient(90deg,#94a3b8 0,#94a3b8 5px,transparent 5px,transparent 8px)"></div>목표</div>
-      <div class="leg"><div class="leg-dot" style="background:#10b981"></div>달성 ≥100%</div>
-      <div class="leg"><div class="leg-dot" style="background:#f59e0b"></div>달성 ≥85%</div>
-      <div class="leg"><div class="leg-dot" style="background:#ef4444"></div>달성 &lt;85%</div>
+      <div class="leg"><div class="leg-dot" style="background:rgba(30,58,138,0.88)"></div>실적</div>
     </div>
   </div>
   <div class="card" style="overflow-x:auto">
     <div class="card-title">월별 KPI 달성률</div>
-    <div class="card-sub">* 달성률 색상: <span style="color:#10b981;font-weight:700">녹색 ≥100%</span> / <span style="color:#f59e0b;font-weight:700">노랑 ≥85%</span> / <span style="color:#ef4444;font-weight:700">빨강 &lt;85%</span> / 실적 없는 월은 목표만 표시</div>
-    <table class="annual-table" style="min-width:1100px">
+    <div class="card-sub">* 달성률 색상: <span style="color:#10b981;font-weight:700">녹색 ≥100%</span> / <span style="color:#f59e0b;font-weight:700">노랑 ≥85%</span> / <span style="color:#ef4444;font-weight:700">빨강 &lt;85%</span> / 실적은 26년 기준, YoY는 25년 동월 대비 (실적 없는 월은 목표만 표시, 당월은 YoY 공란)</div>
+    <table class="annual-table" style="min-width:1300px">
       <thead>
         <tr>
           <th rowspan="2" style="text-align:left;vertical-align:bottom">월</th>
-          <th colspan="3" style="text-align:center;border-left:2px solid #e2e8f0;background:#eff6ff;color:#3b82f6">APPMAU (명)</th>
-          <th colspan="3" style="text-align:center;border-left:2px solid #e2e8f0;background:#f0fdf4;color:#16a34a">순수주 (억원)</th>
-          <th colspan="3" style="text-align:center;border-left:2px solid #e2e8f0;background:#faf5ff;color:#8b5cf6">신규가입자 (명)</th>
-          <th colspan="3" style="text-align:center;border-left:2px solid #e2e8f0;background:#ecfdf5;color:#10b981">전체 구매자(월) (명)</th>
-          <th colspan="3" style="text-align:center;border-left:2px solid #e2e8f0;background:#fffbeb;color:#f59e0b">신규가입자(광고) (명)</th>
-          <th colspan="3" style="text-align:center;border-left:2px solid #e2e8f0;background:#fff1f2;color:#f43f5e">첫구매자(광고) (명)</th>
+          <th colspan="4" style="text-align:center;border-left:2px solid #e2e8f0;background:#eff6ff;color:#3b82f6">APPMAU (명)</th>
+          <th colspan="4" style="text-align:center;border-left:2px solid #e2e8f0;background:#f0fdf4;color:#16a34a">순수주 (억원)</th>
+          <th colspan="4" style="text-align:center;border-left:2px solid #e2e8f0;background:#faf5ff;color:#8b5cf6">신규가입자 (명)</th>
+          <th colspan="4" style="text-align:center;border-left:2px solid #e2e8f0;background:#ecfdf5;color:#10b981">전체 구매자(월) (명)</th>
+          <th colspan="4" style="text-align:center;border-left:2px solid #e2e8f0;background:#fffbeb;color:#f59e0b">신규가입자(광고) (명)</th>
+          <th colspan="4" style="text-align:center;border-left:2px solid #e2e8f0;background:#fff1f2;color:#f43f5e">첫구매자(광고) (명)</th>
         </tr>
         <tr>
-          <th style="border-left:2px solid #e2e8f0">목표</th><th>실적</th><th>달성률</th>
-          <th style="border-left:2px solid #e2e8f0">목표</th><th>실적</th><th>달성률</th>
-          <th style="border-left:2px solid #e2e8f0">목표</th><th>실적</th><th>달성률</th>
-          <th style="border-left:2px solid #e2e8f0">목표</th><th>실적</th><th>달성률</th>
-          <th style="border-left:2px solid #e2e8f0">목표</th><th>실적</th><th>달성률</th>
-          <th style="border-left:2px solid #e2e8f0">목표</th><th>실적</th><th>달성률</th>
+          <th style="border-left:2px solid #e2e8f0">목표</th><th>실적</th><th>달성률</th><th>YoY</th>
+          <th style="border-left:2px solid #e2e8f0">목표</th><th>실적</th><th>달성률</th><th>YoY</th>
+          <th style="border-left:2px solid #e2e8f0">목표</th><th>실적</th><th>달성률</th><th>YoY</th>
+          <th style="border-left:2px solid #e2e8f0">목표</th><th>실적</th><th>달성률</th><th>YoY</th>
+          <th style="border-left:2px solid #e2e8f0">목표</th><th>실적</th><th>달성률</th><th>YoY</th>
+          <th style="border-left:2px solid #e2e8f0">목표</th><th>실적</th><th>달성률</th><th>YoY</th>
         </tr>
       </thead>
       <tbody id="annual-table-body"></tbody>
@@ -1501,25 +1499,18 @@ const ANNUAL_METRICS = [
 let curMetricIdx = 0;
 let annualChart = null;
 
-function getBarColor(a, t) {
-  if (a == null || t == null || t === 0) return 'rgba(0,0,0,0)';
-  const r = a / t;
-  return r >= 1 ? 'rgba(16,185,129,0.85)' : r >= 0.85 ? 'rgba(245,158,11,0.85)' : 'rgba(239,68,68,0.85)';
-}
-
 function buildAnnualChartData(idx) {
   const m = ANNUAL_METRICS[idx];
   return {
     targets: ANNUAL.map(d => d[m.tKey] ?? null),
     actuals: ANNUAL.map(d => d[m.aKey] ?? null),
-    colors:  ANNUAL.map(d => getBarColor(d[m.aKey], d[m.tKey])),
   };
 }
 
 function initAnnualChart() {
   if (annualChart) annualChart.destroy();
   const m = ANNUAL_METRICS[curMetricIdx];
-  const { targets, actuals, colors } = buildAnnualChartData(curMetricIdx);
+  const { targets, actuals } = buildAnnualChartData(curMetricIdx);
 
   annualChart = new Chart(document.getElementById('chart-annual'), {
     type: 'bar',
@@ -1529,9 +1520,9 @@ function initAnnualChart() {
         {
           type: 'line', label: '목표',
           data: targets,
-          borderColor: 'rgba(100,116,139,0.6)',
+          borderColor: 'rgba(148,163,184,0.55)',
           borderDash: [5, 4], borderWidth: 2,
-          pointBackgroundColor: 'rgba(100,116,139,0.5)',
+          pointBackgroundColor: 'rgba(148,163,184,0.45)',
           pointRadius: 4, pointHoverRadius: 5,
           fill: false, tension: 0,
           datalabels: { display: false },
@@ -1540,7 +1531,7 @@ function initAnnualChart() {
         {
           type: 'bar', label: '실적',
           data: actuals,
-          backgroundColor: colors,
+          backgroundColor: 'rgba(30,58,138,0.88)',
           borderRadius: 8, borderSkipped: false,
           maxBarThickness: 44,
           datalabels: {
@@ -1619,6 +1610,47 @@ document.addEventListener('click', () => {
   if (list) list.style.display = 'none';
 });
 
+// 26년 월별 (마감)실적 계산 — DAILY(0.전사(일별))/DAILY_AD(2_raw_전환, DA·SA)를 월 단위로 집계
+// 순수주/신규가입/신규가입(광고)/첫구매(광고)는 합산, MAU_APP/구매자수(월)는 그 달의 마지막 유효값(누적 스냅샷)
+// 데이터가 없는 달(미래월)은 건드리지 않음 → 당월은 자연히 어제자까지 누적된 값만 반영
+function computeMonthlyActuals() {
+  for (let i = 0; i < ANNUAL.length; i++) {
+    const ym = `2026-${String(i + 1).padStart(2, '0')}`;
+    const days = Object.keys(DAILY).filter(d => d.startsWith(ym)).sort();
+    if (days.length === 0) continue;
+
+    let netSum = 0, hasNet = false, joinSum = 0, hasJoin = false;
+    let mauLast = null, buyersLast = null;
+    days.forEach(ds => {
+      const v = DAILY[ds];
+      if (v.net != null)     { netSum  += v.net;  hasNet  = true; }
+      if (v.join != null)    { joinSum += v.join; hasJoin = true; }
+      if (v.mau_app != null) mauLast    = v.mau_app;
+      if (v.buyers  != null) buyersLast = v.buyers;
+    });
+    let joinAdSum = 0, hasJoinAd = false, firstAdSum = 0, hasFirstAd = false;
+    days.forEach(ds => {
+      const v = DAILY_AD[ds];
+      if (!v) return;
+      if (v.join_ad  != null) { joinAdSum  += v.join_ad;  hasJoinAd  = true; }
+      if (v.first_ad != null) { firstAdSum += v.first_ad; hasFirstAd = true; }
+    });
+
+    const d = ANNUAL[i];
+    if (hasNet)          d.nA       = +(netSum / 1e8).toFixed(1);
+    if (mauLast != null) d.mauA     = mauLast;
+    if (hasJoin)         d.joinA    = joinSum;
+    if (buyersLast != null) d.buyersA = buyersLast;
+    if (hasJoinAd)       d.joinAdA  = joinAdSum;
+    if (hasFirstAd)      d.firstAdA = firstAdSum;
+  }
+}
+
+function yoyPct(a, ly) {
+  if (a == null || ly == null || ly === 0) return null;
+  return (a - ly) / ly * 100;
+}
+
 // 연간 테이블 (월 행 × KPI 달성률 열) — data.json 로드 완료 후 buildAnnualTable()에서 호출
 function buildAnnualTable() {
   const tbody = document.getElementById('annual-table-body');
@@ -1637,14 +1669,22 @@ function buildAnnualTable() {
     const isCur = i === TODAY.getMonth();
     const tr = document.createElement('tr');
     if (isCur) tr.classList.add('cur-month');
+    // 당월은 YoY 비교 대상 기간이 아직 마감되지 않아 비워둠
+    const yoy = (a, ly) => {
+      if (isCur) return na;
+      const y = yoyPct(a, ly);
+      if (y == null) return na;
+      const color = y >= 0 ? '#10b981' : '#ef4444';
+      return `<span style="color:${color};font-weight:700">${y >= 0 ? '+' : ''}${y.toFixed(1)}%</span>`;
+    };
     tr.innerHTML =
       `<td style="font-weight:700;white-space:nowrap">${d.m}${d.note ? `<br><span style="font-size:10px;color:#94a3b8;font-weight:400">${d.note}</span>` : ''}</td>` +
-      `<td style="${bl}">${fmtNum(d.mauT)}</td><td>${fmtNum(d.mauA)}</td><td>${pct(d.mauT, d.mauA)}</td>` +
-      `<td style="${bl}">${fmtBil(d.nT)}</td><td>${fmtBil(d.nA)}</td><td>${pct(d.nT, d.nA)}</td>` +
-      `<td style="${bl}">${fmtNum(d.joinT)}</td><td>${fmtNum(d.joinA)}</td><td>${pct(d.joinT, d.joinA)}</td>` +
-      `<td style="${bl}">${fmtNum(d.buyersT)}</td><td>${fmtNum(d.buyersA)}</td><td>${pct(d.buyersT, d.buyersA)}</td>` +
-      `<td style="${bl}">${fmtNum(d.joinAdT)}</td><td>${fmtNum(d.joinAdA)}</td><td>${pct(d.joinAdT, d.joinAdA)}</td>` +
-      `<td style="${bl}">${fmtNum(d.firstAdT)}</td><td>${fmtNum(d.firstAdA)}</td><td>${pct(d.firstAdT, d.firstAdA)}</td>`;
+      `<td style="${bl}">${fmtNum(d.mauT)}</td><td>${fmtNum(d.mauA)}</td><td>${pct(d.mauT, d.mauA)}</td><td>${yoy(d.mauA, d.mauA_ly)}</td>` +
+      `<td style="${bl}">${fmtBil(d.nT)}</td><td>${fmtBil(d.nA)}</td><td>${pct(d.nT, d.nA)}</td><td>${yoy(d.nA, d.nA_ly)}</td>` +
+      `<td style="${bl}">${fmtNum(d.joinT)}</td><td>${fmtNum(d.joinA)}</td><td>${pct(d.joinT, d.joinA)}</td><td>${yoy(d.joinA, d.joinA_ly)}</td>` +
+      `<td style="${bl}">${fmtNum(d.buyersT)}</td><td>${fmtNum(d.buyersA)}</td><td>${pct(d.buyersT, d.buyersA)}</td><td>${yoy(d.buyersA, d.buyersA_ly)}</td>` +
+      `<td style="${bl}">${fmtNum(d.joinAdT)}</td><td>${fmtNum(d.joinAdA)}</td><td>${pct(d.joinAdT, d.joinAdA)}</td><td>${yoy(d.joinAdA, d.joinAdA_ly)}</td>` +
+      `<td style="${bl}">${fmtNum(d.firstAdT)}</td><td>${fmtNum(d.firstAdA)}</td><td>${pct(d.firstAdT, d.firstAdA)}</td><td>${yoy(d.firstAdA, d.firstAdA_ly)}</td>`;
     tbody.appendChild(tr);
   });
 }
@@ -2669,20 +2709,20 @@ document.addEventListener('DOMContentLoaded', () => {
     .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
     .then(data => {
       RAW = data.RAW || {};
-      // 마감된(이번달 이전) 월만 99_Target 시트 실적 스냅샷 반영 — 이번달/미래월은
-      // 스냅샷 영역에 남아있는 값(placeholder)을 실적으로 잘못 표시하지 않도록 제외
-      if (data.ANNUAL_ACT && Array.isArray(data.ANNUAL_ACT)) {
-        data.ANNUAL_ACT.forEach((act, i) => {
-          if (i < ANNUAL.length && i < TODAY.getMonth()) {
-            Object.entries(act).forEach(([k, v]) => { if (v != null) ANNUAL[i][k] = v; });
-          }
-        });
-      }
       DAILY        = data.DAILY        || {};
       DAILY_AD     = data.DAILY_AD     || {};
       TRAFFIC      = data.TRAFFIC      || {};
       DAILY_TGTS   = data.DAILY_TGTS   || {};
       MONTHLY_TGTS = data.MONTHLY_TGTS || {};
+      // 99_Target 시트의 X18:AE29 스냅샷(ANNUAL_ACT)은 전년(2025) 실적 참고값 —
+      // YoY 계산용으로만 사용 (26년 실적으로 표시하지 않음, _ly 접미사로 별도 저장)
+      if (data.ANNUAL_ACT && Array.isArray(data.ANNUAL_ACT)) {
+        data.ANNUAL_ACT.forEach((act, i) => {
+          if (i < ANNUAL.length) {
+            Object.entries(act).forEach(([k, v]) => { if (v != null) ANNUAL[i][k + '_ly'] = v; });
+          }
+        });
+      }
       // 월별 타겟(총수주/순수주/GMV 등)은 99_Target 월별 시트(MONTHLY_TGTS)를 항상 최신값으로 사용
       ANNUAL.forEach((d, i) => {
         const mt = MONTHLY_TGTS[`2026-${String(i + 1).padStart(2, '0')}`];
@@ -2697,6 +2737,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (d.joinAdT == null && mt.join_ad) d.joinAdT = mt.join_ad;
         if (d.firstAdT== null && mt.first_ad)d.firstAdT= mt.first_ad;
       });
+      // 26년 월별 (마감)실적은 0.전사(일별) 일별 데이터를 월 단위로 직접 집계 (당월은 어제자까지 누적)
+      computeMonthlyActuals();
       buildAnnualTable();
       document.getElementById('rt-loading')?.remove();
       // 헤더 날짜 배지: 실제 데이터 기준일로 갱신
