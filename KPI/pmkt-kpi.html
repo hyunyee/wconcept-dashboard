@@ -736,8 +736,8 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
     <div class="card-sub" id="annual-chart-sub">* 목표: 26년 전체 / 실적: 확정 또는 누적 기준 &nbsp;·&nbsp; 단위: 억원</div>
     <div class="chart-box h280"><canvas id="chart-annual"></canvas></div>
     <div class="legend-row" id="annual-legend">
-      <div class="leg"><div class="leg-dot" style="width:18px;height:3px;border-radius:0;background:repeating-linear-gradient(90deg,#94a3b8 0,#94a3b8 5px,transparent 5px,transparent 8px)"></div>목표</div>
-      <div class="leg"><div class="leg-dot" style="background:rgba(30,58,138,0.88)"></div>실적</div>
+      <div class="leg"><div class="leg-dot" style="background:rgba(203,213,225,0.7)"></div>목표</div>
+      <div class="leg"><div class="leg-dot" style="background:rgba(15,42,107,0.92)"></div>실적</div>
     </div>
   </div>
   <div class="card" style="overflow-x:auto">
@@ -1518,22 +1518,19 @@ function initAnnualChart() {
       labels: ANNUAL.map(d => d.m),
       datasets: [
         {
-          type: 'line', label: '목표',
+          type: 'bar', label: '목표',
           data: targets,
-          borderColor: 'rgba(148,163,184,0.55)',
-          borderDash: [5, 4], borderWidth: 2,
-          pointBackgroundColor: 'rgba(148,163,184,0.45)',
-          pointRadius: 4, pointHoverRadius: 5,
-          fill: false, tension: 0,
+          backgroundColor: 'rgba(203,213,225,0.7)',
+          borderRadius: 6, borderSkipped: false,
+          maxBarThickness: 34,
           datalabels: { display: false },
-          order: 1,
         },
         {
           type: 'bar', label: '실적',
           data: actuals,
-          backgroundColor: 'rgba(30,58,138,0.88)',
-          borderRadius: 8, borderSkipped: false,
-          maxBarThickness: 44,
+          backgroundColor: 'rgba(15,42,107,0.92)',
+          borderRadius: 6, borderSkipped: false,
+          maxBarThickness: 34,
           datalabels: {
             display: ctx => actuals[ctx.dataIndex] != null,
             formatter: (v, ctx) => {
@@ -1542,13 +1539,10 @@ function initAnnualChart() {
               const pct = Math.round(v / t * 100);
               return pct + '%';
             },
-            anchor: 'center', align: 'center',
-            font: { size: 12, weight: '700' },
-            color: '#fff',
-            textShadowBlur: 4,
-            textShadowColor: 'rgba(0,0,0,0.25)',
+            anchor: 'end', align: 'top',
+            font: { size: 11, weight: '700' },
+            color: '#1e293b',
           },
-          order: 2,
         }
       ]
     },
@@ -1564,7 +1558,7 @@ function initAnnualChart() {
             label: ctx => {
               const v = ctx.parsed.y;
               if (v == null) return null;
-              if (ctx.dataset.type === 'bar') {
+              if (ctx.dataset.label === '실적') {
                 const t = targets[ctx.dataIndex];
                 const pct = (t && t > 0) ? ` (${Math.round(v/t*100)}%)` : '';
                 return `  실적: ${m.ttFmt(v)}${pct}`;
@@ -1610,39 +1604,33 @@ document.addEventListener('click', () => {
   if (list) list.style.display = 'none';
 });
 
-// 26년 월별 (마감)실적 계산 — DAILY(0.전사(일별))/DAILY_AD(2_raw_전환, DA·SA)를 월 단위로 집계
-// 순수주/신규가입/신규가입(광고)/첫구매(광고)는 합산, MAU_APP/구매자수(월)는 그 달의 마지막 유효값(누적 스냅샷)
-// 데이터가 없는 달(미래월)은 건드리지 않음 → 당월은 자연히 어제자까지 누적된 값만 반영
+// 26년 월별 (마감)실적 — 99_Target 시트 real_monthly 표(REAL_MONTHLY, X18:AH41)에서 그대로 반영
+// 같은 표의 25년 동월 값은 YoY 비교용 참고값(_ly)으로 저장
 function computeMonthlyActuals() {
   for (let i = 0; i < ANNUAL.length; i++) {
-    const ym = `2026-${String(i + 1).padStart(2, '0')}`;
-    const days = Object.keys(DAILY).filter(d => d.startsWith(ym)).sort();
-    if (days.length === 0) continue;
-
-    let netSum = 0, hasNet = false, joinSum = 0, hasJoin = false;
-    let mauLast = null, buyersLast = null;
-    days.forEach(ds => {
-      const v = DAILY[ds];
-      if (v.net != null)     { netSum  += v.net;  hasNet  = true; }
-      if (v.join != null)    { joinSum += v.join; hasJoin = true; }
-      if (v.mau_app != null) mauLast    = v.mau_app;
-      if (v.buyers  != null) buyersLast = v.buyers;
-    });
-    let joinAdSum = 0, hasJoinAd = false, firstAdSum = 0, hasFirstAd = false;
-    days.forEach(ds => {
-      const v = DAILY_AD[ds];
-      if (!v) return;
-      if (v.join_ad  != null) { joinAdSum  += v.join_ad;  hasJoinAd  = true; }
-      if (v.first_ad != null) { firstAdSum += v.first_ad; hasFirstAd = true; }
-    });
-
     const d = ANNUAL[i];
-    if (hasNet)          d.nA       = +(netSum / 1e8).toFixed(1);
-    if (mauLast != null) d.mauA     = mauLast;
-    if (hasJoin)         d.joinA    = joinSum;
-    if (buyersLast != null) d.buyersA = buyersLast;
-    if (hasJoinAd)       d.joinAdA  = joinAdSum;
-    if (hasFirstAd)      d.firstAdA = firstAdSum;
+    const cur = REAL_MONTHLY[`2026-${String(i + 1).padStart(2, '0')}`];
+    const ly  = REAL_MONTHLY[`2025-${String(i + 1).padStart(2, '0')}`];
+    if (cur) {
+      if (cur.net      != null) d.nA       = +(cur.net / 1e8).toFixed(1);
+      if (cur.mau_app  != null) d.mauA     = cur.mau_app;
+      if (cur.join     != null) d.joinA    = cur.join;
+      if (cur.buyers   != null) d.buyersA  = cur.buyers;
+      if (cur.join_ad  != null) d.joinAdA  = cur.join_ad;
+      if (cur.first_ad != null) d.firstAdA = cur.first_ad;
+    }
+    if (ly) {
+      if (ly.net      != null) d.nA_ly       = +(ly.net / 1e8).toFixed(1);
+      if (ly.mau_app  != null) d.mauA_ly     = ly.mau_app;
+      if (ly.join     != null) d.joinA_ly    = ly.join;
+      if (ly.buyers   != null) d.buyersA_ly  = ly.buyers;
+      // 채널ID 도입 초기(25.1~4월)는 신규가입(광고)/첫구매(광고) 실적이 불완전 —
+      // 해당 개월의 26년 동월 YoY는 비교 대상에서 제외
+      if (i >= 4) {
+        if (ly.join_ad  != null) d.joinAdA_ly  = ly.join_ad;
+        if (ly.first_ad != null) d.firstAdA_ly = ly.first_ad;
+      }
+    }
   }
 }
 
@@ -1694,7 +1682,7 @@ function buildAnnualTable() {
 // DATA  (자동갱신: 2026-06-29 14:31)  (자동갱신: 2026-06-29 12:37)  (자동갱신: 2026-06-29 12:35)  (자동갱신: 2026-06-29 12:35)  (자동갱신: 2026-06-29 12:23)  (자동갱신: 2026-06-29 11:52)  (자동갱신: 2026-06-29 11:15)  (자동갱신: 2026-06-29 11:05)
 // ═══════════════════════════════════════════════
 let RAW = {};
-let DAILY = {}, DAILY_AD = {}, TRAFFIC = {}, DAILY_TGTS = {}, MONTHLY_TGTS = {};
+let DAILY = {}, DAILY_AD = {}, TRAFFIC = {}, DAILY_TGTS = {}, MONTHLY_TGTS = {}, REAL_MONTHLY = {};
 
 // State
 let selectedDate = '';
@@ -2714,15 +2702,7 @@ document.addEventListener('DOMContentLoaded', () => {
       TRAFFIC      = data.TRAFFIC      || {};
       DAILY_TGTS   = data.DAILY_TGTS   || {};
       MONTHLY_TGTS = data.MONTHLY_TGTS || {};
-      // 99_Target 시트의 X18:AE29 스냅샷(ANNUAL_ACT)은 전년(2025) 실적 참고값 —
-      // YoY 계산용으로만 사용 (26년 실적으로 표시하지 않음, _ly 접미사로 별도 저장)
-      if (data.ANNUAL_ACT && Array.isArray(data.ANNUAL_ACT)) {
-        data.ANNUAL_ACT.forEach((act, i) => {
-          if (i < ANNUAL.length) {
-            Object.entries(act).forEach(([k, v]) => { if (v != null) ANNUAL[i][k + '_ly'] = v; });
-          }
-        });
-      }
+      REAL_MONTHLY = data.REAL_MONTHLY || {};
       // 월별 타겟(총수주/순수주/GMV 등)은 99_Target 월별 시트(MONTHLY_TGTS)를 항상 최신값으로 사용
       ANNUAL.forEach((d, i) => {
         const mt = MONTHLY_TGTS[`2026-${String(i + 1).padStart(2, '0')}`];
@@ -2737,7 +2717,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (d.joinAdT == null && mt.join_ad) d.joinAdT = mt.join_ad;
         if (d.firstAdT== null && mt.first_ad)d.firstAdT= mt.first_ad;
       });
-      // 26년 월별 (마감)실적은 0.전사(일별) 일별 데이터를 월 단위로 직접 집계 (당월은 어제자까지 누적)
+      // 26년 월별 (마감)실적 + 25년 YoY 참고값을 99_Target real_monthly 표(REAL_MONTHLY)에서 반영
       computeMonthlyActuals();
       buildAnnualTable();
       document.getElementById('rt-loading')?.remove();
