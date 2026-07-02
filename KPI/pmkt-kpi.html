@@ -419,6 +419,14 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
   .diag-priority-1 { background:var(--red-dim); color:var(--red); }
   .diag-priority-2 { background:var(--yellow-dim); color:var(--yellow); }
   .diag-row-detail { font-size:11px; color:var(--text-3); line-height:1.6; padding-left:2px; }
+  .diag-checklist { display:flex; flex-direction:column; gap:6px; }
+  .diag-check-row { display:grid; grid-template-columns:90px 1fr 1fr 70px; align-items:center; gap:8px; padding:7px 10px; border-radius:6px; font-size:12px; background:var(--bg-card2); }
+  .diag-check-row.bad { background:var(--red-dim); }
+  .diag-check-label { font-weight:700; color:var(--text-1); }
+  .diag-check-val { font-weight:700; color:var(--text-1); }
+  .diag-check-base { color:var(--text-3); font-size:11px; }
+  .diag-check-dev { text-align:right; font-weight:700; color:var(--text-2); }
+  .diag-check-row.bad .diag-check-dev { color:var(--red); }
 
   canvas { display:block; }
   
@@ -800,25 +808,8 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
   <!-- KPI -->
   <div class="kpi-grid" id="kpi-grid"></div>
   
-  <!-- Ad Recommendation Panel -->
-  <div class="rec-panel" id="rec-panel" style="display:none;">
-    <div class="rec-header" onclick="toggleRecPanel()">
-      <div class="rec-title">
-        💡 광고비 증액 판단
-        <span class="rec-remain" id="rec-remain"></span>
-      </div>
-      <div class="rec-toggle-btn">
-        <span id="rec-roas-info"></span>
-        <span class="rec-toggle-icon" id="rec-toggle-icon">▼</span>
-      </div>
-    </div>
-    <div class="rec-body" id="rec-body">
-      <div class="rec-scenarios" id="rec-scenarios"></div>
-    </div>
-  </div>
-
   <!-- Funnel Diagnosis Panel -->
-  <div class="rec-panel" id="funnel-diag-panel" style="display:none;margin-top:14px;">
+  <div class="rec-panel" id="funnel-diag-panel" style="display:none;">
     <div class="rec-header">
       <div class="rec-title">🔍 실적 진단</div>
     </div>
@@ -2316,69 +2307,6 @@ function getTargets(date) {
   return { revenue: Math.round(base.revenue * 1.05), net_revenue: 0, event: null, isReal: false };
 }
 
-// ── 광고비 증액 판단 ──────────────────────────────
-function getAdRecommendation(date) {
-  const targets = getTargets(date);
-  if (!targets.isReal) return null;
-
-  const forecast = getForecast(date);
-  const curHour  = getCurrentHour(date);
-  if (curHour < 0) return null;
-
-  const rows      = getHourlyData(date);
-  const accumNet  = forecast.accum_net;
-  const forecastNet = forecast.net_rev;
-  const accumAdcost = rows.slice(0, curHour + 1).reduce((a, r) => a + (r[5] || 0), 0);
-
-  const curAchieve  = accumNet && targets.net_revenue > 0
-    ? accumNet / targets.net_revenue * 100 : 0;
-  const fcAchieve   = forecastNet && targets.net_revenue > 0
-    ? forecastNet / targets.net_revenue * 100 : null;
-
-  // ROAS: 당일 실적 기준만 사용 (비교일 광고비는 채널 일부만 집계돼 과대 추정 위험)
-  const MIN_AD = 3000000; // 300만원 이상 있어야 신뢰
-  let roas = null, roasSource = '';
-  if (accumAdcost >= MIN_AD && accumNet > 0) {
-    roas = accumNet / accumAdcost;
-    roasSource = '당일 실적';
-  }
-
-  const remainHours  = 23 - curHour;
-  const gapToTarget  = forecastNet != null ? targets.net_revenue - forecastNet : null;
-
-  // 시나리오: gapToTarget 크기에 따라 단계 동적 결정
-  let scenarios = [];
-  if (roas && gapToTarget != null) {
-    const adToClose = gapToTarget > 0 ? gapToTarget / roas : 0;
-    let baseSteps;
-    if      (adToClose <= 0)         baseSteps = [500, 1000, 2000, 3000];
-    else if (adToClose < 5e6)        baseSteps = [500, 1000, 2000, 3000];
-    else if (adToClose < 2e7)        baseSteps = [1000, 2000, 5000, 10000];
-    else if (adToClose < 5e7)        baseSteps = [3000, 5000, 10000, 20000];
-    else                              baseSteps = [5000, 10000, 20000, 30000];
-
-    scenarios = baseSteps.map(stepMan => {
-      const adWon   = stepMan * 10000;
-      const addNet  = adWon * roas;
-      const newFc   = (forecastNet || 0) + addNet;
-      const newPct  = targets.net_revenue > 0 ? newFc / targets.net_revenue * 100 : 0;
-      return {
-        adLabel : stepMan >= 10000 ? `+${stepMan/10000}천만원` : `+${stepMan}만원`,
-        addNet,
-        newPct,
-        hit100   : newPct >= 100,
-      };
-    });
-  }
-
-  return {
-    curAchieve, fcAchieve, forecastNet, accumNet, accumAdcost,
-    roas, roasSource, gapToTarget, remainHours,
-    scenarios, targetNet: targets.net_revenue, event: targets.event,
-    hasAdData: accumAdcost >= MIN_AD,
-  };
-}
-
 // ── 실적 진단 (퍼널 단계별 부진 원인 진단) ──────────────────────────
 // null-safe 시간대 값 조회 — DAU 등 일부 필드가 주문/매출보다 늦게 집계되는 경우 대응
 function valueAtOrBefore(date, hour, fieldIdx, maxBack = 3) {
@@ -2391,7 +2319,7 @@ function valueAtOrBefore(date, hour, fieldIdx, maxBack = 3) {
 
 const DIAG_MIN_HOUR    = 2;    // 이 시각 이전엔 진단 보류(노이즈가 큼)
 const DIAG_THRESH_REL  = 0.15; // 트래픽/전환율/주문건수: 상대편차 기준(기존 이상치 감지와 동일 기준)
-const DIAG_THRESH_NETPT = 5;   // 순수주 비율: 절대 %p 기준
+const DIAG_THRESH_NETPT = 5;   // 취반품률: 절대 %p 기준
 
 function getFunnelDiagnosis(date) {
   const curHour = getCurrentHour(date);
@@ -2408,7 +2336,13 @@ function getFunnelDiagnosis(date) {
   const accumRevFull    = rows.slice(0, curHour + 1).reduce((a, r) => a + r[1], 0);
   const todayAOV = accumOrdersFull > 0 ? accumRevFull / accumOrdersFull : 0;
 
-  // ---- 트래픽(DAU) ----
+  // ---- ① 주문건수 ----
+  const baseOrdersVals = compDates.map(cd => getHourlyData(cd).slice(0, curHour + 1).reduce((a, r) => a + r[0], 0));
+  const baseOrdersAvg = baseOrdersVals.reduce((a, b) => a + b, 0) / baseOrdersVals.length;
+  const devOrders = baseOrdersAvg > 0 ? (accumOrdersFull - baseOrdersAvg) / baseOrdersAvg : 0;
+  const stageOrders = { key: 'orders', label: '주문건수', today: accumOrdersFull, base: baseOrdersAvg, dev: devOrders, hour: curHour };
+
+  // ---- ② 트래픽(DAU) ----
   let stageTraffic = null;
   if (trafficHour >= 0) {
     const todayDAU = valueAtOrBefore(date, trafficHour, 3);
@@ -2416,11 +2350,11 @@ function getFunnelDiagnosis(date) {
     if (todayDAU != null && baseVals.length) {
       const baseDAU = baseVals.reduce((a, b) => a + b, 0) / baseVals.length;
       const dev = baseDAU > 0 ? (todayDAU - baseDAU) / baseDAU : 0;
-      stageTraffic = { key: 'traffic', today: todayDAU, base: baseDAU, dev, hour: trafficHour };
+      stageTraffic = { key: 'traffic', label: '트래픽', today: todayDAU, base: baseDAU, dev, hour: trafficHour };
     }
   }
 
-  // ---- 전환율 (trafficHour까지 누적 주문건수 / DAU) ----
+  // ---- ③ 전환율 (trafficHour까지 누적 주문건수 / DAU) ----
   let stageCVR = null;
   if (trafficHour >= 0 && stageTraffic) {
     const accumOrdersAtTH = rows.slice(0, trafficHour + 1).reduce((a, r) => a + r[0], 0);
@@ -2434,44 +2368,41 @@ function getFunnelDiagnosis(date) {
     if (todayCVR != null && baseCVRs.length) {
       const baseCVR = baseCVRs.reduce((a, b) => a + b, 0) / baseCVRs.length;
       const dev = baseCVR > 0 ? (todayCVR - baseCVR) / baseCVR : 0;
-      stageCVR = { key: 'cvr', today: todayCVR, base: baseCVR, dev, hour: trafficHour, accumOrdersAtTH };
+      stageCVR = { key: 'cvr', label: '전환율', today: todayCVR, base: baseCVR, dev, hour: trafficHour, accumOrdersAtTH };
     }
   }
 
-  // ---- 주문건수 (헤드라인/참고용 — 트래픽·전환율의 합성 결과라 임팩트 랭킹에는 미포함) ----
-  const baseOrdersVals = compDates.map(cd => getHourlyData(cd).slice(0, curHour + 1).reduce((a, r) => a + r[0], 0));
-  const baseOrdersAvg = baseOrdersVals.reduce((a, b) => a + b, 0) / baseOrdersVals.length;
-  const devOrders = baseOrdersAvg > 0 ? (accumOrdersFull - baseOrdersAvg) / baseOrdersAvg : 0;
-  const stageOrders = { key: 'orders', today: accumOrdersFull, base: baseOrdersAvg, dev: devOrders, hour: curHour };
-
-  // ---- 순수주 비율 (취소반품·할인 등 반영 근사치 — 별도 취소/반품 필드 없음) ----
-  let stageNetRatio = null;
+  // ---- ④ 취반품률 (1 - 순수주/총수주) — 별도 취소/반품 필드가 없어 근사치 ----
+  let stageCancel = null;
   if (curNetHour >= 0) {
     const todayNet = getNetCumul(date, curNetHour);
     const todayRevAtNH = rows.slice(0, curNetHour + 1).reduce((a, r) => a + r[1], 0);
-    const todayRatio = todayRevAtNH > 0 ? todayNet / todayRevAtNH : null;
-    const baseRatios = compDates.map(cd => {
+    const todayCancelRate = (todayRevAtNH > 0 && todayNet != null) ? 1 - (todayNet / todayRevAtNH) : null;
+    const baseCancelRates = compDates.map(cd => {
       const cRev = getHourlyData(cd).slice(0, curNetHour + 1).reduce((a, r) => a + r[1], 0);
       const cNet = getNetCumul(cd, curNetHour);
-      return (cRev > 0 && cNet != null) ? cNet / cRev : null;
+      return (cRev > 0 && cNet != null) ? 1 - (cNet / cRev) : null;
     }).filter(v => v != null);
-    if (todayRatio != null && baseRatios.length) {
-      const baseRatio = baseRatios.reduce((a, b) => a + b, 0) / baseRatios.length;
-      const devPt = (todayRatio - baseRatio) * 100;
-      stageNetRatio = { key: 'netratio', today: todayRatio, base: baseRatio, devPt, hour: curNetHour, todayRevAtNH };
+    if (todayCancelRate != null && baseCancelRates.length) {
+      const baseCancelRate = baseCancelRates.reduce((a, b) => a + b, 0) / baseCancelRates.length;
+      const devPt = (todayCancelRate - baseCancelRate) * 100; // 양수 = 취반품률 증가(악화)
+      stageCancel = { key: 'cancel', label: '취반품률', today: todayCancelRate, base: baseCancelRate, devPt, hour: curNetHour, todayRevAtNH };
     }
   }
 
-  // ---- 부족분 원화 임팩트 추정 (부진 방향만) ----
+  // ---- 부진 판정 + 원화 임팩트 추정 ----
   const impacts = [];
-  if (stageTraffic && stageCVR && stageTraffic.dev < -DIAG_THRESH_REL) {
-    impacts.push({ key: 'traffic', impact: (stageTraffic.base - stageTraffic.today) * stageCVR.today * todayAOV, dev: stageTraffic.dev, stage: stageTraffic });
+  if (devOrders < -DIAG_THRESH_REL) {
+    impacts.push({ key: 'orders', impact: (baseOrdersAvg - accumOrdersFull) * todayAOV, dev: devOrders, stage: stageOrders });
   }
-  if (stageCVR && stageTraffic && stageCVR.dev < -DIAG_THRESH_REL) {
-    impacts.push({ key: 'cvr', impact: stageTraffic.today * (stageCVR.base - stageCVR.today) * todayAOV, dev: stageCVR.dev, stage: stageCVR });
+  if (stageTraffic && stageTraffic.dev < -DIAG_THRESH_REL) {
+    impacts.push({ key: 'traffic', impact: (stageTraffic.base - stageTraffic.today) * (stageCVR ? stageCVR.today : 0) * todayAOV, dev: stageTraffic.dev, stage: stageTraffic });
   }
-  if (stageNetRatio && stageNetRatio.devPt < -DIAG_THRESH_NETPT) {
-    impacts.push({ key: 'netratio', impact: stageNetRatio.todayRevAtNH * (stageNetRatio.base - stageNetRatio.today), devPt: stageNetRatio.devPt, stage: stageNetRatio });
+  if (stageCVR && stageCVR.dev < -DIAG_THRESH_REL) {
+    impacts.push({ key: 'cvr', impact: (stageTraffic ? stageTraffic.today : 0) * (stageCVR.base - stageCVR.today) * todayAOV, dev: stageCVR.dev, stage: stageCVR });
+  }
+  if (stageCancel && stageCancel.devPt > DIAG_THRESH_NETPT) {
+    impacts.push({ key: 'cancel', impact: stageCancel.todayRevAtNH * (stageCancel.today - stageCancel.base), devPt: stageCancel.devPt, stage: stageCancel });
   }
   impacts.sort((a, b) => b.impact - a.impact);
 
@@ -2480,7 +2411,7 @@ function getFunnelDiagnosis(date) {
     curHour, trafficHour, curNetHour,
     lagWarning: (curHour - trafficHour) >= 2,
     compDates,
-    stageTraffic, stageCVR, stageOrders, stageNetRatio,
+    stageOrders, stageTraffic, stageCVR, stageCancel,
     impacts,
   };
 }
@@ -2507,8 +2438,31 @@ function renderFunnelDiagnosis(date) {
   const gapToTarget = (forecast.net_rev != null && targets.net_revenue > 0)
     ? targets.net_revenue - forecast.net_rev : null;
 
-  const o = diag.stageOrders;
-  const headline = `현재 ${diag.curHour}시 기준 누적 주문 ${o.today.toLocaleString()}건 — 평소 대비 ${o.dev >= 0 ? '+' : ''}${(o.dev * 100).toFixed(1)}%`;
+  const fmtDevRel = dev => `${dev >= 0 ? '+' : ''}${(dev * 100).toFixed(1)}%`;
+
+  // 4개 지표 체크리스트
+  const checklistRows = [];
+  if (diag.stageOrders) {
+    const s = diag.stageOrders;
+    const bad = s.dev < -DIAG_THRESH_REL;
+    checklistRows.push(`<div class="diag-check-row${bad ? ' bad' : ''}"><span class="diag-check-label">${bad ? '🔴' : '⚪'} ${s.label}</span><span class="diag-check-val">${s.today.toLocaleString()}건</span><span class="diag-check-base">평소 ${Math.round(s.base).toLocaleString()}건</span><span class="diag-check-dev">${fmtDevRel(s.dev)}</span></div>`);
+  }
+  if (diag.stageTraffic) {
+    const s = diag.stageTraffic;
+    const bad = s.dev < -DIAG_THRESH_REL;
+    checklistRows.push(`<div class="diag-check-row${bad ? ' bad' : ''}"><span class="diag-check-label">${bad ? '🔴' : '⚪'} ${s.label}</span><span class="diag-check-val">${s.today.toLocaleString()}명</span><span class="diag-check-base">평소 ${Math.round(s.base).toLocaleString()}명</span><span class="diag-check-dev">${fmtDevRel(s.dev)}</span></div>`);
+  }
+  if (diag.stageCVR) {
+    const s = diag.stageCVR;
+    const bad = s.dev < -DIAG_THRESH_REL;
+    checklistRows.push(`<div class="diag-check-row${bad ? ' bad' : ''}"><span class="diag-check-label">${bad ? '🔴' : '⚪'} ${s.label}</span><span class="diag-check-val">${(s.today*100).toFixed(2)}%</span><span class="diag-check-base">평소 ${(s.base*100).toFixed(2)}%</span><span class="diag-check-dev">${fmtDevRel(s.dev)}</span></div>`);
+  }
+  if (diag.stageCancel) {
+    const s = diag.stageCancel;
+    const bad = s.devPt > DIAG_THRESH_NETPT;
+    checklistRows.push(`<div class="diag-check-row${bad ? ' bad' : ''}"><span class="diag-check-label">${bad ? '🔴' : '⚪'} ${s.label}</span><span class="diag-check-val">${(s.today*100).toFixed(1)}%</span><span class="diag-check-base">평소 ${(s.base*100).toFixed(1)}%</span><span class="diag-check-dev">${s.devPt >= 0 ? '+' : ''}${s.devPt.toFixed(1)}%p</span></div>`);
+  }
+  const checklistHtml = `<div class="diag-checklist">${checklistRows.join('')}</div>`;
 
   const lagNote = diag.lagWarning
     ? `<div class="rec-logic-note">※ DAU 데이터가 주문 데이터보다 ${diag.curHour - diag.trafficHour}시간 지연 집계되어, 트래픽/전환율 진단은 ${diag.trafficHour}시 기준으로 계산됨</div>`
@@ -2516,8 +2470,8 @@ function renderFunnelDiagnosis(date) {
 
   if (diag.impacts.length === 0) {
     bodyEl.innerHTML = `
-      <div class="rec-logic-note">${headline}</div>
-      <div class="rec-gap-label">✅ 특이사항 없음 — 트래픽·전환율·순수주 비율 모두 정상 범위 (평소 대비 ±${(DIAG_THRESH_REL*100).toFixed(0)}% 이내)</div>
+      ${checklistHtml}
+      <div class="rec-gap-label" style="margin-top:12px">✅ 특이사항 없음 — 4개 지표 모두 정상 범위</div>
       ${lagNote}`;
     return;
   }
@@ -2531,7 +2485,11 @@ function renderFunnelDiagnosis(date) {
     const shareTxt = impactShare(imp) != null ? ` (금일 타겟 갭의 ${impactShare(imp)}%)` : '';
 
     let bodyLine, suggestLine;
-    if (imp.key === 'traffic') {
+    if (imp.key === 'orders') {
+      const s = imp.stage;
+      bodyLine = `📉 주문건수 감소 — ${s.hour}시 기준 ${s.today.toLocaleString()}건, 평소 ${Math.round(s.base).toLocaleString()}건 대비 ${(s.dev*100).toFixed(1)}%`;
+      suggestLine = `제안: 아래 트래픽·전환율 지표로 유입/구매전환 중 어느 단계가 원인인지 확인 필요`;
+    } else if (imp.key === 'traffic') {
       const s = imp.stage;
       bodyLine = `📉 트래픽(DAU) 감소 — ${s.hour}시 기준 DAU ${s.today.toLocaleString()}명, 평소 ${Math.round(s.base).toLocaleString()}명 대비 ${(s.dev*100).toFixed(1)}%`;
       suggestLine = `제안: 유입 채널 점검 — 광고 노출/입찰 상태, 주요 랜딩페이지 접속 이슈 확인 필요`;
@@ -2541,8 +2499,8 @@ function renderFunnelDiagnosis(date) {
       suggestLine = `제안: 상품/가격/프로모션 노출 UX 점검 — 유입은 정상인데 구매 전환이 낮은 구간(카테고리/디바이스) 확인 필요`;
     } else {
       const s = imp.stage;
-      bodyLine = `⚠️ 순수주 비율(취소반품·할인 등 반영) 하락 — ${s.hour}시 기준 ${(s.today*100).toFixed(1)}%, 평소 ${(s.base*100).toFixed(1)}% 대비 ${s.devPt.toFixed(1)}%p`;
-      suggestLine = `제안: 최근 취소/반품 급증 상품·이벤트 여부, 할인 프로모션 마진 확인 필요<br>※ 취소/반품만 분리 집계된 데이터가 없어 총수주 대비 순수주 비율로 근사한 값입니다`;
+      bodyLine = `⚠️ 취반품률 증가 — ${s.hour}시 기준 ${(s.today*100).toFixed(1)}%, 평소 ${(s.base*100).toFixed(1)}% 대비 +${s.devPt.toFixed(1)}%p`;
+      suggestLine = `제안: 최근 취소/반품 급증 상품·이벤트 여부, 배송/품질 이슈 확인 필요<br>※ 취소/반품만 분리 집계된 데이터가 없어 총수주 대비 순수주 비율(1-순수주/총수주)로 근사한 값입니다`;
     }
 
     return `<div class="rec-scenario-row" style="flex-direction:column;align-items:flex-start;gap:4px">
@@ -2553,7 +2511,7 @@ function renderFunnelDiagnosis(date) {
   }).join('');
 
   bodyEl.innerHTML = `
-    <div class="rec-logic-note">${headline}</div>
+    ${checklistHtml}
     ${rowsHtml}
     ${lagNote}`;
 }
@@ -2848,67 +2806,6 @@ function renderSummary(date) {
 }
 
 // ═══════════════════════════════════════════════
-// RENDER AD RECOMMENDATION
-// ═══════════════════════════════════════════════
-function toggleRecPanel() {
-  const body = document.getElementById('rec-body');
-  const icon = document.getElementById('rec-toggle-icon');
-  const isOpen = body.classList.toggle('open');
-  icon.classList.toggle('open', isOpen);
-}
-
-function renderAdRecommendation(date) {
-  const panel = document.getElementById('rec-panel');
-  if (date !== getLastDate()) { panel.style.display = 'none'; return; }
-  const rec = getAdRecommendation(date);
-  if (!rec) { panel.style.display = 'none'; return; }
-  panel.style.display = 'block';
-
-  document.getElementById('rec-remain').textContent = `잔여 ${rec.remainHours}시간`;
-  document.getElementById('rec-roas-info').innerHTML = rec.roas
-    ? `ROAS <strong>${Math.round(rec.roas * 100)}%</strong>&nbsp;·&nbsp;${rec.roasSource}`
-    : `<span style="color:var(--yellow)">⚠ 광고비 데이터 없음</span>`;
-
-  const scEl = document.getElementById('rec-scenarios');
-
-  if (!rec.roas) {
-    scEl.innerHTML = `<div style="font-size:12px;color:var(--text-3);padding:4px 0">광고비(Airbridge) 데이터 없음 — 연동 후 자동 활성화</div>`;
-    return;
-  }
-
-  const gapStr = rec.gapToTarget > 0
-    ? `<span style="color:var(--red)">⚠ 달성 미달 예상 &nbsp;—&nbsp; ${fmt_rev(rec.gapToTarget)} 부족</span>`
-    : `<span style="color:var(--green)">✅ 달성 순항 중${rec.gapToTarget < 0 ? '&nbsp;(' + fmt_rev(Math.abs(rec.gapToTarget)) + ' 초과 예상)' : ''}</span>`;
-
-  const rows = rec.scenarios.map(s => {
-    const pctC = s.hit100 ? 'var(--green)' : s.newPct >= 90 ? 'var(--yellow)' : 'var(--text-2)';
-    return `<div class="rec-scenario-row">
-      <div class="rec-scenario-ad">${s.adLabel}</div>
-      <div class="rec-scenario-addrev">순수주 +${fmt_rev(s.addNet)} 추가 기대</div>
-      <div class="rec-scenario-pct" style="color:${pctC}">${s.newPct.toFixed(1)}%${s.hit100 ? ' ✅' : ''}</div>
-    </div>`;
-  }).join('');
-
-  // 산출 근거 텍스트
-  const roasPct   = Math.round(rec.roas * 100);
-  const adToClose = rec.gapToTarget > 0 ? Math.ceil(rec.gapToTarget / rec.roas / 10000) : 0;
-  const adCloseLbl = adToClose >= 10000 ? `${(adToClose/10000).toFixed(1)}천만원` : `${adToClose}만원`;
-  const logicLines = [
-    `산출 근거: 당일 누적 순수주 ${fmt_rev(rec.accumNet)} ÷ 광고비 ${fmt_rev(rec.accumAdcost)} = ROAS ${roasPct}% (${rec.roasSource})`,
-    rec.gapToTarget > 0
-      ? `예상마감 ${fmt_rev(rec.forecastNet)} → 타겟 ${fmt_rev(rec.targetNet)} 대비 ${fmt_rev(rec.gapToTarget)} 부족 / 이론적 추가 집행 필요액 약 ${adCloseLbl}`
-      : `예상마감 ${fmt_rev(rec.forecastNet)} → 타겟 ${fmt_rev(rec.targetNet)} 초과 달성 예상`,
-    `※ ROAS 일정 유지 가정 / 잔여 ${rec.remainHours}시간 집행 가능 매체 우선 배분 권장`,
-  ].join('<br>');
-
-  scEl.innerHTML = `
-    <div class="rec-gap-label">${gapStr}</div>
-    <div class="rec-roas-note">증액 시나리오 — ROAS ${roasPct}% 적용 시 예상</div>
-    ${rows}
-    <div class="rec-logic-note">${logicLines}</div>`;
-}
-
-// ═══════════════════════════════════════════════
 // RENDER CHARTS
 // ═══════════════════════════════════════════════
 const HOURS = Array.from({length:24}, (_,i) => `${i}시`);
@@ -3074,7 +2971,6 @@ function render() {
   
   renderSummary(date);
   renderKPI(date);
-  renderAdRecommendation(date);
   renderFunnelDiagnosis(date);
   renderCharts(date);
   renderCompareOutlierNote(date);
