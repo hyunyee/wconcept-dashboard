@@ -2320,6 +2320,7 @@ function valueAtOrBefore(date, hour, fieldIdx, maxBack = 3) {
 const DIAG_MIN_HOUR    = 2;    // 이 시각 이전엔 진단 보류(노이즈가 큼)
 const DIAG_THRESH_REL  = 0.15; // 트래픽/전환율/주문건수: 상대편차 기준(기존 이상치 감지와 동일 기준)
 const DIAG_THRESH_NETPT = 5;   // 취반품률: 절대 %p 기준
+const TRAFFIC_STALE_HOURS = 3; // DAU가 실제 현재 시각보다 이만큼(시간) 뒤처지면 트래픽/전환율 진단 보류
 
 function getFunnelDiagnosis(date) {
   const curHour = getCurrentHour(date);
@@ -2329,8 +2330,16 @@ function getFunnelDiagnosis(date) {
   if (compDates.length === 0) return { available: false, reason: 'no-compare' };
 
   const rows = getHourlyData(date);
-  const trafficHour = Math.min(curHour, getCurrentFieldHour(date, 3));
+  // GA4 DAU는 최신 1시간이 아직 완전히 집계되지 않아 실제보다 낮게 잡히는 경우가
+  // 잦음(주문건수는 정상인데 DAU만 급락하는 패턴으로 확인됨) — 마지막 유효 시간에서
+  // 한 시간 더 물러나 "안정된" 값을 기준으로 사용
+  const trafficHour = Math.min(curHour, getCurrentFieldHour(date, 3) - 1);
   const curNetHour = getCurrentNetHour(date);
+
+  // DAU는 실제 시각 대비 지연 집계되는 경우가 잦음 — 지연이 크면(체감 "기준이 애매함")
+  // 트래픽/전환율 진단을 일시 보류하고, 다음 데이터 갱신으로 지연이 줄면 자동 재개
+  const nowHour = new Date().getHours();
+  const trafficStale = trafficHour >= 0 && (nowHour - trafficHour) >= TRAFFIC_STALE_HOURS;
 
   const accumOrdersFull = rows.slice(0, curHour + 1).reduce((a, r) => a + r[0], 0);
   const accumRevFull    = rows.slice(0, curHour + 1).reduce((a, r) => a + r[1], 0);
@@ -2350,7 +2359,7 @@ function getFunnelDiagnosis(date) {
     if (todayDAU != null && baseVals.length) {
       const baseDAU = baseVals.reduce((a, b) => a + b, 0) / baseVals.length;
       const dev = baseDAU > 0 ? (todayDAU - baseDAU) / baseDAU : 0;
-      stageTraffic = { key: 'traffic', label: '트래픽', today: todayDAU, base: baseDAU, dev, hour: trafficHour };
+      stageTraffic = { key: 'traffic', label: '트래픽', today: todayDAU, base: baseDAU, dev, hour: trafficHour, stale: trafficStale };
     }
   }
 
@@ -2368,7 +2377,7 @@ function getFunnelDiagnosis(date) {
     if (todayCVR != null && baseCVRs.length) {
       const baseCVR = baseCVRs.reduce((a, b) => a + b, 0) / baseCVRs.length;
       const dev = baseCVR > 0 ? (todayCVR - baseCVR) / baseCVR : 0;
-      stageCVR = { key: 'cvr', label: '전환율', today: todayCVR, base: baseCVR, dev, hour: trafficHour, accumOrdersAtTH };
+      stageCVR = { key: 'cvr', label: '전환율', today: todayCVR, base: baseCVR, dev, hour: trafficHour, accumOrdersAtTH, stale: trafficStale };
     }
   }
 
@@ -2395,10 +2404,10 @@ function getFunnelDiagnosis(date) {
   if (devOrders < -DIAG_THRESH_REL) {
     impacts.push({ key: 'orders', impact: (baseOrdersAvg - accumOrdersFull) * todayAOV, dev: devOrders, stage: stageOrders });
   }
-  if (stageTraffic && stageTraffic.dev < -DIAG_THRESH_REL) {
+  if (stageTraffic && !stageTraffic.stale && stageTraffic.dev < -DIAG_THRESH_REL) {
     impacts.push({ key: 'traffic', impact: (stageTraffic.base - stageTraffic.today) * (stageCVR ? stageCVR.today : 0) * todayAOV, dev: stageTraffic.dev, stage: stageTraffic });
   }
-  if (stageCVR && stageCVR.dev < -DIAG_THRESH_REL) {
+  if (stageCVR && !stageCVR.stale && stageCVR.dev < -DIAG_THRESH_REL) {
     impacts.push({ key: 'cvr', impact: (stageTraffic ? stageTraffic.today : 0) * (stageCVR.base - stageCVR.today) * todayAOV, dev: stageCVR.dev, stage: stageCVR });
   }
   if (stageCancel && stageCancel.devPt > DIAG_THRESH_NETPT) {
@@ -2409,7 +2418,7 @@ function getFunnelDiagnosis(date) {
   return {
     available: true,
     curHour, trafficHour, curNetHour,
-    lagWarning: (curHour - trafficHour) >= 2,
+    lagWarning: (curHour - trafficHour) >= 3,
     compDates,
     stageOrders, stageTraffic, stageCVR, stageCancel,
     impacts,
@@ -2449,13 +2458,15 @@ function renderFunnelDiagnosis(date) {
   }
   if (diag.stageTraffic) {
     const s = diag.stageTraffic;
-    const bad = s.dev < -DIAG_THRESH_REL;
-    checklistRows.push(`<div class="diag-check-row${bad ? ' bad' : ''}"><span class="diag-check-label">${bad ? '🔴' : '⚪'} ${s.label}</span><span class="diag-check-val">${s.today.toLocaleString()}명</span><span class="diag-check-base">평소 ${Math.round(s.base).toLocaleString()}명</span><span class="diag-check-dev">${fmtDevRel(s.dev)}</span></div>`);
+    const bad = !s.stale && s.dev < -DIAG_THRESH_REL;
+    const label = s.stale ? `⏳ ${s.label} (지연 데이터)` : `${bad ? '🔴' : '⚪'} ${s.label}`;
+    checklistRows.push(`<div class="diag-check-row${bad ? ' bad' : ''}"><span class="diag-check-label">${label}</span><span class="diag-check-val">${s.today.toLocaleString()}명</span><span class="diag-check-base">평소 ${Math.round(s.base).toLocaleString()}명</span><span class="diag-check-dev">${fmtDevRel(s.dev)}</span></div>`);
   }
   if (diag.stageCVR) {
     const s = diag.stageCVR;
-    const bad = s.dev < -DIAG_THRESH_REL;
-    checklistRows.push(`<div class="diag-check-row${bad ? ' bad' : ''}"><span class="diag-check-label">${bad ? '🔴' : '⚪'} ${s.label}</span><span class="diag-check-val">${(s.today*100).toFixed(2)}%</span><span class="diag-check-base">평소 ${(s.base*100).toFixed(2)}%</span><span class="diag-check-dev">${fmtDevRel(s.dev)}</span></div>`);
+    const bad = !s.stale && s.dev < -DIAG_THRESH_REL;
+    const label = s.stale ? `⏳ ${s.label} (지연 데이터)` : `${bad ? '🔴' : '⚪'} ${s.label}`;
+    checklistRows.push(`<div class="diag-check-row${bad ? ' bad' : ''}"><span class="diag-check-label">${label}</span><span class="diag-check-val">${(s.today*100).toFixed(2)}%</span><span class="diag-check-base">평소 ${(s.base*100).toFixed(2)}%</span><span class="diag-check-dev">${fmtDevRel(s.dev)}</span></div>`);
   }
   if (diag.stageCancel) {
     const s = diag.stageCancel;
@@ -2464,14 +2475,20 @@ function renderFunnelDiagnosis(date) {
   }
   const checklistHtml = `<div class="diag-checklist">${checklistRows.join('')}</div>`;
 
-  const lagNote = diag.lagWarning
-    ? `<div class="rec-logic-note">※ DAU 데이터가 주문 데이터보다 ${diag.curHour - diag.trafficHour}시간 지연 집계되어, 트래픽/전환율 진단은 ${diag.trafficHour}시 기준으로 계산됨</div>`
-    : '';
+  const isTrafficStale = diag.stageTraffic?.stale || diag.stageCVR?.stale;
+  const lagNote = isTrafficStale
+    ? `<div class="rec-logic-note">⏳ 트래픽/전환율은 DAU 데이터 지연(${diag.trafficHour}시 기준)이 커서 진단을 보류했습니다 — 다음 데이터 갱신 후 자동으로 다시 표시됩니다</div>`
+    : diag.lagWarning
+      ? `<div class="rec-logic-note">※ DAU 데이터가 주문 데이터보다 ${diag.curHour - diag.trafficHour}시간 지연 집계되어, 트래픽/전환율 진단은 ${diag.trafficHour}시 기준으로 계산됨</div>`
+      : '';
 
   if (diag.impacts.length === 0) {
+    const okMsg = isTrafficStale
+      ? '✅ 특이사항 없음 — 진단 가능한 지표(주문건수·취반품률) 정상 범위'
+      : '✅ 특이사항 없음 — 4개 지표 모두 정상 범위';
     bodyEl.innerHTML = `
       ${checklistHtml}
-      <div class="rec-gap-label" style="margin-top:12px">✅ 특이사항 없음 — 4개 지표 모두 정상 범위</div>
+      <div class="rec-gap-label" style="margin-top:12px">${okMsg}</div>
       ${lagNote}`;
     return;
   }
