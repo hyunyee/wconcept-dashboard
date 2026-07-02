@@ -452,13 +452,12 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
 <div class="tabs">
   <button class="tab-btn active" id="tab-daily">Daily (전일 기준)</button>
   <div class="tab-divider"></div>
-  <button class="tab-btn annual-tab" onclick="setAnnualView(this)">📅 26연간 월별</button>
-  <div class="tab-divider"></div>
-  <button class="tab-btn" id="tab-ads" onclick="setAdsView(this)">📢 광고실적</button>
-  <div class="tab-divider"></div>
-  <button class="tab-btn realtime-tab" id="tab-realtime" onclick="setRealtimeView(this)">📊 실시간</button>
+  <button class="tab-btn annual-tab" onclick="setAnnualView(this)">📅 연간월별</button>
   <div class="tab-divider"></div>
   <button class="tab-btn" id="tab-period" onclick="setPeriodView(this)">📆 기간조회</button>
+  <div class="tab-divider"></div>
+  <button class="tab-btn realtime-tab" id="tab-realtime" onclick="setRealtimeView(this)">📊 실시간</button>
+  <!-- 광고실적 탭: 별도 광고 대시보드로 재구성 예정이라 임시 숨김. setAdsView()/#view-ads는 코드에 유지 -->
   <span class="tab-note">* 채널ID 기준</span>
 </div>
 
