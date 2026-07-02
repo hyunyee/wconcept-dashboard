@@ -2406,24 +2406,26 @@ function detectCompareOutliers(date) {
   const curHour = getCurrentHour(date);
   const comps = getComparisonDates(date);
   const keys = ['lw', 'lm', 'ly'];
-  const ratios = {};
+  // 각 비교일의 "현재 시각까지 누적 매출"을 서로 비교 (기존에는 비교일 자기 자신의
+  // 하루총합/누적 페이스 비율을 비교했는데, 절대 매출 규모가 큰 이벤트일이 페이스
+  // 모양만 비슷하면 안 걸리는 문제가 있어 누적 매출 자체를 서로 비교하도록 변경)
+  const accums = {};
   keys.forEach(k => {
     const cd = comps[k];
     if (!cd || !RAW[cd]) return;
     const cr = getHourlyData(cd);
-    const acc = cr.slice(0, curHour + 1).reduce((a, r) => a + r[1], 0);
-    const tot = cr.reduce((a, r) => a + r[1], 0);
-    if (acc > 0) ratios[k] = tot / acc;
+    const acc = cr.slice(0, curHour + 1).reduce((a, r) => a + (r ? r[1] : 0), 0);
+    if (acc > 0) accums[k] = acc;
   });
-  const vals = Object.values(ratios);
+  const vals = Object.values(accums);
   if (vals.length < 2) return {};
   const sorted = [...vals].sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
   const median = sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
   const outliers = {};
   keys.forEach(k => {
-    if (ratios[k] == null || !median) return;
-    const dev = (ratios[k] - median) / median;
+    if (accums[k] == null || !median) return;
+    const dev = (accums[k] - median) / median;
     if (Math.abs(dev) > 0.15) {
       const cd = comps[k];
       outliers[k] = { date: cd, dev, event: (DAILY_TGTS[cd] && DAILY_TGTS[cd].event) || null };
@@ -2440,9 +2442,9 @@ function renderCompareOutlierNote(date) {
   if (keys.length === 0) { el.textContent = ''; return; }
   const parts = keys.map(k => {
     const o = outliers[k];
-    const dirTxt = o.dev > 0 ? '평소보다 후반 몰림' : '평소보다 초반 몰림';
+    const dirTxt = o.dev > 0 ? '평소보다 누적 매출 큼' : '평소보다 누적 매출 작음';
     const evtTxt = o.event ? ` (${o.event})` : '';
-    return `${LABELS[k]}${evtTxt} — ${dirTxt}, 배수 ${o.dev > 0 ? '+' : ''}${(o.dev * 100).toFixed(0)}%`;
+    return `${LABELS[k]}${evtTxt} — ${dirTxt}, 편차 ${o.dev > 0 ? '+' : ''}${(o.dev * 100).toFixed(0)}%`;
   });
   el.textContent = `⚠ 이상치 감지: ${parts.join(' / ')} → 예상마감 계산에서 기본 제외`;
 }
