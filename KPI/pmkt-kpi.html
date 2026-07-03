@@ -836,7 +836,25 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
     </div>
   </div>
 
-  <!-- Charts Row 2: DAU + APP DAU -->
+  <!-- Charts Row 2: 주문건수 + 취반품률 (실적진단 지표) -->
+  <div class="chart-grid-2">
+    <div class="chart-card" id="card-orders">
+      <div class="section-header">
+        <div class="section-title"><div class="section-title-dot" style="background:#0ea5e9"></div>시간대별 주문건수</div>
+        <div class="legend-row" id="legend-orders"></div>
+      </div>
+      <div class="chart-wrapper"><canvas id="chart-orders" height="220"></canvas></div>
+    </div>
+    <div class="chart-card" id="card-cancelrate">
+      <div class="section-header">
+        <div class="section-title"><div class="section-title-dot" style="background:var(--red)"></div>시간대별 취반품률 <span style="font-size:10px;color:var(--text-3);font-weight:400;margin-left:6px;">※ 총수주 대비 순수주 비율로 근사(누적 기준)</span></div>
+        <div class="legend-row" id="legend-cancelrate"></div>
+      </div>
+      <div class="chart-wrapper"><canvas id="chart-cancelrate" height="220"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Charts Row 3: DAU + APP DAU -->
   <div class="chart-grid-2">
     <div class="chart-card" id="card-dau">
       <div class="section-header">
@@ -2308,17 +2326,8 @@ function getTargets(date) {
 }
 
 // ── 실적 진단 (퍼널 단계별 부진 원인 진단) ──────────────────────────
-// null-safe 시간대 값 조회 — DAU 등 일부 필드가 주문/매출보다 늦게 집계되는 경우 대응
-function valueAtOrBefore(date, hour, fieldIdx, maxBack = 3) {
-  const rows = getHourlyData(date);
-  for (let h = hour, tries = 0; h >= 0 && tries <= maxBack; h--, tries++) {
-    if (rows[h] && rows[h][fieldIdx] !== null && rows[h][fieldIdx] !== undefined) return rows[h][fieldIdx];
-  }
-  return null;
-}
-
 const DIAG_MIN_HOUR    = 2;    // 이 시각 이전엔 진단 보류(노이즈가 큼)
-const DIAG_THRESH_REL  = 0.15; // 트래픽/전환율/주문건수: 상대편차 기준(기존 이상치 감지와 동일 기준)
+const DIAG_THRESH_REL  = 0.15; // 주문건수: 상대편차 기준(기존 이상치 감지와 동일 기준)
 const DIAG_THRESH_NETPT = 5;   // 취반품률: 절대 %p 기준
 
 function getFunnelDiagnosis(date) {
@@ -2329,10 +2338,6 @@ function getFunnelDiagnosis(date) {
   if (compDates.length === 0) return { available: false, reason: 'no-compare' };
 
   const rows = getHourlyData(date);
-  // GA4 DAU는 파이프라인이 신뢰하는 기준과 동일하게 "현재 시각 - 2시간"까지만 사용
-  // (pmkt_hourly_sync.ps1의 $ga4MaxHour 규칙과 동일 — 최신 1~2시간은 미집계 상태라 제외)
-  const nowHour = new Date().getHours();
-  const trafficHour = Math.min(curHour, getCurrentFieldHour(date, 3), nowHour - 2);
   const curNetHour = getCurrentNetHour(date);
 
   const accumOrdersFull = rows.slice(0, curHour + 1).reduce((a, r) => a + r[0], 0);
@@ -2345,37 +2350,7 @@ function getFunnelDiagnosis(date) {
   const devOrders = baseOrdersAvg > 0 ? (accumOrdersFull - baseOrdersAvg) / baseOrdersAvg : 0;
   const stageOrders = { key: 'orders', label: '주문건수', today: accumOrdersFull, base: baseOrdersAvg, dev: devOrders, hour: curHour };
 
-  // ---- ② 트래픽(DAU) ----
-  let stageTraffic = null;
-  if (trafficHour >= 0) {
-    const todayDAU = valueAtOrBefore(date, trafficHour, 3);
-    const baseVals = compDates.map(cd => valueAtOrBefore(cd, trafficHour, 3)).filter(v => v != null && v > 0);
-    if (todayDAU != null && baseVals.length) {
-      const baseDAU = baseVals.reduce((a, b) => a + b, 0) / baseVals.length;
-      const dev = baseDAU > 0 ? (todayDAU - baseDAU) / baseDAU : 0;
-      stageTraffic = { key: 'traffic', label: '트래픽', today: todayDAU, base: baseDAU, dev, hour: trafficHour };
-    }
-  }
-
-  // ---- ③ 전환율 (trafficHour까지 누적 주문건수 / DAU) ----
-  let stageCVR = null;
-  if (trafficHour >= 0 && stageTraffic) {
-    const accumOrdersAtTH = rows.slice(0, trafficHour + 1).reduce((a, r) => a + r[0], 0);
-    const todayCVR = stageTraffic.today > 0 ? accumOrdersAtTH / stageTraffic.today : null;
-    const baseCVRs = compDates.map(cd => {
-      const cRows = getHourlyData(cd);
-      const cOrders = cRows.slice(0, trafficHour + 1).reduce((a, r) => a + r[0], 0);
-      const cDAU = valueAtOrBefore(cd, trafficHour, 3);
-      return (cDAU && cDAU > 0) ? cOrders / cDAU : null;
-    }).filter(v => v != null);
-    if (todayCVR != null && baseCVRs.length) {
-      const baseCVR = baseCVRs.reduce((a, b) => a + b, 0) / baseCVRs.length;
-      const dev = baseCVR > 0 ? (todayCVR - baseCVR) / baseCVR : 0;
-      stageCVR = { key: 'cvr', label: '전환율', today: todayCVR, base: baseCVR, dev, hour: trafficHour, accumOrdersAtTH };
-    }
-  }
-
-  // ---- ④ 취반품률 (1 - 순수주/총수주) — 별도 취소/반품 필드가 없어 근사치 ----
+  // ---- ② 취반품률 (1 - 순수주/총수주) — 별도 취소/반품 필드가 없어 근사치 ----
   let stageCancel = null;
   if (curNetHour >= 0) {
     const todayNet = getNetCumul(date, curNetHour);
@@ -2398,12 +2373,6 @@ function getFunnelDiagnosis(date) {
   if (devOrders < -DIAG_THRESH_REL) {
     impacts.push({ key: 'orders', impact: (baseOrdersAvg - accumOrdersFull) * todayAOV, dev: devOrders, stage: stageOrders });
   }
-  if (stageTraffic && stageTraffic.dev < -DIAG_THRESH_REL) {
-    impacts.push({ key: 'traffic', impact: (stageTraffic.base - stageTraffic.today) * (stageCVR ? stageCVR.today : 0) * todayAOV, dev: stageTraffic.dev, stage: stageTraffic });
-  }
-  if (stageCVR && stageCVR.dev < -DIAG_THRESH_REL) {
-    impacts.push({ key: 'cvr', impact: (stageTraffic ? stageTraffic.today : 0) * (stageCVR.base - stageCVR.today) * todayAOV, dev: stageCVR.dev, stage: stageCVR });
-  }
   if (stageCancel && stageCancel.devPt > DIAG_THRESH_NETPT) {
     impacts.push({ key: 'cancel', impact: stageCancel.todayRevAtNH * (stageCancel.today - stageCancel.base), devPt: stageCancel.devPt, stage: stageCancel });
   }
@@ -2411,9 +2380,9 @@ function getFunnelDiagnosis(date) {
 
   return {
     available: true,
-    curHour, trafficHour, curNetHour,
+    curHour, curNetHour,
     compDates,
-    stageOrders, stageTraffic, stageCVR, stageCancel,
+    stageOrders, stageCancel,
     impacts,
   };
 }
@@ -2441,35 +2410,26 @@ function renderFunnelDiagnosis(date) {
     ? targets.net_revenue - forecast.net_rev : null;
 
   const fmtDevRel = dev => `${dev >= 0 ? '+' : ''}${(dev * 100).toFixed(1)}%`;
+  const baselineLabel = getBaselineLabel();
 
-  // 4개 지표 체크리스트
+  // 2개 지표 체크리스트 (주문건수·취반품률)
   const checklistRows = [];
   if (diag.stageOrders) {
     const s = diag.stageOrders;
     const bad = s.dev < -DIAG_THRESH_REL;
-    checklistRows.push(`<div class="diag-check-row${bad ? ' bad' : ''}"><span class="diag-check-label">${bad ? '🔴' : '⚪'} ${s.label}</span><span class="diag-check-val">${s.today.toLocaleString()}건</span><span class="diag-check-base">평소 ${Math.round(s.base).toLocaleString()}건</span><span class="diag-check-dev">${fmtDevRel(s.dev)}</span></div>`);
-  }
-  if (diag.stageTraffic) {
-    const s = diag.stageTraffic;
-    const bad = s.dev < -DIAG_THRESH_REL;
-    checklistRows.push(`<div class="diag-check-row${bad ? ' bad' : ''}"><span class="diag-check-label">${bad ? '🔴' : '⚪'} ${s.label}</span><span class="diag-check-val">${s.today.toLocaleString()}명</span><span class="diag-check-base">평소 ${Math.round(s.base).toLocaleString()}명</span><span class="diag-check-dev">${fmtDevRel(s.dev)}</span></div>`);
-  }
-  if (diag.stageCVR) {
-    const s = diag.stageCVR;
-    const bad = s.dev < -DIAG_THRESH_REL;
-    checklistRows.push(`<div class="diag-check-row${bad ? ' bad' : ''}"><span class="diag-check-label">${bad ? '🔴' : '⚪'} ${s.label}</span><span class="diag-check-val">${(s.today*100).toFixed(2)}%</span><span class="diag-check-base">평소 ${(s.base*100).toFixed(2)}%</span><span class="diag-check-dev">${fmtDevRel(s.dev)}</span></div>`);
+    checklistRows.push(`<div class="diag-check-row${bad ? ' bad' : ''}"><span class="diag-check-label">${bad ? '🔴' : '⚪'} ${s.label}</span><span class="diag-check-val">${s.today.toLocaleString()}건</span><span class="diag-check-base">${baselineLabel} ${Math.round(s.base).toLocaleString()}건</span><span class="diag-check-dev">${fmtDevRel(s.dev)}</span></div>`);
   }
   if (diag.stageCancel) {
     const s = diag.stageCancel;
     const bad = s.devPt > DIAG_THRESH_NETPT;
-    checklistRows.push(`<div class="diag-check-row${bad ? ' bad' : ''}"><span class="diag-check-label">${bad ? '🔴' : '⚪'} ${s.label}</span><span class="diag-check-val">${(s.today*100).toFixed(1)}%</span><span class="diag-check-base">평소 ${(s.base*100).toFixed(1)}%</span><span class="diag-check-dev">${s.devPt >= 0 ? '+' : ''}${s.devPt.toFixed(1)}%p</span></div>`);
+    checklistRows.push(`<div class="diag-check-row${bad ? ' bad' : ''}"><span class="diag-check-label">${bad ? '🔴' : '⚪'} ${s.label}</span><span class="diag-check-val">${(s.today*100).toFixed(1)}%</span><span class="diag-check-base">${baselineLabel} ${(s.base*100).toFixed(1)}%</span><span class="diag-check-dev">${s.devPt >= 0 ? '+' : ''}${s.devPt.toFixed(1)}%p</span></div>`);
   }
   const checklistHtml = `<div class="diag-checklist">${checklistRows.join('')}</div>`;
 
   if (diag.impacts.length === 0) {
     bodyEl.innerHTML = `
       ${checklistHtml}
-      <div class="rec-gap-label" style="margin-top:12px">✅ 특이사항 없음 — 4개 지표 모두 정상 범위</div>`;
+      <div class="rec-gap-label" style="margin-top:12px">✅ 특이사항 없음 — 2개 지표 모두 정상 범위</div>`;
     return;
   }
 
@@ -2484,25 +2444,17 @@ function renderFunnelDiagnosis(date) {
     let bodyLine, suggestLine;
     if (imp.key === 'orders') {
       const s = imp.stage;
-      bodyLine = `📉 주문건수 감소 — ${s.hour}시 기준 ${s.today.toLocaleString()}건, 평소 ${Math.round(s.base).toLocaleString()}건 대비 ${(s.dev*100).toFixed(1)}%`;
-      suggestLine = `제안: 아래 트래픽·전환율 지표로 유입/구매전환 중 어느 단계가 원인인지 확인 필요`;
-    } else if (imp.key === 'traffic') {
-      const s = imp.stage;
-      bodyLine = `📉 트래픽(DAU) 감소 — ${s.hour}시 기준 DAU ${s.today.toLocaleString()}명, 평소 ${Math.round(s.base).toLocaleString()}명 대비 ${(s.dev*100).toFixed(1)}%`;
-      suggestLine = `제안: 유입 채널 점검 — 광고 노출/입찰 상태, 주요 랜딩페이지 접속 이슈 확인 필요`;
-    } else if (imp.key === 'cvr') {
-      const s = imp.stage;
-      bodyLine = `📉 전환율 하락 — ${s.hour}시 기준 전환율 ${(s.today*100).toFixed(2)}%, 평소 ${(s.base*100).toFixed(2)}% 대비 ${(s.dev*100).toFixed(1)}%`;
-      suggestLine = `제안: 상품/가격/프로모션 노출 UX 점검 — 유입은 정상인데 구매 전환이 낮은 구간(카테고리/디바이스) 확인 필요`;
+      bodyLine = `📉 주문건수 감소 — ${s.hour}시 기준 ${s.today.toLocaleString()}건, ${baselineLabel} ${Math.round(s.base).toLocaleString()}건 대비 ${(s.dev*100).toFixed(1)}%`;
+      suggestLine = `제안: 마케팅 채널 유입, 프로모션/이벤트 노출 여부 등 외부 요인 점검 필요`;
     } else {
       const s = imp.stage;
-      bodyLine = `⚠️ 취반품률 증가 — ${s.hour}시 기준 ${(s.today*100).toFixed(1)}%, 평소 ${(s.base*100).toFixed(1)}% 대비 +${s.devPt.toFixed(1)}%p`;
+      bodyLine = `⚠️ 취반품률 증가 — ${s.hour}시 기준 ${(s.today*100).toFixed(1)}%, ${baselineLabel} ${(s.base*100).toFixed(1)}% 대비 +${s.devPt.toFixed(1)}%p`;
       suggestLine = `제안: 최근 취소/반품 급증 상품·이벤트 여부, 배송/품질 이슈 확인 필요<br>※ 취소/반품만 분리 집계된 데이터가 없어 총수주 대비 순수주 비율(1-순수주/총수주)로 근사한 값입니다`;
     }
 
     return `<div class="rec-scenario-row" style="flex-direction:column;align-items:flex-start;gap:4px">
       <div style="font-size:12px;font-weight:700;color:var(--text-1)">${tag}${bodyLine}</div>
-      <div class="diag-row-detail">→ 이 영역만 평소 수준으로 회복돼도 순수주 약 ${fmt_rev(Math.max(imp.impact,0))} 추가 확보 가능${shareTxt}</div>
+      <div class="diag-row-detail">→ 이 영역만 ${baselineLabel} 수준으로 회복돼도 순수주 약 ${fmt_rev(Math.max(imp.impact,0))} 추가 확보 가능${shareTxt}</div>
       <div class="diag-row-detail">${suggestLine}</div>
     </div>`;
   }).join('');
@@ -2523,6 +2475,13 @@ const COLORS = {
 };
 
 const LABELS = { today:'오늘', lw:'전주동요일(-7일)', lm:'전월동요일(-28일)', ly:'전년동요일(-364일)' };
+
+// 실적진단에서 "평소" 대신 실제 비교 기준(켜진 토글 평균)을 명시하기 위한 라벨
+const COMP_KEY_LABEL = { lw: '전주동요일', lm: '전월동요일', ly: '전년동요일' };
+function getBaselineLabel() {
+  const keys = ['lw', 'lm', 'ly'].filter(k => compareFlags[k]);
+  return keys.length ? keys.map(k => COMP_KEY_LABEL[k]).join('·') + ' 평균' : '비교기준 없음';
+}
 
 function getWeekdayLabel(date) {
   if (!date) return '';
@@ -2925,10 +2884,9 @@ const chartOpts = (formatter) => ({
   }
 });
 
-function renderChart(id, date, fieldIdx, formatter) {
+function renderChartFromDatasets(id, datasets, formatter) {
   const el = document.getElementById(id);
   if (!el) return;
-  const datasets = buildDatasets(date, fieldIdx);
   if (charts[id]) charts[id].destroy();
   charts[id] = new Chart(el.getContext('2d'), {
     type: 'line',
@@ -2946,10 +2904,67 @@ function renderChart(id, date, fieldIdx, formatter) {
   }
 }
 
+function renderChart(id, date, fieldIdx, formatter) {
+  renderChartFromDatasets(id, buildDatasets(date, fieldIdx), formatter);
+}
+
+// 취반품률(1 - 누적 순수주/누적 총수주) — 원본 필드가 아닌 파생 지표라 buildDatasets 대신 전용 빌더 사용
+function buildCancelRateDatasets(date) {
+  const comps = getComparisonDates(date);
+  const datasets = [];
+
+  function cumulRateSeries(d) {
+    const rows = getHourlyData(d);
+    let cumRev = 0, cumNet = 0, hasNet = false;
+    return rows.map(r => {
+      if (!r) return null;
+      cumRev += r[1] || 0;
+      if (r[2] !== null && r[2] !== undefined) { cumNet += r[2]; hasNet = true; }
+      return (hasNet && cumRev > 0) ? (1 - cumNet / cumRev) * 100 : null;
+    });
+  }
+
+  // ── 오늘 실선 (취반품률 유효 시간까지만, 순수주 차트와 동일 기준) ──
+  const curH = getCurrentFieldHour(date, 2);
+  const todaySeries = cumulRateSeries(date).map((v, h) => h <= curH ? v : null);
+  datasets.push({
+    label: '실적 (' + date + ')',
+    data: todaySeries,
+    borderColor: COLORS.today,
+    backgroundColor: 'rgba(59,130,246,0.10)',
+    borderWidth: 2.5,
+    pointRadius: todaySeries.map((v, h) => v !== null && h === curH ? 5 : 2),
+    pointBackgroundColor: todaySeries.map((v, h) => v !== null && h === curH ? COLORS.today : 'transparent'),
+    spanGaps: false,
+    tension: 0.3, fill: true,
+  });
+
+  // ── 비교일 점선 ──
+  const compMap  = { lw: comps.lw, lm: comps.lm, ly: comps.ly };
+  const colorMap = { lw: COLORS.lw, lm: COLORS.lm, ly: COLORS.ly };
+  Object.entries(compMap).forEach(([key, d]) => {
+    if (!compareFlags[key] || !d || !RAW[d]) return;
+    datasets.push({
+      label: LABELS[key] + ' (' + d + ')',
+      data: cumulRateSeries(d),
+      borderColor: colorMap[key],
+      backgroundColor: 'transparent',
+      borderWidth: 1.5,
+      borderDash: [4, 3],
+      pointRadius: 0,
+      spanGaps: false,
+      tension: 0.3, fill: false,
+    });
+  });
+
+  return datasets;
+}
 
 function renderCharts(date) {
   renderChart('chart-revenue', date, 1, v => fmt_rev(v));
   renderChart('chart-netrev',  date, 2, v => fmt_rev(v));
+  renderChart('chart-orders',  date, 0, v => v.toLocaleString() + '건');
+  renderChartFromDatasets('chart-cancelrate', buildCancelRateDatasets(date), v => v.toFixed(1) + '%');
   renderChart('chart-dau',     date, 3, v => v.toLocaleString());
   renderChart('chart-appdau',  date, 4, v => v.toLocaleString());
 }
