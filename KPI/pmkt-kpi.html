@@ -681,10 +681,25 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
 <div id="view-weekly" style="display:none">
   <div class="sec-hd" style="margin-top:16px">
     <h2 style="--before-color:#0ea5e9">Weekly</h2>
-    <span class="sec-note"></span>
+    <span class="sec-note" id="wk-range-note"></span>
   </div>
-  <div class="card" style="text-align:center;color:#94a3b8;padding:60px 20px">
-    🚧 준비중입니다. 월~일 기준 주차별 추이 대시보드를 구성 중입니다.
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-title">주간 실적 비교 <span style="font-size:10px;color:#94a3b8;font-weight:400">(월~일 주 기준 · 금액단위: 백만원)</span></div>
+    <div class="card-sub" id="wk-table-sub"></div>
+    <table class="dt">
+      <thead><tr>
+        <th>지표</th><th>이번주</th><th>전주 동기간</th><th>WoW</th><th>전주 마감</th><th>전년 동기간</th><th>YoY</th>
+      </tr></thead>
+      <tbody id="wk-table-body"><tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:12px">데이터 로딩 중...</td></tr></tbody>
+    </table>
+    <div style="font-size:10px;color:#94a3b8;margin-top:6px">
+      전주 동기간·전년 동기간(-364일)은 이번주와 같은 요일수(N일차) 컷 기준 · WoW=전주 동기간比, YoY=전년 동기간比
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">12주 순수주 추이</div>
+    <div class="card-sub" id="wk-chart-sub">주간 합계(억원) · 막대: 금년 / 라인: 전년동주(-364일) · * 진행중인 주</div>
+    <div class="chart-box h260"><canvas id="chart-weekly-trend"></canvas></div>
   </div>
 </div><!-- /view-weekly -->
 
@@ -1351,6 +1366,8 @@ function setAdsView(el) {
 
 function setWeeklyView(el) {
   showView('view-weekly', el);
+  // 탭이 visible 상태가 된 후 렌더 (display:none 상태에서 차트 생성 시 크기 0 오류 방지)
+  setTimeout(renderWeekly, 0);
 }
 
 function setRealtimeView(el) {
@@ -1585,6 +1602,131 @@ function renderChannelStatusChart() {
       },
     });
   });
+}
+
+// ── Weekly 탭 ──────────────────────────────────────────────────────
+// 월~일 주 기준. 총수주/순수주/주문건수는 RAW(시간대별), 신규가입/첫구매는 DAILY 합산
+function getWeekStart(d) {
+  const r = new Date(d);
+  const dow = (r.getDay() + 6) % 7; // 월=0 … 일=6
+  r.setDate(r.getDate() - dow);
+  return r;
+}
+
+// start(Date)부터 maxDays일간 합산 (renderPeriodView와 동일한 RAW/DAILY 집계 기준)
+function aggWeek(start, maxDays) {
+  const agg = { revenue: 0, net: 0, orders: 0, join: 0, first: 0 };
+  const cur = new Date(start);
+  for (let i = 0; i < maxDays; i++) {
+    const ds = localDateToStr(cur);
+    (RAW[ds] || []).forEach(h => {
+      if (h) {
+        if (h[0]) agg.orders  += h[0];
+        if (h[1]) agg.revenue += h[1];
+        if (h[2]) agg.net     += h[2];
+      }
+    });
+    const dd = DAILY[ds] || {};
+    if (dd.join)  agg.join  += dd.join;
+    if (dd.first) agg.first += dd.first;
+    cur.setDate(cur.getDate() + 1);
+  }
+  return agg;
+}
+
+let weeklyTrendChart = null;
+function renderWeekly() {
+  if (!Object.keys(RAW).length) return; // 데이터 로드 전 탭 진입 가드
+
+  const ys = getEffectiveDailyDate();
+  const effDate = parseLocalDate(ys);
+  const wkStart = getWeekStart(effDate);
+  const dayN = Math.round((effDate - wkStart) / 864e5) + 1; // 이번주 N일차 (월=1)
+
+  const offset = (base, days) => { const d = new Date(base); d.setDate(d.getDate() + days); return d; };
+  const wkEnd   = offset(wkStart, 6);
+  const lwStart = offset(wkStart, -7);
+  const lyStart = offset(wkStart, -364); // 전년동주: -364일(요일 정렬, 기존 관례)
+
+  const thisW  = aggWeek(wkStart, dayN);
+  const lwSame = aggWeek(lwStart, dayN);
+  const lwFull = aggWeek(lwStart, 7);
+  const lySame = aggWeek(lyStart, dayN);
+
+  const mdw = d => `${d.getMonth() + 1}/${d.getDate()}(${DAYS_KO[d.getDay()]})`;
+  const note = document.getElementById('wk-range-note');
+  if (note) note.textContent = `${mdw(wkStart)} ~ ${mdw(wkEnd)} · ${dayN}일차 · ${ys} 데이터 기준`;
+  const sub = document.getElementById('wk-table-sub');
+  if (sub) sub.textContent = `이번주 ${mdw(wkStart)}~${mdw(effDate)} vs 전주 ${mdw(lwStart)}~ · 전년동주 ${mdw(lyStart)}~`;
+
+  const rows = [
+    { label: '총수주',   key: 'revenue', scale: 1e6 },
+    { label: '순수주',   key: 'net',     scale: 1e6 },
+    { label: '주문건수', key: 'orders',  scale: 1 },
+    { label: '신규가입', key: 'join',    scale: 1 },
+    { label: '첫구매',   key: 'first',   scale: 1 },
+  ];
+  const fn = (v, s) => v ? Math.round(v / s).toLocaleString() : '-';
+  const pctCell = p => {
+    if (p == null) return '<span style="color:#cbd5e1">—</span>';
+    const color = p >= 0 ? '#10b981' : '#ef4444';
+    return `<span style="color:${color};font-weight:700">${p >= 0 ? '+' : ''}${p.toFixed(1)}%</span>`;
+  };
+
+  const tbody = document.getElementById('wk-table-body');
+  if (tbody) tbody.innerHTML = rows.map(r => {
+    const a = thisW[r.key], lwS = lwSame[r.key], lwF = lwFull[r.key], lyS = lySame[r.key];
+    return `<tr>
+      <td>${r.label}</td>
+      <td><b>${fn(a, r.scale)}</b></td>
+      <td>${fn(lwS, r.scale)}</td>
+      <td>${pctCell(yoyPct(a || null, lwS || null))}</td>
+      <td>${fn(lwF, r.scale)}</td>
+      <td>${fn(lyS, r.scale)}</td>
+      <td>${pctCell(yoyPct(a || null, lyS || null))}</td>
+    </tr>`;
+  }).join('');
+
+  // 12주 순수주 추이 — 막대: 금년 주간합, 라인: 전년동주(-364d) 주간합 (억원)
+  const labels = [], curSeries = [], lySeries = [];
+  for (let w = 11; w >= 0; w--) {
+    const s = offset(wkStart, -7 * w);
+    const curNet = aggWeek(s, 7).net;
+    const lyNet  = aggWeek(offset(s, -364), 7).net;
+    labels.push(`${s.getMonth() + 1}/${s.getDate()}주${w === 0 ? '*' : ''}`);
+    curSeries.push(curNet > 0 ? +(curNet / 1e8).toFixed(1) : 0);
+    lySeries.push(lyNet > 0 ? +(lyNet / 1e8).toFixed(1) : 0);
+  }
+
+  const canvas = document.getElementById('chart-weekly-trend');
+  if (canvas) {
+    if (weeklyTrendChart) { weeklyTrendChart.destroy(); weeklyTrendChart = null; }
+    weeklyTrendChart = new Chart(canvas, {
+      data: {
+        labels,
+        datasets: [
+          { type: 'line', label: '전년동주(억)', data: lySeries,
+            borderColor: '#cbd5e1', backgroundColor: '#cbd5e1', borderWidth: 1.5,
+            pointRadius: 2, tension: 0.3, fill: false, datalabels: { display: false } },
+          { type: 'bar', label: '순수주(억)', data: curSeries,
+            backgroundColor: 'rgba(14,165,233,0.7)', borderRadius: 3, datalabels: { display: false } },
+        ],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: true, position: 'bottom', labels: { font: { size: 10 }, boxWidth: 10 } },
+          datalabels: { display: false },
+          tooltip: { mode: 'index', intersect: false },
+        },
+        scales: {
+          x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 9 } } },
+          y: { min: 0, grid: { color: '#f1f5f9' }, border: { display: false },
+            ticks: { color: '#94a3b8', font: { size: 10 } } },
+        },
+      },
+    });
+  }
 }
 
 // ── 기간 조회 탭 ────────────────────────────────────────────────────
@@ -3415,6 +3557,8 @@ document.addEventListener('DOMContentLoaded', () => {
       buildFunnelFromTraffic();
       renderChannelShare();
       renderChannelStatusChart();
+      // 데이터 로드 전에 Weekly 탭에 진입해 있었으면 로드 완료 시점에 렌더
+      if (document.getElementById('view-weekly').style.display !== 'none') renderWeekly();
       init();
     })
     .catch(err => {
