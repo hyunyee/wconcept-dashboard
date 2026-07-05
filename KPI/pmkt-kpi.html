@@ -152,6 +152,11 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
 .mc-text-pre{font-size:12px;line-height:1.75;white-space:pre-wrap;color:#1e293b;font-family:'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif;margin:0;flex:1}
 .mc-insight{display:flex;align-items:flex-start;gap:8px;padding:8px 10px;border-radius:7px;margin-bottom:6px;font-size:11px;line-height:1.5}
 .mc-insight:last-child{margin-bottom:0}
+.mc-headline{padding:11px 20px;font-size:13px;font-weight:600;color:#0f172a;background:#fafbfd;border-bottom:1px solid #f1f5f9;line-height:1.6}
+.mc-headline .hl-num{font-weight:800}
+.mc-headline .hl-up{color:#16a34a;font-weight:700}
+.mc-headline .hl-dn{color:#dc2626;font-weight:700}
+.mc-headline .hl-dim{color:#64748b;font-weight:400}
 .mc-insight.good{background:#f0fdf4;color:#166534}
 .mc-insight.warn{background:#fff7ed;color:#92400e}
 .mc-insight.info{background:#eff6ff;color:#1e40af}
@@ -499,6 +504,8 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
         <button class="mc-btn" onclick="event.stopPropagation();mcToggleCollapse()" style="margin-left:4px">✏️ 편집</button>
       </div>
     </div>
+    <!-- 헤드라인: 접힘 상태에서도 보이는 한 줄 요약 -->
+    <div class="mc-headline" id="mc-headline"></div>
     <div class="mc-body" id="mc-body" style="display:none;grid-template-columns:1fr 1fr">
       <!-- 좌: 자동 생성 Teams 텍스트 -->
       <div class="mc-preview-panel">
@@ -1053,7 +1060,8 @@ function mcGenerateText() {
   const cd = mcCalcData();
   if (!cd) return '데이터 로딩 중...';
   const { m, d, yGmv, yNet, yAdcost, tgtGmv, tgtNet, gmvPct, netPct, adrate, mtdNet, mtdGmv, mtdAdrate, mtdNetPct, netTgtM, netYoy, actM, joinYoy, firstYoy, mauYoy } = cd;
-  const wday = ['일','월','화','수','목','금','토'][YESTERDAY.getDay()];
+  // 요일은 실제 데이터 기준일(yDate)로 — 주말 미갱신 등으로 전일과 다를 수 있음
+  const wday = ['일','월','화','수','목','금','토'][parseLocalDate(cd.yDate).getDay()];
   const f8 = v => v>0 ? `${(v/1e8).toFixed(1)}억` : '-';
   const yf = v => v===null?'-': +v>=0?`+${Math.abs(+v).toFixed(1)}%`:`△${Math.abs(+v).toFixed(1)}%`;
 
@@ -1070,7 +1078,21 @@ function mcGenerateText() {
 
   const netTgtStr = netTgtM>0 ? ` · 달성률 ${mtdNetPct}%` : '';
 
+  // (3) 특이사항: 인사이트 상위 3건 (드라이버 → 리스크 순, 정상범위 안내는 제외)
+  const insTop = mcDetectInsights()
+    .filter(i => i.type === 'good' || i.type === 'warn')
+    .sort((a, b) => (a.type === 'warn' ? 1 : 0) - (b.type === 'warn' ? 1 : 0))
+    .slice(0, 3);
+  const insBlock = insTop.length
+    ? `\n\n(3) 특이사항\n${insTop.map(i => `- ${i.text}`).join('\n')}` : '';
+
+  const daySummary = yNet > 0
+    ? `순수주 ${f8(yNet)} (일 목표 ${netPct}%, YoY ${yf(netYoy)})`
+    : '실적 집계 전';
+
   return `안녕하세요! 전일 및 ${m}월 MTD 전사 수주 실적 공유드립니다.
+
+■ 요약: ${m}/${d}(${wday}) ${daySummary} · ${m}월 누적 순수주 ${f8(mtdNet)}${netTgtStr}
 
 (1) 전일자(${m}/${d}(${wday}))
 목표: 총수주 ${f8(tgtGmv)}, 순수주 ${f8(tgtNet)}
@@ -1084,7 +1106,31 @@ APP MAU ${mauMtd}(YoY ${yf(mauYoy)})
   joinMtd!=='-'   ? `\n신규가입 ${joinMtd}` : ''
 }${
   buyersMtd!=='-' ? `  구매자수 ${buyersMtd}` : ''
-}`;
+}${insBlock}`;
+}
+
+// 접힘 상태에서도 보이는 한 줄 헤드라인 (전일 순수주 · 일 목표 달성률 · YoY · MTD)
+function mcBuildHeadline() {
+  const cd = mcCalcData();
+  if (!cd) return '';
+  const { m, d, yNet, netPct, netYoy } = cd;
+  const wday = ['일','월','화','수','목','금','토'][parseLocalDate(cd.yDate).getDay()];
+  const f8 = v => v > 0 ? `${(v/1e8).toFixed(1)}억` : '-';
+  const pctCls = p => p >= 100 ? 'hl-up' : p >= 85 ? 'hl-dim' : 'hl-dn';
+  const yoySpan = (netYoy === null || yNet <= 0) ? ''
+    : ` <span class="${+netYoy >= 0 ? 'hl-up' : 'hl-dn'}">전년比 ${+netYoy >= 0 ? '+' : '△'}${Math.abs(+netYoy).toFixed(1)}%</span>`;
+  const dayPart = yNet > 0
+    ? `${m}/${d}(${wday}) 순수주 <span class="hl-num">${f8(yNet)}</span>` +
+      (netPct > 0 ? ` <span class="${pctCls(netPct)}">일 목표比 ${netPct}%</span>` : '') + yoySpan
+    : `${m}/${d}(${wday}) 실적 집계 전`;
+  // MTD는 아래 MTD 테이블·KPI 카드와 동일 기준(일별 누적목표 대비)으로 표시
+  const cum = computeMtdCum();
+  const cumPct = cum.tgt.net > 0 ? Math.round(cum.act.net / cum.tgt.net * 100) : 0;
+  const mtdPart = cum.act.net > 0
+    ? ` <span class="hl-dim">|</span> MTD 순수주 <span class="hl-num">${f8(cum.act.net)}</span>` +
+      (cumPct > 0 ? ` <span class="${pctCls(cumPct)}">MTD 목표比 ${cumPct}%</span>` : '')
+    : '';
+  return dayPart + mtdPart;
 }
 
 function mcDetectInsights() {
@@ -1143,11 +1189,15 @@ function mcDetectInsights() {
 }
 
 function mcRefresh() {
+  const hlEl = document.getElementById('mc-headline');
+  if (hlEl) hlEl.innerHTML = mcBuildHeadline();
   const textEl = document.getElementById('mc-text-preview');
   if (textEl) textEl.textContent = mcGenerateText();
   const listEl = document.getElementById('mc-insights-list');
   if (listEl) {
-    const ins = mcDetectInsights();
+    // 드라이버(긍정) → 리스크(경고) 순으로 정렬
+    const order = { good: 0, info: 1, neutral: 1, warn: 2 };
+    const ins = mcDetectInsights().sort((a, b) => (order[a.type] ?? 1) - (order[b.type] ?? 1));
     listEl.innerHTML = ins.map(i =>
       `<div class="mc-insight ${i.type}"><span class="mc-insight-ico">${i.ico}</span><span>${i.text}</span></div>`
     ).join('');
@@ -1155,7 +1205,8 @@ function mcRefresh() {
 }
 
 function mcInit() {
-  document.getElementById('mc-date-label').textContent = `(${fmtMD(YESTERDAY)} 기준)`;
+  // 기준일은 실제 데이터가 있는 유효 전일(getEffectiveDailyDate) 기준으로 표시
+  document.getElementById('mc-date-label').textContent = `(${fmtMD(parseLocalDate(getEffectiveDailyDate()))} 기준)`;
   mcRefresh();
 }
 
