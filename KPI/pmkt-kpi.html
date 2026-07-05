@@ -1087,12 +1087,11 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
       <button type="button" onclick="renderPeriodView()" style="font-size:11px;border:1px solid #0B1D3A;background:#0B1D3A;color:#fff;border-radius:6px;padding:4px 12px;cursor:pointer">조회</button>
     </span>
   </div>
-  <div class="kpi-grid kpi-grid-7">
+  <div class="kpi-grid">
     <div class="kpi-card c-blue">  <div class="kpi-lbl">세션수</div>                                                      <div class="kpi-val" id="pd-sess">-</div>     <div class="kpi-sub" id="pd-sess-sub">-</div></div>
     <div class="kpi-card c-blue">  <div class="kpi-lbl">APP 세션수</div>                                                  <div class="kpi-val" id="pd-sess-app">-</div> <div class="kpi-sub" id="pd-sess-app-sub">-</div></div>
     <div class="kpi-card c-indigo"><div class="kpi-lbl">총수주 <span style="font-size:10px;color:#94a3b8">(백만)</span></div> <div class="kpi-val" id="pd-gmv">-</div>    <div class="kpi-sub" id="pd-gmv-sub">-</div></div>
     <div class="kpi-card c-green"> <div class="kpi-lbl">순수주 <span style="font-size:10px;color:#94a3b8">(백만)</span></div> <div class="kpi-val" id="pd-net">-</div>    <div class="kpi-sub" id="pd-net-sub">-</div></div>
-    <div class="kpi-card c-teal">  <div class="kpi-lbl">구매자수(월)</div>                                               <div class="kpi-val" id="pd-buyers">-</div> <div class="kpi-sub" id="pd-buyers-sub">-</div></div>
     <div class="kpi-card c-orange"><div class="kpi-lbl">신규가입</div>                                                    <div class="kpi-val" id="pd-join">-</div>   <div class="kpi-sub" id="pd-join-sub">-</div></div>
     <div class="kpi-card c-rose">  <div class="kpi-lbl">첫구매</div>                                                      <div class="kpi-val" id="pd-first">-</div>  <div class="kpi-sub" id="pd-first-sub">-</div></div>
   </div>
@@ -1101,9 +1100,35 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
     <div class="chart-box h260"><canvas id="chart-period-trend"></canvas></div>
   </div>
 
-  <!-- 채널별 추이 (일자별) -->
+  <!-- 채널별 비중 (기간 합산) -->
   <div class="sec-hd">
-    <h2>채널별 추이</h2>
+    <h2>채널별 비중</h2>
+    <span class="sec-note">기간 합계 · 전체/APP/WEB·PC제외 설정은 채널별 현황과 공유</span>
+  </div>
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-title">채널별 세션 비중</div>
+      <div class="card-sub" id="pd-donut-sess-total">Total -</div>
+      <div class="chart-box h180"><canvas id="pd-chart-ch-sess"></canvas></div>
+      <div class="ch-legend" id="pd-donut-sess-legend"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">채널별 신규가입</div>
+      <div class="card-sub" id="pd-donut-join-total">Total -</div>
+      <div class="chart-box h180"><canvas id="pd-chart-ch-join"></canvas></div>
+      <div class="ch-legend" id="pd-donut-join-legend"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">채널별 생애첫구매</div>
+      <div class="card-sub" id="pd-donut-first-total">Total -</div>
+      <div class="chart-box h180"><canvas id="pd-chart-ch-first"></canvas></div>
+      <div class="ch-legend" id="pd-donut-first-legend"></div>
+    </div>
+  </div>
+
+  <!-- 채널별 현황 (일자별 추이) -->
+  <div class="sec-hd">
+    <h2>채널별 현황</h2>
     <span class="sec-note" style="display:flex;align-items:center;gap:10px">
       <select id="pd-ch-metric-sel" onchange="renderPeriodChannelShare()"
         style="font-size:11px;border:1px solid #e2e8f0;border-radius:6px;padding:2px 6px;color:#475569;background:#fff;cursor:pointer;outline:none">
@@ -1117,7 +1142,7 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
         <button type="button" class="ch-scope-btn" data-scope="web" onclick="setPeriodChannelDeviceScope('web',this)">WEB</button>
       </span>
       <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:#64748b;cursor:pointer">
-        <input type="checkbox" id="pd-ch-pc-exclude" onchange="renderPeriodChannelShare()" style="cursor:pointer">PC 제외
+        <input type="checkbox" id="pd-ch-pc-exclude" onchange="renderPeriodChannelShare();renderPeriodChannelDonuts()" style="cursor:pointer">PC 제외
       </label>
     </span>
   </div>
@@ -1126,26 +1151,65 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
     <div class="chart-box h280"><canvas id="pd-chart-ch-line"></canvas></div>
   </div>
 
-  <!-- 신규가입 / 첫구매 채널별 현황 (기간 합산) -->
+  <!-- 채널 스코어카드 (기간 합산) -->
   <div class="sec-hd">
-    <h2>신규가입 / 첫구매 채널별 현황</h2>
-    <span class="sec-note">기간 합계 · 전년 동기간 YoY</span>
+    <h2>채널 스코어카드</h2>
+    <span class="sec-note">기간 합계 · %는 전년 동기간 YoY · 채널 태깅(2_raw_전환·트래픽) 기준</span>
   </div>
-  <div class="grid-2">
-    <div class="card">
-      <div class="card-title">신규가입 채널별 현황</div>
-      <table class="dt">
-        <thead><tr><th>채널</th><th>기간합계</th><th>비중</th><th>YoY</th></tr></thead>
-        <tbody id="pd-join-ch-table-body"><tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:12px">데이터 로딩 중...</td></tr></tbody>
-      </table>
+  <div class="card" style="margin-bottom:14px">
+    <table class="dt">
+      <thead><tr><th>채널</th><th>세션</th><th>신규가입</th><th>첫구매</th></tr></thead>
+      <tbody id="pd-ch-matrix"><tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:12px">데이터 로딩 중...</td></tr></tbody>
+    </table>
+  </div>
+
+  <!-- 광고 채널ID별 실적 (기간 합산) -->
+  <div class="sec-hd">
+    <h2>광고 채널ID별 실적</h2>
+    <span class="sec-note">기간 합계 · 헤더 클릭 정렬 · 전년 동기간 YoY</span>
+  </div>
+  <div class="card" style="margin-bottom:14px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
+      <div class="card-sub" id="pd-chad-sub" style="margin-bottom:0"></div>
+      <span style="display:inline-flex;border:1px solid #e2e8f0;border-radius:6px;overflow:hidden">
+        <button type="button" class="ch-scope-btn active" data-adch="ALL" onclick="setPdChAdFilter('ALL',this)">전체</button>
+        <button type="button" class="ch-scope-btn" data-adch="DA" onclick="setPdChAdFilter('DA',this)">DA</button>
+        <button type="button" class="ch-scope-btn" data-adch="SA" onclick="setPdChAdFilter('SA',this)">SA</button>
+      </span>
     </div>
-    <div class="card">
-      <div class="card-title">생애첫구매 채널별 현황</div>
-      <table class="dt">
-        <thead><tr><th>채널</th><th>기간합계</th><th>비중</th><th>YoY</th></tr></thead>
-        <tbody id="pd-first-ch-table-body"><tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:12px">데이터 로딩 중...</td></tr></tbody>
-      </table>
+    <table class="dt">
+      <thead><tr>
+        <th style="cursor:pointer" onclick="setPdChAdSort('chid')">채널ID</th>
+        <th>캠페인</th>
+        <th style="cursor:pointer" onclick="setPdChAdSort('join')" id="pd-chad-th-join">신규가입 ▾</th>
+        <th style="cursor:pointer" onclick="setPdChAdSort('first')" id="pd-chad-th-first">첫구매</th>
+        <th style="cursor:pointer" onclick="setPdChAdSort('rev')" id="pd-chad-th-rev">총수주(백만)</th>
+        <th style="cursor:pointer" onclick="setPdChAdSort('yoy')" id="pd-chad-th-yoy">YoY</th>
+      </tr></thead>
+      <tbody id="pd-chad-body"><tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:12px">데이터 로딩 중...</td></tr></tbody>
+    </table>
+    <div style="font-size:10px;color:#94a3b8;margin-top:6px">행 클릭 시 아래 상세 추이에 표시 · 정렬 기준 상위 15개 채널ID 표시 · YoY는 총수주 기준</div>
+  </div>
+
+  <!-- 채널ID 상세 추이 -->
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:2px">
+      <div class="card-title" style="margin-bottom:0">채널ID 상세 추이</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <input type="text" id="pd-chid-search" placeholder="채널ID 또는 캠페인명 검색"
+          oninput="searchPdChid(this.value)"
+          style="font-size:11px;border:1px solid #e2e8f0;border-radius:6px;padding:4px 8px;width:170px;outline:none">
+        <select id="pd-chid-metric" onchange="renderPdChidDetail()"
+          style="font-size:12px;font-weight:600;border:1.5px solid #0B1D3A;border-radius:6px;padding:3px 8px;color:#0B1D3A;background:#fff;cursor:pointer;outline:none">
+          <option value="join" selected>신규가입</option>
+          <option value="first">첫구매</option>
+          <option value="rev">총수주</option>
+          <option value="sess">세션</option>
+        </select>
+      </div>
     </div>
+    <div class="card-sub" id="pd-chid-sub">채널ID를 검색하거나 위 표에서 행을 클릭하세요</div>
+    <div class="chart-box h220"><canvas id="chart-pd-chid-detail"></canvas></div>
   </div>
 </div>
 <!-- /view-period -->
@@ -2314,9 +2378,6 @@ function renderPeriodView() {
     netSeries.push(dNet > 0 ? +(dNet / 1e8).toFixed(1) : 0);
     cur.setDate(cur.getDate() + 1);
   }
-  // 구매자수(월)는 누적 스냅샷 지표이므로 기간 끝 날짜 기준 값 사용 (Daily 탭 MTD 표와 동일한 처리)
-  const toDaily = DAILY[to] || {};
-
   const f8 = v => v > 0 ? `${(v / 1e8).toFixed(1)}억` : '-';
   // 트래픽 시트는 최근 기간만 보유 — 기간 중 일부만 집계된 경우 보유 일수를 명시
   const sessSub = sess > 0
@@ -2330,8 +2391,6 @@ function renderPeriodView() {
   document.getElementById('pd-gmv-sub').textContent = f8(gmv);
   document.getElementById('pd-net').textContent = net > 0 ? Math.round(net / 1e6).toLocaleString() : '-';
   document.getElementById('pd-net-sub').textContent = f8(net);
-  document.getElementById('pd-buyers').textContent = toDaily.buyers ? toDaily.buyers.toLocaleString() : '-';
-  document.getElementById('pd-buyers-sub').textContent = `${to} 기준`;
   document.getElementById('pd-join').textContent = join.toLocaleString();
   document.getElementById('pd-join-sub').textContent = `${from} ~ ${to}`;
   document.getElementById('pd-first').textContent = first.toLocaleString();
@@ -2352,8 +2411,11 @@ function renderPeriodView() {
     },
   });
 
+  renderPeriodChannelDonuts();
   renderPeriodChannelShare();
-  renderPeriodChannelTable();
+  renderPdChannelMatrix(from, to);
+  renderPdChAd();
+  renderPdChidDetail();
 }
 
 // ── 기간조회 탭 전용 채널별 비중/현황 (Daily 탭과 별개 상태로 관리) ──
@@ -2363,6 +2425,237 @@ function setPeriodChannelDeviceScope(scope, el) {
   el.closest('.sec-note').querySelectorAll('.ch-scope-btn').forEach(b => b.classList.remove('active'));
   el.classList.add('active');
   renderPeriodChannelShare();
+  renderPeriodChannelDonuts();
+}
+
+// 기간조회 ① 채널별 비중 — Daily 탭과 동일하게 도넛 3종(세션/신규가입/첫구매), 기간 합산
+function renderPeriodChannelDonuts() {
+  const from = document.getElementById('period-from')?.value;
+  const to   = document.getElementById('period-to')?.value;
+  if (!from || !to || from > to) return;
+  const excludePc = document.getElementById('pd-ch-pc-exclude')?.checked || false;
+
+  const sessData  = getChannelBreakdownRange(TRAFFIC, from, to, 's',     periodChannelDeviceScope, excludePc);
+  const joinData  = getChannelBreakdownRange(CONV_CH, from, to, 'join',  periodChannelDeviceScope, excludePc);
+  const firstData = getChannelBreakdownRange(CONV_CH, from, to, 'first', periodChannelDeviceScope, excludePc);
+
+  mkDonut('pd-chart-ch-sess',  sessData,  'pd-donut-sess-legend');
+  mkDonut('pd-chart-ch-join',  joinData,  'pd-donut-join-legend');
+  mkDonut('pd-chart-ch-first', firstData, 'pd-donut-first-legend');
+
+  const totalOf = arr => arr.reduce((s, d) => s + d.val, 0);
+  const sessEl  = document.getElementById('pd-donut-sess-total');  if (sessEl)  sessEl.textContent  = `Total ${totalOf(sessData).toLocaleString()}`;
+  const joinEl  = document.getElementById('pd-donut-join-total');  if (joinEl)  joinEl.textContent  = `Total ${totalOf(joinData).toLocaleString()}명`;
+  const firstEl = document.getElementById('pd-donut-first-total'); if (firstEl) firstEl.textContent = `Total ${totalOf(firstData).toLocaleString()}명`;
+}
+
+// 기간×채널그룹(DA/SA 분리) 합산 — Weekly 탭과 동일 버킷 기준, 임의 기간 지원
+function aggChannelRange(from, to) {
+  const out = {};
+  WK_CH_ORDER.forEach(b => out[b] = { sess: 0, join: 0, first: 0 });
+  let cur = parseLocalDate(from);
+  const end = parseLocalDate(to);
+  while (cur <= end) {
+    const ds = localDateToStr(cur);
+    const t = TRAFFIC[ds] || {};
+    Object.keys(t).forEach(ch => {
+      if (ch === '__total__') return;
+      if (t[ch].s) out[wkChannelBucket(ch)].sess += t[ch].s;
+    });
+    const c = CONV_CH[ds] || {};
+    Object.keys(c).forEach(ch => {
+      if (ch === '__total__') return;
+      const b = out[wkChannelBucket(ch)];
+      if (c[ch].join)  b.join  += c[ch].join;
+      if (c[ch].first) b.first += c[ch].first;
+    });
+    cur.setDate(cur.getDate() + 1);
+  }
+  return out;
+}
+
+// 기간조회 ③ 채널 스코어카드 — Weekly와 동일 매트릭스, WoW 대신 전년 동기간 YoY
+function renderPdChannelMatrix(from, to) {
+  const lyFrom = `${parseInt(from.substring(0, 4)) - 1}${from.substring(4)}`;
+  const lyTo   = `${parseInt(to.substring(0, 4)) - 1}${to.substring(4)}`;
+  const cur = aggChannelRange(from, to);
+  const ly  = aggChannelRange(lyFrom, lyTo);
+  const cell = (a, b) => {
+    if (!a) return '<td style="color:#cbd5e1">-</td>';
+    const p = yoyPct(a || null, b || null);
+    const pTxt = p == null ? '' : ` <span style="font-size:10px;font-weight:700;color:${p >= 0 ? '#10b981' : '#ef4444'}">${p >= 0 ? '+' : ''}${p.toFixed(0)}%</span>`;
+    return `<td>${a.toLocaleString()}${pTxt}</td>`;
+  };
+  const el = document.getElementById('pd-ch-matrix');
+  if (el) el.innerHTML = WK_CH_ORDER
+    .filter(b => cur[b].sess || cur[b].join || cur[b].first)
+    .map(b => `<tr><td style="font-weight:700">${b}</td>${cell(cur[b].sess, ly[b].sess)}${cell(cur[b].join, ly[b].join)}${cell(cur[b].first, ly[b].first)}</tr>`)
+    .join('');
+}
+
+// 기간×채널ID(CH_AD) 합산 — 임의 기간 지원
+function aggChAdRange(from, to) {
+  const out = {};
+  let cur = parseLocalDate(from);
+  const end = parseLocalDate(to);
+  while (cur <= end) {
+    const day = CH_AD[localDateToStr(cur)];
+    if (day) Object.keys(day).forEach(chid => {
+      const a = out[chid] || (out[chid] = [0, 0, 0, 0]);
+      const v = day[chid];
+      a[0] += v[0] || 0; a[1] += v[1] || 0; a[2] += v[2] || 0; a[3] += v[3] || 0;
+    });
+    cur.setDate(cur.getDate() + 1);
+  }
+  return out;
+}
+
+// 기간조회 ④ 광고 채널ID별 실적 — Weekly와 동일 UI, WoW 대신 전년 동기간 YoY
+let pdChAdFilter = 'ALL';
+let pdChAdSort = { key: 'join', dir: 'desc' };
+let pdSelectedChid = null;
+
+function setPdChAdFilter(f, el) {
+  pdChAdFilter = f;
+  el.parentElement.querySelectorAll('.ch-scope-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderPdChAd();
+}
+
+function setPdChAdSort(key) {
+  if (pdChAdSort.key === key) {
+    pdChAdSort.dir = pdChAdSort.dir === 'desc' ? 'asc' : 'desc';
+  } else {
+    pdChAdSort = { key, dir: key === 'chid' ? 'asc' : 'desc' };
+  }
+  renderPdChAd();
+}
+
+function updatePdChAdHeaders() {
+  const labels = { join: '신규가입', first: '첫구매', rev: '총수주(백만)', yoy: 'YoY' };
+  Object.keys(labels).forEach(key => {
+    const th = document.getElementById(`pd-chad-th-${key}`);
+    if (!th) return;
+    const arrow = pdChAdSort.key === key ? (pdChAdSort.dir === 'desc' ? ' ▾' : ' ▴') : '';
+    th.textContent = labels[key] + arrow;
+  });
+}
+
+function renderPdChAd() {
+  const from = document.getElementById('period-from')?.value;
+  const to   = document.getElementById('period-to')?.value;
+  const body = document.getElementById('pd-chad-body');
+  const subEl = document.getElementById('pd-chad-sub');
+  if (!body || !from || !to || from > to) return;
+  const lyFrom = `${parseInt(from.substring(0, 4)) - 1}${from.substring(4)}`;
+  const lyTo   = `${parseInt(to.substring(0, 4)) - 1}${to.substring(4)}`;
+  const cur = aggChAdRange(from, to);
+  const ly  = aggChAdRange(lyFrom, lyTo);
+  const meta = CH_AD_META || {};
+  let rows = Object.keys(cur).map(chid => ({
+    chid, m: meta[chid] || {},
+    join: cur[chid][0], first: cur[chid][1], rev: cur[chid][2],
+    yoy: yoyPct(cur[chid][2] || null, (ly[chid] && ly[chid][2]) || null),
+  }));
+  if (pdChAdFilter !== 'ALL') rows = rows.filter(r => r.m.ch === pdChAdFilter);
+  const dir = pdChAdSort.dir === 'asc' ? 1 : -1;
+  if (pdChAdSort.key === 'chid') {
+    rows.sort((a, b) => dir * a.chid.localeCompare(b.chid));
+  } else {
+    rows.sort((a, b) => dir * ((a[pdChAdSort.key] ?? -Infinity) - (b[pdChAdSort.key] ?? -Infinity)));
+  }
+  updatePdChAdHeaders();
+  if (!rows.length) {
+    body.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:12px">해당 기간 광고 채널 데이터 없음 (CH_AD 보유: 최근 120일)</td></tr>';
+    if (subEl) subEl.textContent = '';
+    return;
+  }
+  const total = rows.reduce((s, r) => ({ join: s.join + r.join, first: s.first + r.first, rev: s.rev + r.rev }), { join: 0, first: 0, rev: 0 });
+  const chBadge = ch => !ch ? '' : ` <span style="font-size:9px;padding:1px 5px;border-radius:8px;background:${ch === 'DA' ? '#ede9fe' : '#dcfce7'};color:${ch === 'DA' ? '#6d28d9' : '#15803d'}">${ch}</span>`;
+  body.innerHTML = rows.slice(0, 15).map(r => `<tr onclick="selectPdChid('${r.chid}')"
+      style="cursor:pointer${pdSelectedChid === r.chid ? ';background:#eff6ff' : ''}">
+      <td style="font-family:ui-monospace,monospace;font-size:11px;white-space:nowrap">${r.chid}${chBadge(r.m.ch)}</td>
+      <td style="font-size:11px;color:#475569">${r.m.label || '-'}</td>
+      <td>${r.join ? r.join.toLocaleString() : '-'}</td>
+      <td>${r.first ? r.first.toLocaleString() : '-'}</td>
+      <td><b>${r.rev ? Math.round(r.rev / 1e6).toLocaleString() : '-'}</b></td>
+      <td>${wkPctCell(r.yoy)}</td>
+    </tr>`).join('')
+    + `<tr style="background:#f8fafc"><td style="font-weight:700" colspan="2">합계 (${rows.length}개 채널ID)</td>
+       <td><b>${total.join.toLocaleString()}</b></td><td><b>${total.first.toLocaleString()}</b></td>
+       <td><b>${Math.round(total.rev / 1e6).toLocaleString()}</b></td><td></td></tr>`;
+  if (subEl) subEl.textContent = `${pdChAdFilter === 'ALL' ? 'DA+SA 전체' : pdChAdFilter} ${rows.length}개 채널ID 중 정렬 상위 15 표시 · ${from}~${to}`;
+}
+
+// 기간조회 ⑤ 채널ID 상세 추이 — Weekly와 동일(검색/행 클릭으로 선택, 전체 히스토리 표시)
+function selectPdChid(chid, fromSearch) {
+  pdSelectedChid = chid;
+  if (!fromSearch) {
+    const inp = document.getElementById('pd-chid-search');
+    if (inp) inp.value = chid;
+  }
+  renderPdChidDetail();
+  renderPdChAd();
+}
+
+function searchPdChid(query) {
+  const q = query.trim().toLowerCase();
+  const sub = document.getElementById('pd-chid-sub');
+  if (!q) return;
+  const meta = CH_AD_META || {};
+  const match = Object.keys(meta).find(chid =>
+    chid.toLowerCase().includes(q) || (meta[chid].label || '').toLowerCase().includes(q));
+  if (match) {
+    selectPdChid(match, true);
+  } else {
+    pdSelectedChid = null;
+    if (sub) sub.textContent = `"${query}" 일치하는 채널ID 없음`;
+    if (pdChidDetailChart) { pdChidDetailChart.destroy(); pdChidDetailChart = null; }
+  }
+}
+
+let pdChidDetailChart = null;
+function renderPdChidDetail() {
+  const canvas = document.getElementById('chart-pd-chid-detail');
+  const sub = document.getElementById('pd-chid-sub');
+  if (!canvas) return;
+  if (!pdSelectedChid) {
+    if (sub) sub.textContent = '채널ID를 검색하거나 위 표에서 행을 클릭하세요';
+    if (pdChidDetailChart) { pdChidDetailChart.destroy(); pdChidDetailChart = null; }
+    return;
+  }
+  const metric = document.getElementById('pd-chid-metric')?.value || 'join';
+  const idx = WK_CHID_METRIC_IDX[metric];
+  const m = CH_AD_META[pdSelectedChid] || {};
+  const dates = Object.keys(CH_AD).sort();
+  const labels = [], series = [];
+  dates.forEach(ds => {
+    const v = CH_AD[ds][pdSelectedChid] || null;
+    labels.push(`${Number(ds.slice(5, 7))}/${Number(ds.slice(8, 10))}`);
+    series.push(v && v[idx] ? v[idx] : (metric === 'sess' ? null : (v ? 0 : null)));
+  });
+  const label = { join: '신규가입', first: '첫구매', rev: '총수주', sess: '세션' }[metric];
+  if (sub) sub.textContent = `${pdSelectedChid}${m.ch ? ` (${m.ch})` : ''} ${m.label ? '· ' + m.label : ''} · ${label} 일별 추이`
+    + (metric === 'sess' ? ' · 세션은 트래픽 시트 보유기간(최근 34일)만 표시' : '');
+
+  if (pdChidDetailChart) { pdChidDetailChart.destroy(); pdChidDetailChart = null; }
+  pdChidDetailChart = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{ label, data: series, borderColor: '#0B1D3A', backgroundColor: '#0B1D3A',
+        borderWidth: 2, pointRadius: 0, tension: 0.3, fill: false, spanGaps: false, datalabels: { display: false } }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, datalabels: { display: false }, tooltip: { mode: 'index', intersect: false } },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 8 }, maxTicksLimit: 16 } },
+        y: { min: 0, grid: { color: '#f1f5f9' }, border: { display: false },
+          ticks: { color: '#94a3b8', font: { size: 10 }, callback: v => v.toLocaleString() } },
+      },
+    },
+  });
 }
 
 // 일자별 채널버킷 합산 (라인차트용) — getChannelBreakdownRange의 기간합산과 달리 날짜별로 분해
@@ -2446,50 +2739,6 @@ function renderPeriodChannelShare() {
   const total = days.reduce((s, d) => s + CH_BUCKET_ORDER.reduce((ss, b) => ss + d.buckets[b], 0), 0);
   const totalEl = document.getElementById('pd-ch-line-total');
   if (totalEl) totalEl.textContent = `Total ${total.toLocaleString()}${cfg.unit}`;
-}
-
-function renderPeriodChannelTable() {
-  const from = document.getElementById('period-from')?.value;
-  const to   = document.getElementById('period-to')?.value;
-  if (!from || !to || from > to) return;
-
-  // 전년 동기간 (윤년 등은 단순 연도-1 치환으로 근사, 일 단위 오차는 무시 가능한 수준)
-  const lyFrom = `${parseInt(from.substring(0, 4)) - 1}${from.substring(4)}`;
-  const lyTo   = `${parseInt(to.substring(0, 4)) - 1}${to.substring(4)}`;
-
-  const fmtPct = v => v == null ? '-' : `${v >= 0 ? '+' : '△'}${Math.abs(v).toFixed(1)}%`;
-  const pctCls = v => v == null ? '' : v >= 0 ? 'chg-up' : 'chg-dn';
-
-  [['join', 'pd-join-ch-table-body'], ['first', 'pd-first-ch-table-body']].forEach(([metric, bodyId]) => {
-    const tbody = document.getElementById(bodyId);
-    if (!tbody) return;
-
-    const cur = sumByChannelBucketRange(metric, from, to);
-    const ly  = sumByChannelBucketRange(metric, lyFrom, lyTo);
-    const totCur = CH_BUCKET_ORDER.reduce((s, b) => s + cur[b], 0);
-    const totLy  = CH_BUCKET_ORDER.reduce((s, b) => s + ly[b], 0);
-
-    const rows = CH_BUCKET_ORDER.map(b => ({
-      label: b,
-      val: cur[b],
-      pct: totCur > 0 ? Math.round(cur[b] / totCur * 100) : 0,
-      yoy: ly[b] > 0 ? (cur[b] - ly[b]) / ly[b] * 100 : null,
-    }));
-    const totYoy = totLy > 0 ? (totCur - totLy) / totLy * 100 : null;
-
-    tbody.innerHTML = rows.map(r => `<tr>
-        <td>${r.label}</td>
-        <td>${r.val ? r.val.toLocaleString() : '-'}</td>
-        <td>${r.pct}%</td>
-        <td class="${pctCls(r.yoy)}">${fmtPct(r.yoy)}</td>
-      </tr>`).join('') +
-      `<tr style="background:#f8fafc">
-        <td style="font-weight:700">합계</td>
-        <td style="font-weight:700">${totCur.toLocaleString()}</td>
-        <td>-</td>
-        <td class="${pctCls(totYoy)}">${fmtPct(totYoy)}</td>
-      </tr>`;
-  });
 }
 
 // ── MTD 순수주 달성 페이스 차트 ──
