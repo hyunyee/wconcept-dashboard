@@ -725,7 +725,7 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
 <!-- ════════ 연간 월별 뷰 ════════ -->
 <div id="view-annual" style="display:none">
   <div class="sec-hd" style="margin-top:16px">
-    <h2 style="--before-color:#8b5cf6">2026 연간 월별 달성현황</h2>
+    <h2 style="--before-color:#8b5cf6" id="annual-title">연간 월별 달성현황</h2>
     <span class="sec-note"></span>
   </div>
   <div class="card" style="margin-bottom:14px">
@@ -978,6 +978,8 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
 const DAYS_KO = ['일','월','화','수','목','금','토'];
 const TODAY = new Date();
 const YESTERDAY = new Date(TODAY); YESTERDAY.setDate(TODAY.getDate()-1);
+const CUR_YEAR = TODAY.getFullYear();
+const PREV_YEAR = CUR_YEAR - 1;
 const fmtMD  = d => `${d.getMonth()+1}/${d.getDate()}(${DAYS_KO[d.getDay()]})`;
 const fmtISO = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 
@@ -1947,36 +1949,13 @@ new Chart(document.getElementById('chart-roas'), {
 });
 
 // ── 연간 월별 데이터 (99_Target 시트 기준) ───────────────────────
-// 금액: 억원 / 인원: 명 / 실적은 확정분만 입력
+// 금액: 억원 / 인원: 명
 // tT/tA=총수주(차트용), nT/nA=순수주, gmvT/gmvA=GMV(차트용)
 // mauT/mauA=APPMAU, joinT/joinA=신규가입자, buyersT/buyersA=전체구매자(월)
 // joinAdT/joinAdA=신규가입자(광고), firstAdT/firstAdA=첫구매자(광고)
-const ANNUAL = [
-  { m:'1월',  tT:634.8, tA:673.98, nT:450.0, nA:454.6, gmvT:460.0, gmvA:459.48,
-    mauT:1616656, mauA:1672768, joinT:87183,  joinA:59989,  buyersT:297724, buyersA:266220, joinAdT:11591, joinAdA:11591, firstAdT:2535,  firstAdA:3591  },
-  { m:'2월',  tT:575.3, tA:511.69, nT:410.0, nA:358.1, gmvT:395.0, gmvA:352.52,
-    mauT:1531418, mauA:1516961, joinT:89460,  joinA:49017,  buyersT:256221, buyersA:220912, joinAdT:10326, joinAdA:10331, firstAdT:2618,  firstAdA:3557  },
-  { m:'3월',  tT:879.0, tA:845.20, nT:625.0, nA:602.7, gmvT:595.0, gmvA:544.76,
-    mauT:1693550, mauA:1913293, joinT:103642, joinA:85156,  buyersT:356257, buyersA:334020, joinAdT:31446, joinAdA:31446, firstAdT:12272, firstAdA:14855 },
-  { m:'4월',  tT:715.1, tA:693.70, nT:515.0, nA:475.2, gmvT:555.0, gmvA:527.95,
-    mauT:1829077, mauA:1848765, joinT:100612, joinA:100136, buyersT:368949, buyersA:321779, joinAdT:49380, joinAdA:51060, firstAdT:11691, firstAdA:14955 },
-  { m:'5월',  tT:699.4, tA:660.83, nT:515.0, nA:481.7, gmvT:530.0, gmvA:462.82,
-    mauT:1699334, mauA:1936270, joinT:83492,  joinA:87319,  buyersT:349031, buyersA:318695, joinAdT:24668, joinAdA:38068, firstAdT:7984,  firstAdA:13511 },
-  { m:'6월',  tT:997.5, tA:735.35, nT:685.0, nA:null, gmvT:650.0, gmvA:552.03,
-    mauT:1965839, mauA:null, joinT:111589, joinA:null,  buyersT:426017, buyersA:null, joinAdT:32190, joinAdA:null, firstAdT:9348,  firstAdA:null },
-  { m:'7월',  tT:null, tA:null, nT:524.8, nA:null, gmvT:554.8, gmvA:null,
-    mauT:1642180, mauA:null, joinT:76377,  joinA:null,   buyersT:357068, buyersA:null, joinAdT:24389, joinAdA:null, firstAdT:8540,  firstAdA:null },
-  { m:'8월',  tT:null, tA:null, nT:null,  nA:null, gmvT:null,  gmvA:null,
-    mauT:1599672, mauA:null, joinT:62918,  joinA:null,   buyersT:295624, buyersA:null, joinAdT:21093, joinAdA:null, firstAdT:7037,  firstAdA:null },
-  { m:'9월',  tT:null, tA:null, nT:null,  nA:null, gmvT:null,  gmvA:null,
-    mauT:1871163, mauA:null, joinT:80126,  joinA:null,   buyersT:317861, buyersA:null, joinAdT:30194, joinAdA:null, firstAdT:9974,  firstAdA:null },
-  { m:'10월', tT:null, tA:null, nT:null,  nA:null, gmvT:null,  gmvA:null,
-    mauT:2033112, mauA:null, joinT:84546,  joinA:null,   buyersT:354807, buyersA:null, joinAdT:30293, joinAdA:null, firstAdT:10355, firstAdA:null },
-  { m:'11월', tT:null, tA:null, nT:null,  nA:null, gmvT:null,  gmvA:null,
-    mauT:2456720, mauA:null, joinT:116066, joinA:null,   buyersT:460927, buyersA:null, joinAdT:47895, joinAdA:null, firstAdT:14766, firstAdA:null },
-  { m:'12월', tT:null, tA:null, nT:null,  nA:null, gmvT:null,  gmvA:null,
-    mauT:1901279, mauA:null, joinT:75418,  joinA:null,   buyersT:334906, buyersA:null, joinAdT:23827, joinAdA:null, firstAdT:7838,  firstAdA:null },
-];
+// 목표는 MONTHLY_TGTS(99_Target 월별 시트), 실적은 REAL_MONTHLY(real_monthly 표)에서
+// 로드 시점에 채움 — 여기는 빈 골격만 유지 (연도 무관)
+const ANNUAL = Array.from({ length: 12 }, (_, i) => ({ m: `${i + 1}월` }));
 
 // 현재 진행중인 월 note 동적 설정 (어제 날짜가 이번 달에 속할 때만 — 월초에는 전월 날짜를 이번달에 잘못 붙이지 않도록)
 const curMonIdx = TODAY.getMonth(); // 0-indexed, 6월=5
@@ -2126,9 +2105,11 @@ document.addEventListener('click', () => {
 function computeMonthlyActuals() {
   for (let i = 0; i < ANNUAL.length; i++) {
     const d = ANNUAL[i];
-    const cur = REAL_MONTHLY[`2026-${String(i + 1).padStart(2, '0')}`];
-    const ly  = REAL_MONTHLY[`2025-${String(i + 1).padStart(2, '0')}`];
+    const cur = REAL_MONTHLY[`${CUR_YEAR}-${String(i + 1).padStart(2, '0')}`];
+    const ly  = REAL_MONTHLY[`${PREV_YEAR}-${String(i + 1).padStart(2, '0')}`];
     if (cur) {
+      if (cur.revenue  != null) d.tA       = +(cur.revenue / 1e8).toFixed(1);
+      if (cur.gmv      != null) d.gmvA     = +(cur.gmv / 1e8).toFixed(1);
       if (cur.net      != null) d.nA       = +(cur.net / 1e8).toFixed(1);
       if (cur.mau_app  != null) d.mauA     = cur.mau_app;
       if (cur.join     != null) d.joinA    = cur.join;
@@ -3274,15 +3255,48 @@ function init() {
   }, 60000);
 }
 
+// 헤더 배지: 데이터 생성 시각 + 경과 시간에 따른 신선도 경고 (5h 초과 주의 / 20h 초과 경고)
+function renderFreshnessBadge(genStr) {
+  const el = document.getElementById('badge-date');
+  const badge = el.closest('.badge');
+  el.textContent = genStr || getEffectiveDailyDate();
+  const gen = genStr ? new Date(genStr.replace(' ', 'T')) : null;
+  const ageH = gen && !isNaN(gen) ? (Date.now() - gen.getTime()) / 36e5 : null;
+  badge.style.background = ''; badge.style.color = ''; badge.style.borderColor = '';
+  if (ageH == null) return;
+  if (ageH > 20) {
+    badge.style.background = 'rgba(239,68,68,.15)'; badge.style.color = '#dc2626'; badge.style.borderColor = 'rgba(239,68,68,.4)';
+    el.textContent += ` · ⚠ ${Math.floor(ageH)}시간 전 데이터`;
+  } else if (ageH > 5) {
+    badge.style.background = 'rgba(245,158,11,.15)'; badge.style.color = '#b45309'; badge.style.borderColor = 'rgba(245,158,11,.4)';
+    el.textContent += ` · ${Math.floor(ageH)}시간 경과`;
+  }
+}
+
+// JSON 로드 실패 시 재시도 (일시적 네트워크/배포 중 504 대비)
+async function fetchWithRetry(url, tries = 3, delayMs = 1500) {
+  let lastErr;
+  for (let i = 0; i < tries; i++) {
+    try {
+      const r = await fetch(url);
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return await r.json();
+    } catch (e) {
+      lastErr = e;
+      if (i < tries - 1) await new Promise(res => setTimeout(res, delayMs));
+    }
+  }
+  throw lastErr;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   const loadingEl = document.createElement('div');
   loadingEl.id = 'rt-loading';
-  loadingEl.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);font-size:14px;color:#94a3b8;z-index:999';
+  loadingEl.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);font-size:14px;color:#94a3b8;z-index:999;text-align:center';
   loadingEl.textContent = '데이터 로딩 중...';
   document.body.appendChild(loadingEl);
 
-  fetch('pmkt_kpi_data.json?v=' + Date.now())
-    .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+  fetchWithRetry('pmkt_kpi_data.json?v=' + Date.now())
     .then(data => {
       RAW = data.RAW || {};
       DAILY        = data.DAILY        || {};
@@ -3294,25 +3308,25 @@ document.addEventListener('DOMContentLoaded', () => {
       REAL_MONTHLY = data.REAL_MONTHLY || {};
       // 월별 타겟(총수주/순수주/GMV 등)은 99_Target 월별 시트(MONTHLY_TGTS)를 항상 최신값으로 사용
       ANNUAL.forEach((d, i) => {
-        const mt = MONTHLY_TGTS[`2026-${String(i + 1).padStart(2, '0')}`];
+        const mt = MONTHLY_TGTS[`${CUR_YEAR}-${String(i + 1).padStart(2, '0')}`];
         if (!mt) return;
-        // 이미 값이 있는 과거 월은 유지, 비어있는 월(주로 미래월)만 시트 값으로 채움
-        if (d.tT      == null && mt.revenue) d.tT      = mt.revenue / 1e8;
-        if (d.nT      == null && mt.net)     d.nT      = mt.net     / 1e8;
-        if (d.gmvT    == null && mt.gmv)     d.gmvT    = mt.gmv     / 1e8;
-        if (d.mauT    == null && mt.mau_app) d.mauT    = mt.mau_app;
-        if (d.joinT   == null && mt.join)    d.joinT   = mt.join;
-        if (d.buyersT == null && mt.buyers)  d.buyersT = mt.buyers;
-        if (d.firstT  == null && mt.first)   d.firstT  = mt.first;
-        if (d.joinAdT == null && mt.join_ad) d.joinAdT = mt.join_ad;
-        if (d.firstAdT== null && mt.first_ad)d.firstAdT= mt.first_ad;
+        if (mt.revenue)  d.tT      = mt.revenue / 1e8;
+        if (mt.net)      d.nT      = mt.net     / 1e8;
+        if (mt.gmv)      d.gmvT    = mt.gmv     / 1e8;
+        if (mt.mau_app)  d.mauT    = mt.mau_app;
+        if (mt.join)     d.joinT   = mt.join;
+        if (mt.buyers)   d.buyersT = mt.buyers;
+        if (mt.first)    d.firstT  = mt.first;
+        if (mt.join_ad)  d.joinAdT = mt.join_ad;
+        if (mt.first_ad) d.firstAdT= mt.first_ad;
       });
       // 26년 월별 (마감)실적 + 25년 YoY 참고값을 99_Target real_monthly 표(REAL_MONTHLY)에서 반영
       computeMonthlyActuals();
       buildAnnualTable();
       document.getElementById('rt-loading')?.remove();
-      // 헤더 배지: 데이터 최종 생성(업데이트) 시각
-      document.getElementById('badge-date').textContent = data.generated || getEffectiveDailyDate();
+      // 헤더 배지: 데이터 최종 생성(업데이트) 시각 + 신선도 경고
+      renderFreshnessBadge(data.generated);
+      document.getElementById('annual-title').textContent = `${CUR_YEAR} 연간 월별 달성현황`;
       renderDailyKPI();
       buildMtdTable();
       buildFunnelFromTraffic();
@@ -3320,8 +3334,10 @@ document.addEventListener('DOMContentLoaded', () => {
       renderChannelStatusChart();
       init();
     })
-    .catch(() => {
-      document.getElementById('rt-loading').textContent = '⚠️ 데이터 로드 실패 — 새로고침 해주세요.';
+    .catch(err => {
+      document.getElementById('rt-loading').innerHTML =
+        `⚠️ 데이터 로드 실패 (${err && err.message ? err.message : '네트워크 오류'})<br>` +
+        `<button onclick="location.reload()" style="margin-top:10px;padding:6px 16px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;cursor:pointer;font-size:13px">다시 시도</button>`;
     });
 });
 </script>
