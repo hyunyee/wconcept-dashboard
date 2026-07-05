@@ -977,8 +977,9 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
       <button type="button" onclick="renderPeriodView()" style="font-size:11px;border:1px solid #0B1D3A;background:#0B1D3A;color:#fff;border-radius:6px;padding:4px 12px;cursor:pointer">조회</button>
     </span>
   </div>
-  <div class="kpi-grid">
-    <div class="kpi-card c-blue">  <div class="kpi-lbl">APP MAU</div>                                                    <div class="kpi-val" id="pd-mau">-</div>    <div class="kpi-sub" id="pd-mau-sub">-</div></div>
+  <div class="kpi-grid kpi-grid-7">
+    <div class="kpi-card c-blue">  <div class="kpi-lbl">세션수</div>                                                      <div class="kpi-val" id="pd-sess">-</div>     <div class="kpi-sub" id="pd-sess-sub">-</div></div>
+    <div class="kpi-card c-blue">  <div class="kpi-lbl">APP 세션수</div>                                                  <div class="kpi-val" id="pd-sess-app">-</div> <div class="kpi-sub" id="pd-sess-app-sub">-</div></div>
     <div class="kpi-card c-indigo"><div class="kpi-lbl">총수주 <span style="font-size:10px;color:#94a3b8">(백만)</span></div> <div class="kpi-val" id="pd-gmv">-</div>    <div class="kpi-sub" id="pd-gmv-sub">-</div></div>
     <div class="kpi-card c-green"> <div class="kpi-lbl">순수주 <span style="font-size:10px;color:#94a3b8">(백만)</span></div> <div class="kpi-val" id="pd-net">-</div>    <div class="kpi-sub" id="pd-net-sub">-</div></div>
     <div class="kpi-card c-teal">  <div class="kpi-lbl">구매자수(월)</div>                                               <div class="kpi-val" id="pd-buyers">-</div> <div class="kpi-sub" id="pd-buyers-sub">-</div></div>
@@ -1786,6 +1787,7 @@ function renderPeriodView() {
   if (!from || !to || from > to) return;
 
   let gmv = 0, net = 0, join = 0, first = 0;
+  let sess = 0, sessApp = 0, sessDays = 0, totalDays = 0;
   const labels = [], netSeries = [];
   let cur = parseLocalDate(from);
   const end = parseLocalDate(to);
@@ -1797,16 +1799,30 @@ function renderPeriodView() {
     const dd = DAILY[ds] || {};
     if (dd.join) join += dd.join;
     if (dd.first) first += dd.first;
+    // 세션: TRAFFIC 전체 합계 + APP 디바이스 합계 (트래픽 시트 보유일만 집계)
+    totalDays++;
+    const td = (TRAFFIC[ds] || {}).__total__;
+    if (td && td.s) {
+      sess += td.s; sessDays++;
+      const app = td.device && td.device.app;
+      if (app && app.s) sessApp += app.s;
+    }
     labels.push(`${cur.getMonth() + 1}/${cur.getDate()}`);
     netSeries.push(dNet > 0 ? +(dNet / 1e8).toFixed(1) : 0);
     cur.setDate(cur.getDate() + 1);
   }
-  // APP MAU·구매자수(월)는 누적 스냅샷 지표이므로 기간 끝 날짜 기준 값 사용 (Daily 탭 MTD 표와 동일한 처리)
+  // 구매자수(월)는 누적 스냅샷 지표이므로 기간 끝 날짜 기준 값 사용 (Daily 탭 MTD 표와 동일한 처리)
   const toDaily = DAILY[to] || {};
 
   const f8 = v => v > 0 ? `${(v / 1e8).toFixed(1)}억` : '-';
-  document.getElementById('pd-mau').textContent = toDaily.mau_app ? toDaily.mau_app.toLocaleString() : '-';
-  document.getElementById('pd-mau-sub').textContent = `${to} 기준`;
+  // 트래픽 시트는 최근 기간만 보유 — 기간 중 일부만 집계된 경우 보유 일수를 명시
+  const sessSub = sess > 0
+    ? (sessDays < totalDays ? `트래픽 보유 ${sessDays}/${totalDays}일 합계` : `${from} ~ ${to}`)
+    : '트래픽 데이터 없음';
+  document.getElementById('pd-sess').textContent = sess > 0 ? sess.toLocaleString() : '-';
+  document.getElementById('pd-sess-sub').textContent = sessSub;
+  document.getElementById('pd-sess-app').textContent = sessApp > 0 ? sessApp.toLocaleString() : '-';
+  document.getElementById('pd-sess-app-sub').textContent = sess > 0 ? `전체 대비 ${Math.round(sessApp / sess * 100)}%` : '-';
   document.getElementById('pd-gmv').textContent = gmv > 0 ? Math.round(gmv / 1e6).toLocaleString() : '-';
   document.getElementById('pd-gmv-sub').textContent = f8(gmv);
   document.getElementById('pd-net').textContent = net > 0 ? Math.round(net / 1e6).toLocaleString() : '-';
