@@ -86,6 +86,8 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
 .kpi-lbl{font-size:11px;color:#64748b;font-weight:600;margin-bottom:8px}
 .kpi-val{font-size:21px;font-weight:800;color:#0f172a;letter-spacing:-.5px;margin-bottom:4px}
 .kpi-sub{font-size:11px;color:#94a3b8;margin-bottom:4px}
+.kpi-mtd{font-size:10.5px;font-weight:700;margin-top:3px}
+.kpi-mtd.over{color:#16a34a}.kpi-mtd.warn{color:#64748b}.kpi-mtd.low{color:#dc2626}.kpi-mtd.na{color:#94a3b8;font-weight:400}
 .yoy{display:inline-block;padding:1px 7px;border-radius:4px;font-size:11px;font-weight:700}
 .yoy.up{background:#dcfce7;color:#16a34a}.yoy.dn{background:#fee2e2;color:#dc2626}.yoy.flat{background:#f1f5f9;color:#64748b}
 
@@ -517,13 +519,13 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
     <span class="sec-note" id="kpi-period-label"></span>
   </div>
   <div class="kpi-grid kpi-grid-7">
-    <div class="kpi-card c-blue">  <div class="kpi-lbl">APP MAU</div>                                                    <div class="kpi-val" id="k-mau">-</div>    <div class="kpi-sub" id="k-mau-sub">-</div>    <span class="yoy" id="k-mau-yoy">-</span></div>
-    <div class="kpi-card c-indigo"><div class="kpi-lbl">총수주 <span style="font-size:10px;color:#94a3b8">(백만)</span></div> <div class="kpi-val" id="k-gmv">-</div>    <div class="kpi-sub" id="k-gmv-sub">-</div>    <span class="yoy" id="k-gmv-yoy">-</span></div>
-    <div class="kpi-card c-green"> <div class="kpi-lbl">순수주 <span style="font-size:10px;color:#94a3b8">(백만)</span></div> <div class="kpi-val" id="k-net">-</div>    <div class="kpi-sub" id="k-net-sub">-</div>    <span class="yoy" id="k-net-yoy">-</span></div>
-    <div class="kpi-card c-teal">  <div class="kpi-lbl">구매자수(월)</div>                                               <div class="kpi-val" id="k-buyers">-</div> <div class="kpi-sub" id="k-buyers-sub">-</div> <span class="yoy" id="k-buyers-yoy">-</span></div>
-    <div class="kpi-card c-orange"><div class="kpi-lbl">신규가입</div>                                                    <div class="kpi-val" id="k-join">-</div>   <div class="kpi-sub" id="k-join-sub">-</div>   <span class="yoy" id="k-join-yoy">-</span></div>
-    <div class="kpi-card c-rose">  <div class="kpi-lbl">첫구매</div>                                                      <div class="kpi-val" id="k-first">-</div>  <div class="kpi-sub" id="k-first-sub">-</div>  <span class="yoy" id="k-first-yoy">-</span></div>
-    <div class="kpi-card c-purple"><div class="kpi-lbl">광고비 <span style="font-size:10px;color:#94a3b8">(백만)</span></div> <div class="kpi-val" id="k-adcost">-</div> <div class="kpi-sub" id="k-adcost-sub">-</div> <span class="yoy" id="k-adcost-yoy">-</span></div>
+    <div class="kpi-card c-blue">  <div class="kpi-lbl">APP MAU</div>                                                    <div class="kpi-val" id="k-mau">-</div>    <div class="kpi-sub" id="k-mau-sub">-</div>    <span class="yoy" id="k-mau-yoy">-</span><div class="kpi-mtd" id="k-mau-mtd"></div></div>
+    <div class="kpi-card c-indigo"><div class="kpi-lbl">총수주 <span style="font-size:10px;color:#94a3b8">(백만)</span></div> <div class="kpi-val" id="k-gmv">-</div>    <div class="kpi-sub" id="k-gmv-sub">-</div>    <span class="yoy" id="k-gmv-yoy">-</span><div class="kpi-mtd" id="k-gmv-mtd"></div></div>
+    <div class="kpi-card c-green"> <div class="kpi-lbl">순수주 <span style="font-size:10px;color:#94a3b8">(백만)</span></div> <div class="kpi-val" id="k-net">-</div>    <div class="kpi-sub" id="k-net-sub">-</div>    <span class="yoy" id="k-net-yoy">-</span><div class="kpi-mtd" id="k-net-mtd"></div></div>
+    <div class="kpi-card c-teal">  <div class="kpi-lbl">구매자수(월)</div>                                               <div class="kpi-val" id="k-buyers">-</div> <div class="kpi-sub" id="k-buyers-sub">-</div> <span class="yoy" id="k-buyers-yoy">-</span><div class="kpi-mtd" id="k-buyers-mtd"></div></div>
+    <div class="kpi-card c-orange"><div class="kpi-lbl">신규가입</div>                                                    <div class="kpi-val" id="k-join">-</div>   <div class="kpi-sub" id="k-join-sub">-</div>   <span class="yoy" id="k-join-yoy">-</span><div class="kpi-mtd" id="k-join-mtd"></div></div>
+    <div class="kpi-card c-rose">  <div class="kpi-lbl">첫구매</div>                                                      <div class="kpi-val" id="k-first">-</div>  <div class="kpi-sub" id="k-first-sub">-</div>  <span class="yoy" id="k-first-yoy">-</span><div class="kpi-mtd" id="k-first-mtd"></div></div>
+    <div class="kpi-card c-purple"><div class="kpi-lbl">광고비 <span style="font-size:10px;color:#94a3b8">(백만)</span></div> <div class="kpi-val" id="k-adcost">-</div> <div class="kpi-sub" id="k-adcost-sub">-</div> <span class="yoy" id="k-adcost-yoy">-</span><div class="kpi-mtd" id="k-adcost-mtd"></div></div>
   </div>
 
   <!-- ③ MTD 달성현황 -->
@@ -1257,6 +1259,31 @@ function renderDailyKPI() {
     dt.adcost ? `일 타겟 ${Math.round(dt.adcost/1e6).toLocaleString()}백만`
               : mt.adcost ? `월 타겟 ${Math.round(mt.adcost/1e6).toLocaleString()}백만` : '일 기준',
     dt.adcost ? diff(d.adcost, dt.adcost) : null);
+
+  // 카드 하단: MTD 목표 달성률 (MTD 테이블과 동일 기준·색상 규칙)
+  const mtd = computeMtdCum();
+  const setMtd = (id, actVal, tgtVal, neutral) => {
+    const el = document.getElementById(id + '-mtd');
+    if (!el) return;
+    if (!actVal || !tgtVal) { el.textContent = ''; el.className = 'kpi-mtd na'; return; }
+    const p = Math.round(actVal / tgtVal * 100);
+    el.textContent = `MTD ${p}%`;
+    el.className = 'kpi-mtd ' + (neutral ? 'warn' : p >= 100 ? 'over' : p >= 85 ? 'warn' : 'low');
+  };
+  setMtd('k-mau',    mtd.act.mau_app, mtd.tgt.mau_app);
+  setMtd('k-gmv',    mtd.act.revenue, mtd.tgt.revenue);
+  setMtd('k-net',    mtd.act.net,     mtd.tgt.net);
+  setMtd('k-buyers', mtd.act.buyers,  mtd.tgt.buyers);
+  setMtd('k-join',   mtd.act.join,    mtd.tgt.join);
+  setMtd('k-first',  mtd.act.first,   mtd.tgt.first);
+  // 광고비는 목표 초과/미달이 좋고 나쁨이 아니므로 중립색 + 월예산 기준 소진율
+  const adEl = document.getElementById('k-adcost-mtd');
+  if (adEl) {
+    if (mtd.act.adcost && mtd.mt.adcost) {
+      adEl.textContent = `월예산 소진 ${Math.round(mtd.act.adcost / mtd.mt.adcost * 100)}%`;
+      adEl.className = 'kpi-mtd warn';
+    } else { adEl.textContent = ''; adEl.className = 'kpi-mtd na'; }
+  }
 }
 
 
@@ -1834,7 +1861,8 @@ function selectPaceMetric(metricKey) {
 }
 
 // ── MTD 달성현황 테이블 (동적 생성) ──────────────────────────────
-function buildMtdTable() {
+// MTD(1일~전일) 누적 실적/목표 — MTD 테이블과 KPI 카드가 공용으로 사용
+function computeMtdCum() {
   const ys = getEffectiveDailyDate();
   const mo = ys.substring(0, 7);
   const yr = parseInt(mo.split('-')[0]);
@@ -1842,7 +1870,6 @@ function buildMtdTable() {
   const daysInMonth = new Date(yr, mn, 0).getDate();
   const mt = MONTHLY_TGTS[mo] || {};
 
-  // 1일~전일 누적
   const act = { mau_app:0, buyers:0, join:0, first:0, net:0, revenue:0, gmv:0, adcost:0 };
   const tgt = { mau_app:0, buyers:0, join:0, first:0, net:0, revenue:0, gmv:0, adcost:0 };
 
@@ -1875,6 +1902,11 @@ function buildMtdTable() {
     if (ds === ys && dt.buyers)   tgt.buyers  = dt.buyers;
     cur.setDate(cur.getDate() + 1);
   }
+  return { ys, mo, mn, daysInMonth, mt, act, tgt, elapsed, firstDs };
+}
+
+function buildMtdTable() {
+  const { ys, mo, mn, daysInMonth, mt, act, tgt, elapsed, firstDs } = computeMtdCum();
 
   // 예상마감 = 누적실적 × (월 전체 일수 / 경과 일수) — MAU·구매자수 제외
   const proj = (v) => elapsed > 0 && v > 0 ? Math.round(v * daysInMonth / elapsed) : null;
