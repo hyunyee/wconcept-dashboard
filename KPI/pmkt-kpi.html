@@ -782,8 +782,8 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
   <div class="card" style="margin-bottom:14px">
     <div class="card-title">채널 성과 매트릭스 <span style="font-size:10px;color:#94a3b8;font-weight:400">선택 주 합계 · %는 WoW · 채널 태깅(2_raw_전환·트래픽) 기준</span></div>
     <table class="dt">
-      <thead><tr><th>채널</th><th>세션</th><th>신규가입</th><th>첫구매</th></tr></thead>
-      <tbody id="wk-ch-matrix"><tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:12px">데이터 로딩 중...</td></tr></tbody>
+      <thead><tr><th>채널</th><th>총수주(백만)</th><th>세션</th><th>신규가입</th><th>첫구매</th></tr></thead>
+      <tbody id="wk-ch-matrix"><tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:12px">데이터 로딩 중...</td></tr></tbody>
     </table>
   </div>
 
@@ -1165,8 +1165,8 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
   </div>
   <div class="card" style="margin-bottom:14px">
     <table class="dt">
-      <thead><tr><th>채널</th><th>세션</th><th>신규가입</th><th>첫구매</th></tr></thead>
-      <tbody id="pd-ch-matrix"><tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:12px">데이터 로딩 중...</td></tr></tbody>
+      <thead><tr><th>채널</th><th>총수주(백만)</th><th>세션</th><th>신규가입</th><th>첫구매</th></tr></thead>
+      <tbody id="pd-ch-matrix"><tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:12px">데이터 로딩 중...</td></tr></tbody>
     </table>
   </div>
 
@@ -1905,7 +1905,7 @@ function wkChannelBucket(ch) {
 }
 function aggWeekByChannel(start) {
   const out = {};
-  WK_CH_ORDER.forEach(b => out[b] = { sess: 0, join: 0, first: 0 });
+  WK_CH_ORDER.forEach(b => out[b] = { sess: 0, join: 0, first: 0, rev: 0 });
   const cur = new Date(start);
   for (let i = 0; i < 7; i++) {
     const ds = localDateToStr(cur);
@@ -1920,6 +1920,7 @@ function aggWeekByChannel(start) {
       const b = out[wkChannelBucket(ch)];
       if (c[ch].join)  b.join  += c[ch].join;
       if (c[ch].first) b.first += c[ch].first;
+      if (c[ch].rev)   b.rev   += c[ch].rev;
     });
     cur.setDate(cur.getDate() + 1);
   }
@@ -2194,10 +2195,16 @@ function renderWeeklyChannelMatrix(wkStart) {
     const pTxt = p == null ? '' : ` <span style="font-size:10px;font-weight:700;color:${p >= 0 ? '#10b981' : '#ef4444'}">${p >= 0 ? '+' : ''}${p.toFixed(0)}%</span>`;
     return `<td>${a.toLocaleString()}${pTxt}</td>`;
   };
+  const revCell = (a, b) => {
+    if (!a) return '<td style="color:#cbd5e1">-</td>';
+    const p = yoyPct(a || null, b || null);
+    const pTxt = p == null ? '' : ` <span style="font-size:10px;font-weight:700;color:${p >= 0 ? '#10b981' : '#ef4444'}">${p >= 0 ? '+' : ''}${p.toFixed(0)}%</span>`;
+    return `<td><b>${Math.round(a / 1e6).toLocaleString()}</b>${pTxt}</td>`;
+  };
   const el = document.getElementById('wk-ch-matrix');
   if (el) el.innerHTML = WK_CH_ORDER
     .filter(b => cur[b].sess || cur[b].join || cur[b].first)
-    .map(b => `<tr><td style="font-weight:700">${b}</td>${cell(cur[b].sess, prev[b].sess)}${cell(cur[b].join, prev[b].join)}${cell(cur[b].first, prev[b].first)}</tr>`)
+    .map(b => `<tr><td style="font-weight:700">${b}</td>${revCell(cur[b].rev, prev[b].rev)}${cell(cur[b].sess, prev[b].sess)}${cell(cur[b].join, prev[b].join)}${cell(cur[b].first, prev[b].first)}</tr>`)
     .join('');
 }
 
@@ -2548,7 +2555,7 @@ function renderPeriodChannelDonuts() {
 // 기간×채널그룹(DA/SA 분리) 합산 — Weekly 탭과 동일 버킷 기준, 임의 기간 지원
 function aggChannelRange(from, to) {
   const out = {};
-  WK_CH_ORDER.forEach(b => out[b] = { sess: 0, join: 0, first: 0 });
+  WK_CH_ORDER.forEach(b => out[b] = { sess: 0, join: 0, first: 0, rev: 0 });
   let cur = parseLocalDate(from);
   const end = parseLocalDate(to);
   while (cur <= end) {
@@ -2564,6 +2571,7 @@ function aggChannelRange(from, to) {
       const b = out[wkChannelBucket(ch)];
       if (c[ch].join)  b.join  += c[ch].join;
       if (c[ch].first) b.first += c[ch].first;
+      if (c[ch].rev)   b.rev   += c[ch].rev;
     });
     cur.setDate(cur.getDate() + 1);
   }
@@ -2582,10 +2590,16 @@ function renderPdChannelMatrix(from, to) {
     const pTxt = p == null ? '' : ` <span style="font-size:10px;font-weight:700;color:${p >= 0 ? '#10b981' : '#ef4444'}">${p >= 0 ? '+' : ''}${p.toFixed(0)}%</span>`;
     return `<td>${a.toLocaleString()}${pTxt}</td>`;
   };
+  const revCell = (a, b) => {
+    if (!a) return '<td style="color:#cbd5e1">-</td>';
+    const p = yoyPct(a || null, b || null);
+    const pTxt = p == null ? '' : ` <span style="font-size:10px;font-weight:700;color:${p >= 0 ? '#10b981' : '#ef4444'}">${p >= 0 ? '+' : ''}${p.toFixed(0)}%</span>`;
+    return `<td><b>${Math.round(a / 1e6).toLocaleString()}</b>${pTxt}</td>`;
+  };
   const el = document.getElementById('pd-ch-matrix');
   if (el) el.innerHTML = WK_CH_ORDER
     .filter(b => cur[b].sess || cur[b].join || cur[b].first)
-    .map(b => `<tr><td style="font-weight:700">${b}</td>${cell(cur[b].sess, ly[b].sess)}${cell(cur[b].join, ly[b].join)}${cell(cur[b].first, ly[b].first)}</tr>`)
+    .map(b => `<tr><td style="font-weight:700">${b}</td>${revCell(cur[b].rev, ly[b].rev)}${cell(cur[b].sess, ly[b].sess)}${cell(cur[b].join, ly[b].join)}${cell(cur[b].first, ly[b].first)}</tr>`)
     .join('');
 }
 
