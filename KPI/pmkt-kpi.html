@@ -3596,20 +3596,26 @@ async function askJiwoni() {
 }
 
 // ── ① 의도 파싱 — Flow A 연결 전엔 키워드 기반 로컬 폴백으로 동작 ──────────
+// 지원 패턴 4종에 대한 트리거 키워드는 자연스러운 유사 표현(1위/최고/괜찮아/늘었 등)까지
+// 폭넓게 인식하도록 구성 — 어떤 표현이든 4종 패턴 중 하나로만 매핑되고, 계산 로직은 그대로 재사용
 function jwMockParseIntent(q) {
   const chMatch = q.match(/DA|SA|Organic|CRM|PCS|기타/);
   const metric = q.includes('신규가입') ? 'join' : q.includes('첫구매') ? 'first'
     : q.includes('세션') ? 'sess' : (q.includes('총수주') || q.includes('매출')) ? 'rev' : 'join';
-  if (q.includes('채널') && (q.includes('아이디') || /channel\s*id/i.test(q) || q.includes('가장') || q.includes('제일'))) {
+
+  const rankHint = /채널\s*(아이디|id)|가장|제일|1위|탑|top|베스트|최고/i;
+  if (q.includes('채널') && rankHint.test(q)) {
     return { pattern: 'channel_id_ranking', slots: { channelGroup: chMatch ? chMatch[0] : 'ALL', metric } };
   }
-  if (q.includes('특이사항')) {
+  if (q.includes('특이사항') || q.includes('이슈') || q.includes('요약') || q.includes('코멘트')) {
     return { pattern: 'highlights', slots: { period: (q.includes('이번 달') || q.includes('이번달')) ? 'this_month' : 'this_week' } };
   }
-  if (chMatch && (q.includes('잘하고') || q.includes('어때') || q.includes('추세'))) {
+  const trendHint = /잘하고|어때|추세|괜찮|좋아|성과|어떻/;
+  if (chMatch && trendHint.test(q)) {
     return { pattern: 'channel_trend', slots: { channelGroup: chMatch[0] } };
   }
-  if (q.includes('얼마나') || q.includes('대비')) {
+  const cmpHint = /얼마나|대비|변화|증가|감소|늘었|줄었|올랐|내렸/;
+  if (cmpHint.test(q)) {
     const cmpMetric = q.includes('순수주') ? 'net' : q.includes('총수주') ? 'revenue' : q.includes('주문') ? 'orders'
       : q.includes('신규가입') ? 'join' : q.includes('첫구매') ? 'first' : 'net';
     return { pattern: 'metric_period_compare', slots: { metric: cmpMetric } };
