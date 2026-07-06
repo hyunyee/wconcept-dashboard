@@ -928,10 +928,11 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
   <div class="card" style="overflow-x:auto">
     <div class="card-title">월별 KPI 달성률</div>
     <div class="card-sub">* 달성률 색상: <span style="color:#10b981;font-weight:700">녹색 ≥100%</span> / <span style="color:#f59e0b;font-weight:700">노랑 ≥90%</span> / <span style="color:#ef4444;font-weight:700">빨강 &lt;90%</span> / 실적은 26년 기준, YoY는 25년 동월 대비 (실적 없는 월은 목표만 표시, 당월은 YoY 공란)</div>
-    <table class="annual-table" style="min-width:1620px">
+    <table class="annual-table" style="min-width:1900px">
       <thead>
         <tr>
           <th rowspan="2" style="text-align:left;vertical-align:bottom">월</th>
+          <th colspan="4" style="text-align:center;border-left:2px solid #e2e8f0">광고비 (억원)</th>
           <th colspan="4" style="text-align:center;border-left:2px solid #e2e8f0">APPMAU (명)</th>
           <th colspan="4" style="text-align:center;border-left:2px solid #e2e8f0">순수주 (억원)</th>
           <th colspan="4" style="text-align:center;border-left:2px solid #e2e8f0">전체 구매자(월) (명)</th>
@@ -942,6 +943,7 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
           <th colspan="2" style="text-align:center;border-left:2px solid #e2e8f0">CR (주문건수/세션수)</th>
         </tr>
         <tr>
+          <th style="border-left:2px solid #e2e8f0">목표</th><th>실적</th><th>달성률</th><th>YoY</th>
           <th style="border-left:2px solid #e2e8f0">목표</th><th>실적</th><th>달성률</th><th>YoY</th>
           <th style="border-left:2px solid #e2e8f0">목표</th><th>실적</th><th>달성률</th><th>YoY</th>
           <th style="border-left:2px solid #e2e8f0">목표</th><th>실적</th><th>달성률</th><th>YoY</th>
@@ -3279,6 +3281,7 @@ function computeMonthlyActuals() {
       if (cur.revenue  != null) d.tA       = +(cur.revenue / 1e8).toFixed(1);
       if (cur.gmv      != null) d.gmvA     = +(cur.gmv / 1e8).toFixed(1);
       if (cur.net      != null) d.nA       = +(cur.net / 1e8).toFixed(1);
+      if (cur.adcost   != null) d.adcostA  = +(cur.adcost / 1e8).toFixed(1);
       if (cur.mau_app  != null) d.mauA     = cur.mau_app;
       if (cur.join     != null) d.joinA    = cur.join;
       if (cur.buyers   != null) d.buyersA  = cur.buyers;
@@ -3288,6 +3291,7 @@ function computeMonthlyActuals() {
     }
     if (ly) {
       if (ly.net      != null) d.nA_ly       = +(ly.net / 1e8).toFixed(1);
+      if (ly.adcost   != null) d.adcostA_ly  = +(ly.adcost / 1e8).toFixed(1);
       if (ly.mau_app  != null) d.mauA_ly     = ly.mau_app;
       if (ly.join     != null) d.joinA_ly    = ly.join;
       if (ly.buyers   != null) d.buyersA_ly  = ly.buyers;
@@ -3356,6 +3360,17 @@ function buildAnnualTable() {
     return `<span class="ann-pct ${cls}">${p}%</span>`;
   };
   const bl = 'border-left:2px solid #e2e8f0';
+  // 광고비는 목표 초과/미달이 좋고나쁨이 아니므로(Daily 탭 KPI 카드와 동일 원칙) 중립 회색으로만 표시
+  const pctNeutral = (t, a) => {
+    if (t == null || a == null) return na;
+    const p = Math.round(a / t * 100);
+    return `<span style="color:#64748b;font-weight:700">${p}%</span>`;
+  };
+  const yoyNeutral = (isCur, a, ly) => {
+    if (isCur || a == null || ly == null || ly === 0) return na;
+    const y = (a - ly) / ly * 100;
+    return `<span style="color:#64748b;font-weight:700">${y >= 0 ? '+' : ''}${y.toFixed(1)}%</span>`;
+  };
   const crFmt = v => v != null ? v.toFixed(2) + '%' : na;
   // CR은 이미 %(비율)이므로 YoY는 상대변화율이 아니라 두 값의 차(%p)로 계산
   const crYoy = (isCur, a, ly) => {
@@ -3380,6 +3395,7 @@ function buildAnnualTable() {
     summaryTr.classList.add('annual-summary-row');
     summaryTr.innerHTML =
       `<td style="white-space:nowrap">연간 누적<br><span style="font-size:10px;color:#94a3b8;font-weight:400">1~${closeIdx + 1}월(평균/계)</span></td>` +
+      `<td style="${bl}">${fmtBil(sum('adcostT'))}</td><td>${fmtBil(sum('adcostA'))}</td><td>${pctNeutral(sum('adcostT'), sum('adcostA'))}</td><td>${na}</td>` +
       `<td style="${bl}">${fmtNum(avg('mauT'))}</td><td>${fmtNum(avg('mauA'))}</td><td>${pct(avg('mauT'), avg('mauA'))}</td><td>${na}</td>` +
       `<td style="${bl}">${fmtBil(sum('nT'))}</td><td>${fmtBil(sum('nA'))}</td><td>${pct(sum('nT'), sum('nA'))}</td><td>${na}</td>` +
       `<td style="${bl}">${fmtNum(sum('buyersT'))}</td><td>${fmtNum(sum('buyersA'))}</td><td>${pct(sum('buyersT'), sum('buyersA'))}</td><td>${na}</td>` +
@@ -3410,6 +3426,7 @@ function buildAnnualTable() {
     };
     tr.innerHTML =
       `<td style="font-weight:700;white-space:nowrap">${d.m}${d.note ? `<br><span style="font-size:10px;color:#94a3b8;font-weight:400">${d.note}</span>` : ''}</td>` +
+      `<td style="${bl}">${fmtBil(d.adcostT)}</td><td>${fmtBil(d.adcostA)}</td><td>${pctNeutral(d.adcostT, d.adcostA)}</td><td>${yoyNeutral(isCur, d.adcostA, d.adcostA_ly)}</td>` +
       `<td style="${bl}">${fmtNum(d.mauT)}</td><td>${fmtNum(d.mauA)}</td><td>${pct(d.mauT, d.mauA)}</td><td>${yoy(d.mauA, d.mauA_ly)}</td>` +
       `<td style="${bl}">${fmtBil(d.nT)}</td><td>${fmtBil(d.nA)}</td><td>${pct(d.nT, d.nA)}</td><td>${yoy(d.nA, d.nA_ly)}</td>` +
       `<td style="${bl}">${fmtNum(d.buyersT)}</td><td>${fmtNum(d.buyersA)}</td><td>${pct(d.buyersT, d.buyersA)}</td><td>${yoy(d.buyersA, d.buyersA_ly)}</td>` +
@@ -4544,6 +4561,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (mt.revenue)  d.tT      = mt.revenue / 1e8;
         if (mt.net)      d.nT      = mt.net     / 1e8;
         if (mt.gmv)      d.gmvT    = mt.gmv     / 1e8;
+        if (mt.adcost)   d.adcostT = mt.adcost  / 1e8;
         if (mt.mau_app)  d.mauT    = mt.mau_app;
         if (mt.join)     d.joinT   = mt.join;
         if (mt.buyers)   d.buyersT = mt.buyers;
