@@ -1922,6 +1922,35 @@ function aggWeekFull(start) {
   return agg;
 }
 
+// aggWeekFull과 동일 집계를 임의 기간 [from,to]로 일반화 — 지원이 탭별 스코프 대응용
+function aggRangeFull(from, to) {
+  const agg = { revenue: 0, net: 0, orders: 0, join: 0, first: 0, sess: 0, sessApp: 0, missDaily: 0 };
+  let cur = parseLocalDate(from);
+  const end = parseLocalDate(to);
+  while (cur <= end) {
+    const ds = localDateToStr(cur);
+    (RAW[ds] || []).forEach(h => {
+      if (h) {
+        if (h[0]) agg.orders  += h[0];
+        if (h[1]) agg.revenue += h[1];
+        if (h[2]) agg.net     += h[2];
+      }
+    });
+    const dd = DAILY[ds] || {};
+    if (dd.join)  agg.join  += dd.join;
+    if (dd.first) agg.first += dd.first;
+    if (dd.join == null && dd.first == null) agg.missDaily++;
+    const td = (TRAFFIC[ds] || {}).__total__;
+    if (td && td.s) {
+      agg.sess += td.s;
+      const app = td.device && td.device.app;
+      if (app && app.s) agg.sessApp += app.s;
+    }
+    cur.setDate(cur.getDate() + 1);
+  }
+  return agg;
+}
+
 // 주간 채널그룹별 합산 — DA/SA 분리 버킷 (Daily 탭 groupChannel의 Ads 통합과 별개)
 const WK_CH_ORDER = ['Organic', 'DA', 'SA', 'CRM', 'PCS', '기타'];
 WK_CH_TREND_ON = new Set(WK_CH_ORDER);
@@ -3572,7 +3601,8 @@ async function askJiwoni() {
   const bubble = jwAddBotMessage('🤔 질문을 이해하는 중...');
 
   try {
-    const intent = await jwParseIntent(q);
+    const scope = jwGetTabScope();
+    const intent = await jwParseIntent(q, scope);
     if (!intent || intent.unsupported) {
       bubble.body.innerHTML =
         `아직 이런 질문은 답변드리기 어려워요 😅<br><br>이런 식으로 물어봐 주세요:<br>` +
@@ -3580,7 +3610,7 @@ async function askJiwoni() {
       return;
     }
 
-    const computed = jwCompute(intent);
+    const computed = jwCompute(intent, scope);
     if (computed.error) { bubble.body.innerHTML = `계산 중 문제가 있었어요: ${computed.error}`; return; }
 
     bubble.body.innerHTML = '✍️ 답변을 정리하는 중...';
@@ -3595,20 +3625,81 @@ async function askJiwoni() {
   }
 }
 
+// ── 현재 보고 있는 탭에 맞춰 지원이의 기본 기간·비교기준 결정 ──────────────
+// 각 탭이 이미 스스로 쓰는 관례를 그대로 따름(새 규칙 발명 없음): Weekly=WoW, 연간/기간조회=YoY,
+// Daily=전주 동요일, 실시간=그 탭에서 현재 선택된 날짜·비교토글(selectedDate/getFilteredCompDates)
+function jwIsViewVisible(id) {
+  const el = document.getElementById(id);
+  return !!el && el.style.display !== 'none';
+}
+
+function jwGetTabScope() {
+  if (jwIsViewVisible('view-annual')) {
+    const ed = getEffectiveDailyDate();
+    const mo = ed.substring(0, 7);
+    const lyMo = `${parseInt(mo.substring(0, 4)) - 1}${mo.substring(4)}`;
+    return {
+      scope: 'month', from: `${mo}-01`, to: ed,
+      cmpFrom: `${lyMo}-01`, cmpTo: `${parseInt(ed.substring(0, 4)) - 1}${ed.substring(4)}`,
+      label: `${mo}-01~${ed}(MTD)`, cmpLabel: '전년 동기간',
+    };
+  }
+  if (jwIsViewVisible('view-period')) {
+    const from = document.getElementById('period-from')?.value;
+    const to = document.getElementById('period-to')?.value;
+    if (from && to) {
+      return {
+        scope: 'range', from, to,
+        cmpFrom: `${parseInt(from.substring(0, 4)) - 1}${from.substring(4)}`,
+        cmpTo: `${parseInt(to.substring(0, 4)) - 1}${to.substring(4)}`,
+        label: `${from}~${to}`, cmpLabel: '전년 동기간',
+      };
+    }
+  }
+  if (jwIsViewVisible('view-realtime')) {
+    const d = (typeof selectedDate !== 'undefined' && selectedDate) || getLastDate();
+    const activeKeys = ['lw', 'lm', 'ly'].filter(k => compareFlags[k]);
+    const comps = getFilteredCompDates(d);
+    const cmp = comps[0] || getDateByOffset(d, -7);
+    const cmpLabel = (activeKeys[0] && COMP_KEY_LABEL[activeKeys[0]]) || '전주 동요일';
+    return { scope: 'realtime', from: d, to: d, cmpFrom: cmp, cmpTo: cmp, label: d, cmpLabel };
+  }
+  if (jwIsViewVisible('view-dash')) {
+    const ed = getEffectiveDailyDate();
+    const cmp = getDateByOffset(ed, -7);
+    return { scope: 'day', from: ed, to: ed, cmpFrom: cmp, cmpTo: cmp, label: ed, cmpLabel: '전주 동요일' };
+  }
+  // Weekly 및 그 외 폴백 — 기존 동작과 동일(최근 마감주 vs 전주)
+  // wkOffset()은 Date 객체를 반환하므로(주간 렌더링 쪽 관례), 범위 집계 함수(문자열 날짜 기대)에 넘기기 전에 문자열로 변환
+  const wkStart = latestClosedWeekStart();
+  const wkEnd = wkOffset(wkStart, 6);
+  return {
+    scope: 'week', from: localDateToStr(wkStart), to: localDateToStr(wkEnd),
+    cmpFrom: localDateToStr(wkOffset(wkStart, -7)), cmpTo: localDateToStr(wkOffset(wkStart, -1)),
+    label: `${wkMD(wkStart)}~${wkMD(wkEnd)}`, cmpLabel: '전주',
+  };
+}
+
 // ── ① 의도 파싱 — Flow A 연결 전엔 키워드 기반 로컬 폴백으로 동작 ──────────
-// 지원 패턴 4종에 대한 트리거 키워드는 자연스러운 유사 표현(1위/최고/괜찮아/늘었 등)까지
-// 폭넓게 인식하도록 구성 — 어떤 표현이든 4종 패턴 중 하나로만 매핑되고, 계산 로직은 그대로 재사용
-function jwMockParseIntent(q) {
+function jwMockParseIntent(q, scope) {
   const chMatch = q.match(/DA|SA|Organic|CRM|PCS|기타/);
   const metric = q.includes('신규가입') ? 'join' : q.includes('첫구매') ? 'first'
     : q.includes('세션') ? 'sess' : (q.includes('총수주') || q.includes('매출')) ? 'rev' : 'join';
+
+  // 실시간 탭에서만 활성화되는 실적진단 질문(기존 "🔍 실적 진단" 패널 로직 재사용)
+  const diagHint = /진단|부진|이슈|원인|왜/;
+  if (scope && scope.scope === 'realtime' && diagHint.test(q)) {
+    return { pattern: 'realtime_diagnosis', slots: {} };
+  }
 
   const rankHint = /채널\s*(아이디|id)|가장|제일|1위|탑|top|베스트|최고/i;
   if (q.includes('채널') && rankHint.test(q)) {
     return { pattern: 'channel_id_ranking', slots: { channelGroup: chMatch ? chMatch[0] : 'ALL', metric } };
   }
   if (q.includes('특이사항') || q.includes('이슈') || q.includes('요약') || q.includes('코멘트')) {
-    return { pattern: 'highlights', slots: { period: (q.includes('이번 달') || q.includes('이번달')) ? 'this_month' : 'this_week' } };
+    const period = (q.includes('이번 달') || q.includes('이번달')) ? 'this_month'
+      : (q.includes('이번주') || q.includes('이번 주')) ? 'this_week' : undefined;
+    return { pattern: 'highlights', slots: { period } };
   }
   const trendHint = /잘하고|어때|추세|괜찮|좋아|성과|어떻/;
   if (chMatch && trendHint.test(q)) {
@@ -3623,33 +3714,32 @@ function jwMockParseIntent(q) {
   return { unsupported: true };
 }
 
-async function jwParseIntent(q) {
-  if (!JW_FLOW_A_URL) return jwMockParseIntent(q);
+async function jwParseIntent(q, scope) {
+  if (!JW_FLOW_A_URL) return jwMockParseIntent(q, scope);
   const resp = await fetch(JW_FLOW_A_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question: q }) });
   if (!resp.ok) throw new Error('의도 파싱 서버 오류');
   return await resp.json();
 }
 
-// ── ② 계산 디스패치 — 전부 기존 Weekly/기간조회/마감코멘트 함수 재사용 ──────
-function jwCompute(intent) {
+// ── ② 계산 디스패치 — 전부 기존 Weekly/기간조회/마감코멘트/실적진단 함수 재사용 ──
+function jwCompute(intent, scope) {
   const dispatch = {
     channel_id_ranking: jwComputeChannelIdRanking,
     metric_period_compare: jwComputeMetricCompare,
     channel_trend: jwComputeChannelTrend,
     highlights: jwComputeHighlights,
+    realtime_diagnosis: jwComputeRealtimeDiagnosis,
   };
   const fn = dispatch[intent.pattern];
   if (!fn) return { error: '지원하지 않는 패턴입니다.' };
-  try { return fn(intent.slots || {}); } catch (e) { return { error: e.message }; }
+  try { return fn(intent.slots || {}, scope); } catch (e) { return { error: e.message }; }
 }
 
-function jwComputeChannelIdRanking(slots) {
+function jwComputeChannelIdRanking(slots, scope) {
   const metric = slots.metric || 'join';
   const idx = WK_CHID_METRIC_IDX[metric] ?? 0;
-  const wkStart = latestClosedWeekStart();
-  const wkEnd = wkOffset(wkStart, 6);
-  const cur = aggWeekChAd(wkStart);
-  const prev = aggWeekChAd(wkOffset(wkStart, -7));
+  const cur = aggChAdRange(scope.from, scope.to);
+  const prev = aggChAdRange(scope.cmpFrom, scope.cmpTo);
   const meta = CH_AD_META || {};
   let rows = Object.keys(cur).map(chid => ({
     chid, m: meta[chid] || {}, val: cur[chid][idx], prevVal: (prev[chid] && prev[chid][idx]) || 0,
@@ -3660,48 +3750,48 @@ function jwComputeChannelIdRanking(slots) {
   if (!top || !top.val) return { error: '해당 조건의 채널ID 데이터가 없습니다.' };
   return {
     pattern: 'channel_id_ranking',
-    debugRange: `${wkMD(wkStart)}~${wkMD(wkEnd)}`,
+    debugRange: scope.label,
     data: { chid: top.chid, label: top.m.label || '', ch: top.m.ch || '', metric,
-      value: top.val, prevValue: top.prevVal, wowPct: yoyPct(top.val || null, top.prevVal || null) },
+      value: top.val, prevValue: top.prevVal, wowPct: yoyPct(top.val || null, top.prevVal || null),
+      cmpLabel: scope.cmpLabel },
   };
 }
 
-function jwComputeMetricCompare(slots) {
+function jwComputeMetricCompare(slots, scope) {
   const metric = slots.metric || 'net';
-  const wkStart = latestClosedWeekStart();
-  const cur = aggWeekFull(wkStart)[metric];
-  const prev = aggWeekFull(wkOffset(wkStart, -7))[metric];
+  const cur = aggRangeFull(scope.from, scope.to)[metric];
+  const prev = aggRangeFull(scope.cmpFrom, scope.cmpTo)[metric];
   if (cur == null) return { error: '해당 지표 데이터를 찾을 수 없습니다.' };
   return {
     pattern: 'metric_period_compare',
-    debugRange: `${wkMD(wkStart)}~${wkMD(wkOffset(wkStart, 6))}`,
-    data: { metric, value: cur, prevValue: prev, wowPct: yoyPct(cur || null, prev || null), period: '이번 마감주', prevPeriod: '전주' },
+    debugRange: scope.label,
+    data: { metric, value: cur, prevValue: prev, wowPct: yoyPct(cur || null, prev || null), period: scope.label, prevPeriod: scope.cmpLabel },
   };
 }
 
-function jwComputeChannelTrend(slots) {
+function jwComputeChannelTrend(slots, scope) {
   const ch = slots.channelGroup;
   if (!ch || !WK_CH_ORDER.includes(ch)) return { error: '채널을 인식하지 못했습니다.' };
-  const wkStart = latestClosedWeekStart();
-  const cur = aggWeekByChannel(wkStart)[ch];
-  const prev = aggWeekByChannel(wkOffset(wkStart, -7))[ch];
-  const ly = aggWeekByChannel(wkOffset(wkStart, -364))[ch];
-  return {
-    pattern: 'channel_trend',
-    debugRange: `${wkMD(wkStart)}~${wkMD(wkOffset(wkStart, 6))}`,
-    data: {
-      channel: ch,
-      sess: cur.sess, sessWow: yoyPct(cur.sess || null, prev.sess || null),
-      join: cur.join, joinWow: yoyPct(cur.join || null, prev.join || null),
-      first: cur.first, firstWow: yoyPct(cur.first || null, prev.first || null),
-      rev: cur.rev, revWow: yoyPct(cur.rev || null, prev.rev || null),
-      revYoy: yoyPct(cur.rev || null, ly.rev || null),
-    },
+  const cur = aggChannelRange(scope.from, scope.to)[ch];
+  const prev = aggChannelRange(scope.cmpFrom, scope.cmpTo)[ch];
+  const data = {
+    channel: ch, cmpLabel: scope.cmpLabel,
+    sess: cur.sess, sessWow: yoyPct(cur.sess || null, prev.sess || null),
+    join: cur.join, joinWow: yoyPct(cur.join || null, prev.join || null),
+    first: cur.first, firstWow: yoyPct(cur.first || null, prev.first || null),
+    rev: cur.rev, revWow: yoyPct(cur.rev || null, prev.rev || null),
   };
+  // week 스코프만 별도로 전년(-364일) 3-way 비교 추가 — 그 외 스코프는 cmp가 이미 YoY 개념이라 중복 표시 안 함
+  if (scope.scope === 'week') {
+    const ly = aggChannelRange(getDateByOffset(scope.from, -364), getDateByOffset(scope.to, -364))[ch];
+    data.revYoy = yoyPct(cur.rev || null, ly.rev || null);
+  }
+  return { pattern: 'channel_trend', debugRange: scope.label, data };
 }
 
-function jwComputeHighlights(slots) {
-  if (slots.period === 'this_month') {
+function jwComputeHighlights(slots, scope) {
+  const period = slots.period || (scope && scope.scope === 'month' ? 'this_month' : 'this_week');
+  if (period === 'this_month') {
     const insights = mcDetectInsights();
     return { pattern: 'highlights', debugRange: '이번 달', data: { scope: 'month', insights: insights.map(i => i.text) } };
   }
@@ -3720,6 +3810,36 @@ function jwComputeHighlights(slots) {
   return { pattern: 'highlights', debugRange: `${wkMD(wkStart)}~${wkMD(wkOffset(wkStart, 6))}`, data: { scope: 'week', insights: insights.map(i => i.text) } };
 }
 
+// 실시간 탭 전용 — 기존 "🔍 실적 진단" 패널이 쓰는 함수를 그대로 재사용(신규 계산 로직 없음)
+function jwComputeRealtimeDiagnosis() {
+  const date = (typeof selectedDate !== 'undefined' && selectedDate) || getLastDate();
+  const diag = getFunnelDiagnosis(date);
+  if (!diag.available) {
+    return { pattern: 'realtime_diagnosis', debugRange: date, data: { date, available: false, reason: diag.reason } };
+  }
+  const forecast = getForecast(date);
+  const targets = getTargets(date);
+  const gapToTarget = (forecast.net_rev != null && targets.net_revenue > 0)
+    ? targets.net_revenue - forecast.net_rev : null;
+  return {
+    pattern: 'realtime_diagnosis',
+    debugRange: date,
+    data: {
+      date, baselineLabel: getBaselineLabel(), available: true,
+      orders: diag.stageOrders ? {
+        today: diag.stageOrders.today, base: Math.round(diag.stageOrders.base),
+        devPct: +(diag.stageOrders.dev * 100).toFixed(1),
+      } : null,
+      cancelRate: diag.stageCancel ? {
+        todayPct: +(diag.stageCancel.today * 100).toFixed(1), basePct: +(diag.stageCancel.base * 100).toFixed(1),
+        devPt: +diag.stageCancel.devPt.toFixed(1),
+      } : null,
+      impacts: diag.impacts.map(imp => ({ key: imp.key, impact: Math.round(imp.impact) })),
+      gapToTarget: gapToTarget != null ? Math.round(gapToTarget) : null,
+    },
+  };
+}
+
 // ── ③ 답변 문장화 — Flow B 연결 전엔 템플릿 기반 로컬 폴백으로 동작 ────────
 function jwMockPhrase(computed) {
   const d = computed.data;
@@ -3728,14 +3848,25 @@ function jwMockPhrase(computed) {
   switch (computed.pattern) {
     case 'channel_id_ranking': {
       const chBadge = d.ch ? `(${d.ch})` : '';
-      return `${computed.debugRange} 기준, ${d.chid}${chBadge}${d.label ? ' · ' + d.label : ''}가 ${metricLabel[d.metric] || d.metric} ${d.value.toLocaleString()}(으)로 가장 높았습니다.\n전주(${d.prevValue.toLocaleString()}) 대비 ${pctStr(d.wowPct)}입니다.`;
+      return `${computed.debugRange} 기준, ${d.chid}${chBadge}${d.label ? ' · ' + d.label : ''}가 ${metricLabel[d.metric] || d.metric} ${d.value.toLocaleString()}(으)로 가장 높았습니다.\n${d.cmpLabel || '비교기간'}(${d.prevValue.toLocaleString()}) 대비 ${pctStr(d.wowPct)}입니다.`;
     }
     case 'metric_period_compare':
       return `${d.period} ${metricLabel[d.metric] || d.metric}은 ${(d.value / 1e8).toFixed(1)}억으로, ${d.prevPeriod}(${(d.prevValue / 1e8).toFixed(1)}억) 대비 ${pctStr(d.wowPct)}입니다.`;
     case 'channel_trend':
-      return `${computed.debugRange} 기준 ${d.channel} 채널 — 세션 ${pctStr(d.sessWow)}, 신규가입 ${pctStr(d.joinWow)}, 첫구매 ${pctStr(d.firstWow)}, 총수주 ${pctStr(d.revWow)}(전주 대비) / YoY ${pctStr(d.revYoy)}.`;
+      return `${computed.debugRange} 기준 ${d.channel} 채널 — 세션 ${pctStr(d.sessWow)}, 신규가입 ${pctStr(d.joinWow)}, 첫구매 ${pctStr(d.firstWow)}, 총수주 ${pctStr(d.revWow)}(${d.cmpLabel || '비교기간'} 대비)${d.revYoy != null ? ` / YoY ${pctStr(d.revYoy)}` : ''}.`;
     case 'highlights':
       return d.insights.length ? d.insights.join('\n') : '특이사항이 없습니다.';
+    case 'realtime_diagnosis': {
+      if (!d.available) {
+        return d.reason === 'early' ? '아직 데이터가 충분히 쌓이지 않아 진단하기 어려워요 (2시 이후 진단 가능).' : '비교 기준일이 꺼져있어 진단할 수 없어요 — 상단에서 전주/전월/전년동요일 중 하나를 켜주세요.';
+      }
+      if (!d.impacts.length) return `${d.date} 기준 특이사항 없음 — 주문건수·취반품률 모두 정상 범위입니다(비교: ${d.baselineLabel}).`;
+      const lines = d.impacts.map(imp => imp.key === 'orders'
+        ? `주문건수 부진(오늘 ${d.orders.today.toLocaleString()}건, ${d.baselineLabel} ${d.orders.base.toLocaleString()}건 대비 ${d.orders.devPct}%)`
+        : `취반품률 악화(오늘 ${d.cancelRate.todayPct}%, ${d.baselineLabel} ${d.cancelRate.basePct}% 대비 +${d.cancelRate.devPt}%p)`);
+      const gapTxt = d.gapToTarget != null ? ` 목표 갭 대비 이 요인들의 순수주 임팩트 추정 ${d.impacts.reduce((s, i) => s + i.impact, 0).toLocaleString()}원.` : '';
+      return `${d.date} 실적 진단 — ${lines.join(', ')}.${gapTxt}`;
+    }
     default:
       return '답변을 생성하지 못했습니다.';
   }
