@@ -3327,11 +3327,12 @@ function buildAnnualTable() {
   };
   const bl = 'border-left:2px solid #e2e8f0';
   const crFmt = v => v != null ? v.toFixed(2) + '%' : na;
+  // CR은 이미 %(비율)이므로 YoY는 상대변화율이 아니라 두 값의 차(%p)로 계산
   const crYoy = (isCur, a, ly) => {
-    if (isCur || a == null || ly == null || ly === 0) return na;
-    const y = (a - ly) / ly * 100;
+    if (isCur || a == null || ly == null) return na;
+    const y = a - ly;
     const color = y >= 0 ? '#10b981' : '#ef4444';
-    return `<span style="color:${color};font-weight:700">${y >= 0 ? '+' : ''}${y.toFixed(1)}%p</span>`;
+    return `<span style="color:${color};font-weight:700">${y >= 0 ? '+' : ''}${y.toFixed(2)}%p</span>`;
   };
 
   // 연간 누적 행 — 실적이 채워진 마지막(마감) 월까지 집계해 1월 위에 표시
