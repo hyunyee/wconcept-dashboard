@@ -2729,6 +2729,8 @@ function renderPdChidDetail() {
   const canvas = document.getElementById('chart-pd-chid-detail');
   const sub = document.getElementById('pd-chid-sub');
   if (!canvas) return;
+  const from = document.getElementById('period-from')?.value;
+  const to   = document.getElementById('period-to')?.value;
   if (!pdSelectedChid) {
     if (sub) sub.textContent = '채널ID를 검색하거나 위 표에서 행을 클릭하세요';
     if (pdChidDetailChart) { pdChidDetailChart.destroy(); pdChidDetailChart = null; }
@@ -2737,7 +2739,8 @@ function renderPdChidDetail() {
   const metric = document.getElementById('pd-chid-metric')?.value || 'join';
   const idx = WK_CHID_METRIC_IDX[metric];
   const m = CH_AD_META[pdSelectedChid] || {};
-  const dates = Object.keys(CH_AD).sort();
+  // 상단에서 설정한 기간(period-from~to) 범위로 필터 — CH_AD 전체 히스토리가 아니라 조회 기간 기준
+  const dates = Object.keys(CH_AD).filter(ds => (!from || ds >= from) && (!to || ds <= to)).sort();
   const labels = [], series = [];
   dates.forEach(ds => {
     const v = CH_AD[ds][pdSelectedChid] || null;
@@ -2745,9 +2748,15 @@ function renderPdChidDetail() {
     series.push(v && v[idx] ? v[idx] : (metric === 'sess' ? null : (v ? 0 : null)));
   });
   const label = { join: '신규가입', first: '첫구매', rev: '총수주', sess: '세션' }[metric];
-  if (sub) sub.textContent = `${pdSelectedChid}${m.ch ? ` (${m.ch})` : ''} ${m.label ? '· ' + m.label : ''} · ${label} 일별 추이`
-    + (metric === 'sess' ? ' · 세션은 트래픽 시트 보유기간(최근 34일)만 표시' : '');
+  const rangeTxt = from && to ? ` (${from}~${to})` : '';
+  const emptyNote = dates.length ? '' : ' · 선택 기간에 데이터 없음(CH_AD 보유: 최근 120일)';
+  if (sub) sub.textContent = `${pdSelectedChid}${m.ch ? ` (${m.ch})` : ''} ${m.label ? '· ' + m.label : ''} · ${label} 일별 추이${rangeTxt}`
+    + (metric === 'sess' ? ' · 세션은 트래픽 시트 보유기간(최근 34일)만 표시' : '') + emptyNote;
 
+  if (!dates.length) {
+    if (pdChidDetailChart) { pdChidDetailChart.destroy(); pdChidDetailChart = null; }
+    return;
+  }
   if (pdChidDetailChart) { pdChidDetailChart.destroy(); pdChidDetailChart = null; }
   pdChidDetailChart = new Chart(canvas, {
     type: 'line',
