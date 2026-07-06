@@ -3473,8 +3473,8 @@ function buildAnnualTable() {
 // 설계: ①의도파싱(Flow A, LLM) → ②브라우저에서 기존 집계함수로 계산(신규 로직 없음, 100% 재사용)
 //       → ③답변 문장화(Flow B, LLM). Flow A/B URL이 비어있으면 로컬 폴백(mock)으로 동작 —
 //       Power Automate 플로우 구축 전에도 계산 로직을 검증할 수 있고, URL만 채우면 자동 전환됨.
-const JW_FLOW_A_URL = ''; // TODO: Power Automate "의도 파싱" 플로우 트리거 URL
-const JW_FLOW_B_URL = ''; // TODO: Power Automate "답변 문장화" 플로우 트리거 URL
+const JW_FLOW_A_URL = 'https://defaultd4ffc887d88d41ccbf6a6bb47ec0f3.ca.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/21/workflows/17db540cde42401db9d2303b07402e25/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=vtV_ECgYOWhYCrX-nE54Gn1NxrtUhjB665seJuej3a8';
+const JW_FLOW_B_URL = 'https://defaultd4ffc887d88d41ccbf6a6bb47ec0f3.ca.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/19/workflows/536cfc91d729413890c26c5de21d97bf/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=P-JhPF5Fvb5ijvn2i5tU87LTQAFCIp_Y_iO-9ww0X5M';
 
 // ── 플로팅 팝업 토글 (탭 전환 시스템과 완전 분리 — 어느 탭에 있어도 열림/대화 상태 유지) ──
 let jwPopupOpen = false;
@@ -3585,7 +3585,7 @@ async function askJiwoni() {
 
     bubble.body.innerHTML = '✍️ 답변을 정리하는 중...';
     const answer = await jwPhraseAnswer(q, computed);
-    bubble.body.innerHTML = answer.replace(/\n/g, '<br>');
+    bubble.body.innerHTML = answer.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>');
     bubble.setMeta(`패턴: ${intent.pattern}${computed.debugRange ? ' · ' + computed.debugRange : ''}${(!JW_FLOW_A_URL || !JW_FLOW_B_URL) ? ' · (로컬 폴백 모드 — Flow 연결 전)' : ''}`);
   } catch (e) {
     bubble.body.innerHTML = `오류가 발생했어요: ${e.message}`;
