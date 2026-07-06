@@ -4478,6 +4478,7 @@ function init() {
   buildMtdPaceChart();
   render();
   if (location.hash === '#realtime') setRealtimeView(document.getElementById('tab-realtime'));
+  else if (location.hash === '#daily') showView('view-dash', document.getElementById('tab-daily'));
   setInterval(() => {
     document.getElementById('updated-at').textContent = `업데이트 ${new Date().toLocaleTimeString('ko-KR')}`;
   }, 60000);
