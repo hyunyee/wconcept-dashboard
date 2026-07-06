@@ -3304,7 +3304,7 @@ function computeMonthlyActuals() {
       if (cur.revenue  != null) d.tA       = +(cur.revenue / 1e8).toFixed(1);
       if (cur.gmv      != null) d.gmvA     = +(cur.gmv / 1e8).toFixed(1);
       if (cur.net      != null) d.nA       = +(cur.net / 1e8).toFixed(1);
-      if (cur.adcost   != null) d.adcostA  = +(cur.adcost / 1e8).toFixed(1);
+      if (cur.adcost   != null) { d.adcostA = +(cur.adcost / 1e8).toFixed(1); d.adcostA_raw = cur.adcost; }
       if (cur.mau_app  != null) d.mauA     = cur.mau_app;
       if (cur.join     != null) d.joinA    = cur.join;
       if (cur.buyers   != null) d.buyersA  = cur.buyers;
@@ -3314,7 +3314,7 @@ function computeMonthlyActuals() {
     }
     if (ly) {
       if (ly.net      != null) d.nA_ly       = +(ly.net / 1e8).toFixed(1);
-      if (ly.adcost   != null) d.adcostA_ly  = +(ly.adcost / 1e8).toFixed(1);
+      if (ly.adcost   != null) { d.adcostA_ly = +(ly.adcost / 1e8).toFixed(1); d.adcostA_ly_raw = ly.adcost; }
       if (ly.mau_app  != null) d.mauA_ly     = ly.mau_app;
       if (ly.join     != null) d.joinA_ly    = ly.join;
       if (ly.buyers   != null) d.buyersA_ly  = ly.buyers;
@@ -3425,7 +3425,7 @@ function buildAnnualTable() {
     summaryTr.classList.add('annual-summary-row');
     summaryTr.innerHTML =
       `<td style="white-space:nowrap">연간 누적<br><span style="font-size:10px;color:#94a3b8;font-weight:400">1~${closeIdx + 1}월(평균/계)</span></td>` +
-      `<td style="${bl}">${fmtBil(sum('adcostT'))}</td><td>${fmtBil(sum('adcostA'))}</td><td>${pctNeutral(sum('adcostT'), sum('adcostA'))}</td><td>${yoyNeutral(false, sum('adcostA'), sum('adcostA_ly'))}</td>` +
+      `<td style="${bl}">${fmtBil(sum('adcostT'))}</td><td>${fmtBil(sum('adcostA'))}</td><td>${pctNeutral(sum('adcostT'), sum('adcostA'))}</td><td>${yoyNeutral(false, sum('adcostA_raw'), sum('adcostA_ly_raw'))}</td>` +
       `<td style="${bl}">${fmtNum(avg('mauT'))}</td><td>${fmtNum(avg('mauA'))}</td><td>${pct(avg('mauT'), avg('mauA'))}</td><td>${yoyCum(avg('mauA'), avg('mauA_ly'))}</td>` +
       `<td style="${bl}">${fmtBil(sum('nT'))}</td><td>${fmtBil(sum('nA'))}</td><td>${pct(sum('nT'), sum('nA'))}</td><td>${yoyCum(sum('nA'), sum('nA_ly'))}</td>` +
       `<td style="${bl}">${fmtNum(sum('buyersT'))}</td><td>${fmtNum(sum('buyersA'))}</td><td>${pct(sum('buyersT'), sum('buyersA'))}</td><td>${yoyCum(sum('buyersA'), sum('buyersA_ly'))}</td>` +
@@ -3456,7 +3456,7 @@ function buildAnnualTable() {
     };
     tr.innerHTML =
       `<td style="font-weight:700;white-space:nowrap">${d.m}${d.note ? `<br><span style="font-size:10px;color:#94a3b8;font-weight:400">${d.note}</span>` : ''}</td>` +
-      `<td style="${bl}">${fmtBil(d.adcostT)}</td><td>${fmtBil(d.adcostA)}</td><td>${pctNeutral(d.adcostT, d.adcostA)}</td><td>${yoyNeutral(isCur, d.adcostA, d.adcostA_ly)}</td>` +
+      `<td style="${bl}">${fmtBil(d.adcostT)}</td><td>${fmtBil(d.adcostA)}</td><td>${pctNeutral(d.adcostT, d.adcostA)}</td><td>${yoyNeutral(isCur, d.adcostA_raw, d.adcostA_ly_raw)}</td>` +
       `<td style="${bl}">${fmtNum(d.mauT)}</td><td>${fmtNum(d.mauA)}</td><td>${pct(d.mauT, d.mauA)}</td><td>${yoy(d.mauA, d.mauA_ly)}</td>` +
       `<td style="${bl}">${fmtBil(d.nT)}</td><td>${fmtBil(d.nA)}</td><td>${pct(d.nT, d.nA)}</td><td>${yoy(d.nA, d.nA_ly)}</td>` +
       `<td style="${bl}">${fmtNum(d.buyersT)}</td><td>${fmtNum(d.buyersA)}</td><td>${pct(d.buyersT, d.buyersA)}</td><td>${yoy(d.buyersA, d.buyersA_ly)}</td>` +
