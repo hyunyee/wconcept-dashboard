@@ -3371,6 +3371,13 @@ function buildAnnualTable() {
     const y = (a - ly) / ly * 100;
     return `<span style="color:#64748b;font-weight:700">${y >= 0 ? '+' : ''}${y.toFixed(1)}%</span>`;
   };
+  // 연간 누적 행 YoY — 개별 월 yoy()와 동일한 색상 규칙(초록/빨강). 누적행은 항상 마감월 합계라 isCur 개념 없음
+  const yoyCum = (a, ly) => {
+    if (a == null || ly == null || ly === 0) return na;
+    const y = (a - ly) / ly * 100;
+    const color = y >= 0 ? '#10b981' : '#ef4444';
+    return `<span style="color:${color};font-weight:700">${y >= 0 ? '+' : ''}${y.toFixed(1)}%</span>`;
+  };
   const crFmt = v => v != null ? v.toFixed(2) + '%' : na;
   // CR은 이미 %(비율)이므로 YoY는 상대변화율이 아니라 두 값의 차(%p)로 계산
   const crYoy = (isCur, a, ly) => {
@@ -3395,12 +3402,12 @@ function buildAnnualTable() {
     summaryTr.classList.add('annual-summary-row');
     summaryTr.innerHTML =
       `<td style="white-space:nowrap">연간 누적<br><span style="font-size:10px;color:#94a3b8;font-weight:400">1~${closeIdx + 1}월(평균/계)</span></td>` +
-      `<td style="${bl}">${fmtBil(sum('adcostT'))}</td><td>${fmtBil(sum('adcostA'))}</td><td>${pctNeutral(sum('adcostT'), sum('adcostA'))}</td><td>${na}</td>` +
-      `<td style="${bl}">${fmtNum(avg('mauT'))}</td><td>${fmtNum(avg('mauA'))}</td><td>${pct(avg('mauT'), avg('mauA'))}</td><td>${na}</td>` +
-      `<td style="${bl}">${fmtBil(sum('nT'))}</td><td>${fmtBil(sum('nA'))}</td><td>${pct(sum('nT'), sum('nA'))}</td><td>${na}</td>` +
-      `<td style="${bl}">${fmtNum(sum('buyersT'))}</td><td>${fmtNum(sum('buyersA'))}</td><td>${pct(sum('buyersT'), sum('buyersA'))}</td><td>${na}</td>` +
-      `<td style="${bl}">${fmtNum(sum('joinT'))}</td><td>${fmtNum(sum('joinA'))}</td><td>${pct(sum('joinT'), sum('joinA'))}</td><td>${na}</td>` +
-      `<td style="${bl}">${fmtNum(sum('firstT'))}</td><td>${fmtNum(sum('firstA'))}</td><td>${pct(sum('firstT'), sum('firstA'))}</td><td>${na}</td>` +
+      `<td style="${bl}">${fmtBil(sum('adcostT'))}</td><td>${fmtBil(sum('adcostA'))}</td><td>${pctNeutral(sum('adcostT'), sum('adcostA'))}</td><td>${yoyNeutral(false, sum('adcostA'), sum('adcostA_ly'))}</td>` +
+      `<td style="${bl}">${fmtNum(avg('mauT'))}</td><td>${fmtNum(avg('mauA'))}</td><td>${pct(avg('mauT'), avg('mauA'))}</td><td>${yoyCum(avg('mauA'), avg('mauA_ly'))}</td>` +
+      `<td style="${bl}">${fmtBil(sum('nT'))}</td><td>${fmtBil(sum('nA'))}</td><td>${pct(sum('nT'), sum('nA'))}</td><td>${yoyCum(sum('nA'), sum('nA_ly'))}</td>` +
+      `<td style="${bl}">${fmtNum(sum('buyersT'))}</td><td>${fmtNum(sum('buyersA'))}</td><td>${pct(sum('buyersT'), sum('buyersA'))}</td><td>${yoyCum(sum('buyersA'), sum('buyersA_ly'))}</td>` +
+      `<td style="${bl}">${fmtNum(sum('joinT'))}</td><td>${fmtNum(sum('joinA'))}</td><td>${pct(sum('joinT'), sum('joinA'))}</td><td>${yoyCum(sum('joinA'), sum('joinA_ly'))}</td>` +
+      `<td style="${bl}">${fmtNum(sum('firstT'))}</td><td>${fmtNum(sum('firstA'))}</td><td>${pct(sum('firstT'), sum('firstA'))}</td><td>${yoyCum(sum('firstA'), sum('firstA_ly'))}</td>` +
       `<td style="${bl}">${fmtNum(sum('joinAdT'))}</td><td>${fmtNum(sum('joinAdA'))}</td><td>${pct(sum('joinAdT'), sum('joinAdA'))}</td><td>${na}</td>` +
       `<td style="${bl}">${fmtNum(sum('firstAdT'))}</td><td>${fmtNum(sum('firstAdA'))}</td><td>${pct(sum('firstAdT'), sum('firstAdA'))}</td><td>${na}</td>` +
       (() => {
