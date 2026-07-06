@@ -72,6 +72,15 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
 .fi-leg-y::before{content:'';display:inline-block;width:8px;height:2px;background:#94a3b8;border-radius:1px}
 .fi-leg-note{font-size:10px;color:#cbd5e1;margin-left:auto}
 .fi-inp-grp{display:none}
+/* 구매 전환 퍼널 (폭 축소 막대) */
+.funnel-stage-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px}
+.funnel-stage-lbl{font-size:12px;font-weight:700;color:#0f172a}
+.funnel-stage-val{font-size:15px;font-weight:800;color:#0f172a}
+.funnel-bar-bg{height:28px;background:#f1f5f9;border-radius:6px;overflow:hidden}
+.funnel-bar{height:100%;border-radius:6px;transition:width .4s ease}
+.funnel-connector{display:flex;align-items:center;justify-content:center;gap:10px;padding:7px 0;font-size:11px;color:#64748b;font-weight:600}
+.funnel-connector .funnel-arrow{color:#cbd5e1;font-size:13px}
+.funnel-total{margin-top:10px;text-align:center;font-size:12px;font-weight:700;color:#0B1D3A;padding:7px;background:#f8fafc;border-radius:6px}
 /* 구분선 행 */
 .achv-table .divider-row td{border-top:2px solid #e2e8f0;background:#f8fafc;font-size:10px;color:#94a3b8;font-weight:600;padding:4px 10px}
 
@@ -587,49 +596,33 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
       <span>· 전일 기준 · <span style="color:#f59e0b;font-weight:700">┃</span> 당월평균</span>
     </span>
   </div>
-  <div class="card" style="margin-bottom:14px">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px 36px">
-      <!-- 세션당 상품조회 -->
-      <div class="fi">
-        <div class="fi-head"><span class="fi-lbl">세션당 상품조회</span><span class="fi-val" id="fi-s2vi-disp">-</span></div>
-        <div class="fi-gauge-wrap">
-          <div class="fi-gauge-fill good" id="fi-s2vi-fill" style="width:0%"></div>
-          <div class="fi-mark mavg" id="fi-s2vi-m-mark" style="left:0"></div>
-          <div class="fi-mark yavg" id="fi-s2vi-y-mark" style="left:0"></div>
-        </div>
-        <div class="fi-legend"><span class="fi-leg-m">당월 <span id="fi-s2vi-m-lbl">-</span></span><span class="fi-leg-y">26년 <span id="fi-s2vi-y-lbl">-</span></span></div>
+  <div class="grid-32" style="margin-bottom:14px">
+    <div class="card">
+      <div class="card-title">구매 전환 퍼널</div>
+      <div class="card-sub">세션 → 장바구니 → 구매 (막대 폭 = 세션 대비 비율)</div>
+      <div class="funnel-stage">
+        <div class="funnel-stage-head"><span class="funnel-stage-lbl">세션</span><span class="funnel-stage-val" id="fn-sess-val">-</span></div>
+        <div class="funnel-bar-bg"><div class="funnel-bar" id="fn-sess-bar" style="width:100%;background:#3b82f6"></div></div>
       </div>
-      <!-- 상품조회→장바구니 전환율 -->
-      <div class="fi">
-        <div class="fi-head"><span class="fi-lbl">상품조회→장바구니 전환율</span><span class="fi-val" id="fi-vi2c-disp">-</span></div>
-        <div class="fi-gauge-wrap">
-          <div class="fi-gauge-fill good" id="fi-vi2c-fill" style="width:0%"></div>
-          <div class="fi-mark mavg" id="fi-vi2c-m-mark" style="left:0"></div>
-          <div class="fi-mark yavg" id="fi-vi2c-y-mark" style="left:0"></div>
-        </div>
-        <div class="fi-legend"><span class="fi-leg-m">당월 <span id="fi-vi2c-m-lbl">-</span></span><span class="fi-leg-y">26년 <span id="fi-vi2c-y-lbl">-</span></span></div>
+      <div class="funnel-connector">
+        <span id="fn-s2vi-lbl">세션당 상품조회 -건</span><span class="funnel-arrow">→</span><span id="fn-vi2c-lbl">상품조회→장바구니 -%</span>
       </div>
-      <!-- 장바구니→구매 전환율 -->
-      <div class="fi">
-        <div class="fi-head"><span class="fi-lbl">장바구니→구매 전환율</span><span class="fi-val" id="fi-c2p-disp">-</span></div>
-        <div class="fi-gauge-wrap">
-          <div class="fi-gauge-fill good" id="fi-c2p-fill" style="width:0%"></div>
-          <div class="fi-mark mavg" id="fi-c2p-m-mark" style="left:0"></div>
-          <div class="fi-mark yavg" id="fi-c2p-y-mark" style="left:0"></div>
-        </div>
-        <div class="fi-legend"><span class="fi-leg-m">당월 <span id="fi-c2p-m-lbl">-</span></span><span class="fi-leg-y">26년 <span id="fi-c2p-y-lbl">-</span></span></div>
+      <div class="funnel-stage">
+        <div class="funnel-stage-head"><span class="funnel-stage-lbl">장바구니</span><span class="funnel-stage-val" id="fn-cart-val">-</span></div>
+        <div class="funnel-bar-bg"><div class="funnel-bar" id="fn-cart-bar" style="width:0%;background:#0ea5e9"></div></div>
       </div>
-      <!-- 세션→구매 전환율 -->
-      <div class="fi">
-        <div class="fi-head"><span class="fi-lbl">세션→구매 전환율</span><span class="fi-val" id="fi-s2p-disp">-</span></div>
-        <div class="fi-gauge-wrap">
-          <div class="fi-gauge-fill good" id="fi-s2p-fill" style="width:0%"></div>
-          <div class="fi-mark mavg" id="fi-s2p-m-mark" style="left:35%"></div>
-          <div class="fi-mark yavg" id="fi-s2p-y-mark" style="left:42%"></div>
-        </div>
-        <div class="fi-legend"><span class="fi-leg-m">당월 <span id="fi-s2p-m-lbl">-</span></span><span class="fi-leg-y">26년 <span id="fi-s2p-y-lbl">-</span></span></div>
+      <div class="funnel-connector">
+        <span id="fn-c2p-lbl">장바구니→구매 전환율 -%</span>
       </div>
-      <!-- 세션→신규가입 전환율 -->
+      <div class="funnel-stage">
+        <div class="funnel-stage-head"><span class="funnel-stage-lbl">구매</span><span class="funnel-stage-val" id="fn-purchase-val">-</span></div>
+        <div class="funnel-bar-bg"><div class="funnel-bar" id="fn-purchase-bar" style="width:0%;background:#10b981"></div></div>
+      </div>
+      <div class="funnel-total" id="fn-s2p-total">세션→구매 전환율 -%</div>
+    </div>
+    <div class="card">
+      <div class="card-title">세션→신규가입 전환</div>
+      <div class="card-sub">퍼널과 별도 경로(구매로 이어지지 않아도 발생)</div>
       <div class="fi">
         <div class="fi-head"><span class="fi-lbl">세션→신규가입 전환율</span><span class="fi-val" id="fi-s2j-disp">-</span></div>
         <div class="fi-gauge-wrap">
@@ -638,16 +631,6 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
           <div class="fi-mark yavg" id="fi-s2j-y-mark" style="left:30%"></div>
         </div>
         <div class="fi-legend"><span class="fi-leg-m">당월 <span id="fi-s2j-m-lbl">-</span></span><span class="fi-leg-y">26년 <span id="fi-s2j-y-lbl">-</span></span></div>
-      </div>
-      <!-- 신규가입→첫구매 전환율 -->
-      <div class="fi">
-        <div class="fi-head"><span class="fi-lbl">신규가입→첫구매 전환율</span><span class="fi-val" id="fi-j2f-disp">-</span></div>
-        <div class="fi-gauge-wrap">
-          <div class="fi-gauge-fill good" id="fi-j2f-fill" style="width:0%"></div>
-          <div class="fi-mark mavg" id="fi-j2f-m-mark" style="left:0"></div>
-          <div class="fi-mark yavg" id="fi-j2f-y-mark" style="left:0"></div>
-        </div>
-        <div class="fi-legend"><span class="fi-leg-m">당월 <span id="fi-j2f-m-lbl">-</span></span><span class="fi-leg-y">26년 <span id="fi-j2f-y-lbl">-</span></span></div>
       </div>
     </div>
   </div>
@@ -733,14 +716,17 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
   </div>
 
   <!-- ① 주간 실적 코멘트 -->
-  <div class="card" style="margin-bottom:14px;border-left:3px solid #0ea5e9;border-radius:0 12px 12px 0">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+  <div class="card" style="margin-bottom:14px;border-left:3px solid #0ea5e9;border-radius:0 12px 12px 0;padding:0;overflow:hidden">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;cursor:pointer" onclick="wkMcToggleCollapse()">
       <div class="card-title" style="margin-bottom:0">주간 실적 코멘트</div>
-      <button type="button" id="wk-copy-btn" onclick="copyWeeklyComment()"
-        style="font-size:11px;border:1px solid #e2e8f0;background:#fff;border-radius:6px;padding:3px 10px;cursor:pointer;color:#475569">📋 Teams 복사</button>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span id="wk-mc-chevron" style="font-size:11px;color:#94a3b8;transition:transform .2s;display:inline-block;transform:rotate(180deg)">▲</span>
+        <button type="button" id="wk-copy-btn" onclick="event.stopPropagation();copyWeeklyComment()"
+          style="font-size:11px;border:1px solid #e2e8f0;background:#fff;border-radius:6px;padding:3px 10px;cursor:pointer;color:#475569">📋 Teams 복사</button>
+      </div>
     </div>
-    <div id="wk-headline" style="font-size:14px;font-weight:700;color:#0f172a;margin-bottom:8px">-</div>
-    <ul id="wk-notes" style="font-size:12px;color:#475569;line-height:1.8;padding-left:16px;margin:0"></ul>
+    <div id="wk-headline" class="mc-headline" style="padding:11px 20px 14px">-</div>
+    <ul id="wk-notes" style="display:none;font-size:12px;line-height:1.5;padding:12px 20px 16px;margin:0;border-top:1px solid #f1f5f9;list-style:none"></ul>
   </div>
 
   <!-- ② 주간 실적 비교 -->
@@ -777,7 +763,7 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
     <div class="chart-box h260"><canvas id="chart-weekly-trend"></canvas></div>
   </div>
 
-  <!-- ④ 채널 스코어카드 -->
+  <!-- ④ 채널별 비중 -->
   <div class="card" style="margin-bottom:14px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
       <div class="card-title" style="margin-bottom:0">채널별 비중</div>
@@ -790,14 +776,20 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
     <div class="card-sub" id="wk-share-sub" style="margin-bottom:8px">선택 주 합계 비중</div>
     <div id="wk-share-bar" style="display:flex;height:26px;border-radius:6px;overflow:hidden;margin-bottom:8px"></div>
     <div id="wk-share-legend" style="display:flex;flex-wrap:wrap;gap:10px;font-size:11px;color:#475569"></div>
+  </div>
 
-    <div class="card-title" style="margin:16px 0 2px">채널 스코어카드 <span style="font-size:10px;color:#94a3b8;font-weight:400">선택 주 합계 · %는 WoW · 채널 태깅(2_raw_전환·트래픽) 기준</span></div>
+  <!-- ⑤ 채널 성과 매트릭스 -->
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-title">채널 성과 매트릭스 <span style="font-size:10px;color:#94a3b8;font-weight:400">선택 주 합계 · %는 WoW · 채널 태깅(2_raw_전환·트래픽) 기준</span></div>
     <table class="dt">
       <thead><tr><th>채널</th><th>세션</th><th>신규가입</th><th>첫구매</th></tr></thead>
       <tbody id="wk-ch-matrix"><tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:12px">데이터 로딩 중...</td></tr></tbody>
     </table>
+  </div>
 
-    <div style="display:flex;align-items:center;justify-content:space-between;margin:18px 0 2px">
+  <!-- ⑥ 채널별 10주 추이 -->
+  <div class="card" style="margin-bottom:14px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
       <div class="card-title" style="margin-bottom:0">채널별 10주 추이</div>
       <select id="wk-ch-trend-metric" onchange="renderWeeklyChannelTrend()"
         style="font-size:12px;font-weight:600;border:1.5px solid #0ea5e9;border-radius:6px;padding:3px 8px;color:#0B1D3A;background:#fff;cursor:pointer;outline:none">
@@ -1096,7 +1088,20 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
     <div class="kpi-card c-rose">  <div class="kpi-lbl">첫구매</div>                                                      <div class="kpi-val" id="pd-first">-</div>  <div class="kpi-sub" id="pd-first-sub">-</div></div>
   </div>
   <div class="card">
-    <div class="card-title">기간 내 일별 순수주 추이</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
+      <div class="card-title" style="margin-bottom:0">기간 내 일별 추이</div>
+      <select id="pd-trend-metric" onchange="renderPeriodTrendChart()"
+        style="font-size:12px;font-weight:600;border:1.5px solid #0B1D3A;border-radius:6px;padding:3px 8px;color:#0B1D3A;background:#fff;cursor:pointer;outline:none">
+        <option value="net" selected>순수주</option>
+        <option value="revenue">총수주</option>
+        <option value="orders">주문건수</option>
+        <option value="sess">세션수</option>
+        <option value="sessApp">APP 세션수</option>
+        <option value="join">신규가입</option>
+        <option value="first">첫구매</option>
+      </select>
+    </div>
+    <div class="card-sub" id="pd-trend-sub">순수주 일별 추이 (억원)</div>
     <div class="chart-box h260"><canvas id="chart-period-trend"></canvas></div>
   </div>
 
@@ -1151,9 +1156,9 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
     <div class="chart-box h280"><canvas id="pd-chart-ch-line"></canvas></div>
   </div>
 
-  <!-- 채널 스코어카드 (기간 합산) -->
+  <!-- 채널 성과 매트릭스 (기간 합산) -->
   <div class="sec-hd">
-    <h2>채널 스코어카드</h2>
+    <h2>채널 성과 매트릭스</h2>
     <span class="sec-note">기간 합계 · %는 전년 동기간 YoY · 채널 태깅(2_raw_전환·트래픽) 기준</span>
   </div>
   <div class="card" style="margin-bottom:14px">
@@ -1225,9 +1230,6 @@ const CUR_YEAR = TODAY.getFullYear();
 const PREV_YEAR = CUR_YEAR - 1;
 const fmtMD  = d => `${d.getMonth()+1}/${d.getDate()}(${DAYS_KO[d.getDay()]})`;
 const fmtISO = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-
-// 날짜 뱃지 동적 설정
-document.getElementById('ch-date-note').textContent = `Daily 기준 (${fmtMD(YESTERDAY)})`;
 
 // ── 마감 코멘트 (RAW 자동 생성) ──────────────────────────────────
 
@@ -1698,11 +1700,14 @@ function setChannelDeviceScope(scope, el) {
 
 function renderChannelShare() {
   const ys = getEffectiveDailyDate();
+  const monthStart = `${ys.substring(0, 7)}-01`;
+  const dateNoteEl = document.getElementById('ch-date-note');
+  if (dateNoteEl) dateNoteEl.textContent = `MTD 기준 (${fmtMD(parseLocalDate(monthStart))}~${fmtMD(parseLocalDate(ys))})`;
   const excludePc = document.getElementById('ch-pc-exclude')?.checked || false;
 
-  const sessData  = getChannelBreakdown(TRAFFIC,  ys, 's',     channelDeviceScope, excludePc);
-  const joinData  = getChannelBreakdown(CONV_CH,  ys, 'join',  channelDeviceScope, excludePc);
-  const firstData = getChannelBreakdown(CONV_CH,  ys, 'first', channelDeviceScope, excludePc);
+  const sessData  = getChannelBreakdownRange(TRAFFIC,  monthStart, ys, 's',     channelDeviceScope, excludePc);
+  const joinData  = getChannelBreakdownRange(CONV_CH,  monthStart, ys, 'join',  channelDeviceScope, excludePc);
+  const firstData = getChannelBreakdownRange(CONV_CH,  monthStart, ys, 'first', channelDeviceScope, excludePc);
 
   mkDonut('chart-ch-sess',  sessData,  'sess-legend');
   mkDonut('chart-ch-join',  joinData,  'join-legend');
@@ -2001,50 +2006,99 @@ function renderWeekly() {
   renderWkChidDetail();
 }
 
-// ① 주간 실적 코멘트 — 룰 기반 자동 생성 (헤드라인 + 특이사항)
+// ① 주간 실적 코멘트 — 룰 기반 자동 생성 (헤드라인 + 근거 있는 특이사항)
+// Daily 탭 mcDetectInsights()와 동일 품질 기준: 실제 수치 병기, 최소 규모 가드로 노이즈 제거, good/warn 태깅
+function wkDetectInsights(wkStart, cur, prev, ach, tgtNet) {
+  const ins = [];
+  const pctStr = p => p == null ? '-' : `${p >= 0 ? '+' : ''}${p.toFixed(1)}%`;
+  const fmtCnt = (v, kind) => kind === 'money' ? `${(v / 1e8).toFixed(1)}억` : v.toLocaleString();
+
+  // 1. 주간 목표 달성 여부 (85% 미만 경고, 100% 이상 긍정)
+  if (ach != null) {
+    if (ach < 85) ins.push({ type: 'warn', text: `주간 순수주 목표 달성률 ${ach}% — 미달 (실적 ${(cur.net / 1e8).toFixed(1)}억 / 목표 ${(tgtNet / 1e8).toFixed(1)}억)` });
+    else if (ach >= 100) ins.push({ type: 'good', text: `주간 순수주 목표 달성 (${ach}%, 실적 ${(cur.net / 1e8).toFixed(1)}억 / 목표 ${(tgtNet / 1e8).toFixed(1)}억)` });
+  }
+
+  // 2. 전사 지표 WoW 급변 — 최소 규모(50건) 가드로 소규모 노이즈 제외, 실제 수치 병기
+  WK_METRICS.forEach(m => {
+    if (m.key === 'sess' || m.key === 'sessApp' || m.key === 'net') return; // 세션은 보유기간 편차 큼, 순수주는 헤드라인에 이미 표시
+    const a = cur[m.key], b = prev[m.key];
+    const p = yoyPct(a || null, b || null);
+    if (p != null && Math.abs(p) >= 15 && (a >= 50 || b >= 50)) {
+      ins.push({ type: p > 0 ? 'good' : 'warn', text: `${m.label} ${fmtCnt(a, m.kind)} — 전주 ${fmtCnt(b, m.kind)} 대비 WoW ${pctStr(p)}` });
+    }
+  });
+
+  // 3. 채널 급변 — 비중 5% 이상 또는 규모 300명 이상인 채널만(소규모 채널 %변동 노이즈 제외)
+  const chCur = aggWeekByChannel(wkStart);
+  const chPrev = aggWeekByChannel(wkOffset(wkStart, -7));
+  const totalJoin = WK_CH_ORDER.reduce((s, b) => s + (chCur[b].join || 0), 0);
+  WK_CH_ORDER.forEach(b => {
+    const a = chCur[b].join || 0, p0 = chPrev[b].join || 0;
+    const p = yoyPct(a || null, p0 || null);
+    const share = totalJoin > 0 ? a / totalJoin * 100 : 0;
+    if (p != null && Math.abs(p) >= 15 && (share >= 5 || a >= 300 || p0 >= 300)) {
+      ins.push({ type: p > 0 ? 'good' : 'warn', text: `${b} 채널 신규가입 ${a.toLocaleString()}명(비중 ${Math.round(share)}%) — 전주 ${p0.toLocaleString()}명 대비 WoW ${pctStr(p)}` });
+    }
+  });
+
+  // 4. 데이터 공백 경고
+  if (cur.missDaily > 0) ins.push({ type: 'warn', text: `주 중 ${cur.missDaily}일 신규가입·첫구매 미집계 — 잠정치, 수치 확정 전` });
+
+  return ins;
+}
+
 function renderWeeklyComment(wkStart, wkEnd, cur, prev, ly) {
   let tgtNet = 0;
-  const events = [];
+  const eventTokens = new Set();
   const c = new Date(wkStart);
   for (let i = 0; i < 7; i++) {
     const ds = localDateToStr(c);
     const t = DAILY_TGTS[ds] || {};
     if (t.net) tgtNet += t.net;
-    if (t.event && !events.includes(t.event)) events.push(t.event);
+    // 이벤트 라벨이 주 중 누적/확장되는 경우가 있어 '/' 토큰 단위로 분리 후 중복 제거
+    if (t.event) t.event.split('/').map(s => s.trim()).filter(Boolean).forEach(tok => eventTokens.add(tok));
     c.setDate(c.getDate() + 1);
   }
+  const events = [...eventTokens];
   const ach = (tgtNet > 0 && cur.net > 0) ? Math.round(cur.net / tgtNet * 100) : null;
   const pctStr = p => p == null ? '-' : `${p >= 0 ? '+' : ''}${p.toFixed(1)}%`;
   const wow = yoyPct(cur.net || null, prev.net || null);
   const yoy = yoyPct(cur.net || null, ly.net || null);
-  const headline = `${wkMD(wkStart)}~${wkMD(wkEnd)} 순수주 ${(cur.net / 1e8).toFixed(1)}억`
-    + (ach != null ? ` · 주간 목표比 ${ach}%` : '') + ` · WoW ${pctStr(wow)} · YoY ${pctStr(yoy)}`;
 
-  const notes = [];
-  if (events.length) notes.push(`행사: ${events.join(', ')}`);
-  // 전사 지표 급변 (WoW ±15%) — 세션은 트래픽 보유 기간 영향이 커서 제외
-  WK_METRICS.forEach(m => {
-    if (m.key === 'sess' || m.key === 'sessApp' || m.key === 'net') return;
-    const p = yoyPct(cur[m.key] || null, prev[m.key] || null);
-    if (p != null && Math.abs(p) >= 15) notes.push(`${m.label} WoW ${pctStr(p)} ${p > 0 ? '증가' : '감소'}`);
-  });
-  // 채널 급변 (신규가입 WoW ±15%, 주 100명 이상 규모 채널만)
-  const chCur = aggWeekByChannel(wkStart);
-  const chPrev = aggWeekByChannel(wkOffset(wkStart, -7));
-  WK_CH_ORDER.forEach(b => {
-    const p = yoyPct(chCur[b].join || null, chPrev[b].join || null);
-    if (p != null && Math.abs(p) >= 15 && (chCur[b].join >= 100 || chPrev[b].join >= 100)) {
-      notes.push(`${b} 신규가입 WoW ${pctStr(p)}`);
-    }
-  });
-  if (cur.missDaily > 0) notes.push(`⚠ 주 중 ${cur.missDaily}일 신규가입·첫구매 미집계 — 수치 확정 전`);
-  if (!notes.length) notes.push('특이사항 없음');
+  const pctCls = p => p >= 100 ? 'hl-up' : p >= 85 ? 'hl-dim' : 'hl-dn';
+  const achSpan = ach != null ? ` <span class="${pctCls(ach)}">주간 목표比 ${ach}%</span>` : '';
+  const wowSpan = wow == null ? '' : ` <span class="${wow >= 0 ? 'hl-up' : 'hl-dn'}">WoW ${pctStr(wow)}</span>`;
+  const yoySpan = yoy == null ? '' : ` <span class="${yoy >= 0 ? 'hl-up' : 'hl-dn'}">YoY ${pctStr(yoy)}</span>`;
+  const headline = `${wkMD(wkStart)}~${wkMD(wkEnd)} 순수주 <span class="hl-num">${(cur.net / 1e8).toFixed(1)}억</span>` + achSpan + wowSpan + yoySpan;
+
+  const insights = wkDetectInsights(wkStart, cur, prev, ach, tgtNet)
+    .sort((a, b) => (a.type === 'warn' ? 0 : 1) - (b.type === 'warn' ? 0 : 1))
+    .slice(0, 4);
+  if (events.length) insights.unshift({ type: 'info', text: `행사: ${events.join(', ')}` });
+  if (!insights.length) insights.push({ type: 'info', text: '특이사항 없음 · 정상 범위 내 실적' });
+
+  const typeColor = { good: ['#f0fdf4', '#166534'], warn: ['#fff7ed', '#92400e'], info: ['#eff6ff', '#1e40af'] };
 
   const hEl = document.getElementById('wk-headline');
-  if (hEl) hEl.textContent = headline;
+  if (hEl) hEl.innerHTML = headline;
   const nEl = document.getElementById('wk-notes');
-  if (nEl) nEl.innerHTML = notes.map(n => `<li>${n}</li>`).join('');
-  wkCommentText = `■ 주간 실적 (${wkMD(wkStart)}~${wkMD(wkEnd)})\n${headline}\n` + notes.map(n => `- ${n}`).join('\n');
+  if (nEl) nEl.innerHTML = insights.map(i => {
+    const [bg, fg] = typeColor[i.type] || ['#f8fafc', '#475569'];
+    return `<li style="margin-bottom:6px;padding:8px 10px;border-radius:7px;background:${bg};color:${fg}">${i.text}</li>`;
+  }).join('');
+
+  const headlinePlain = headline.replace(/<[^>]+>/g, '');
+  wkCommentText = `■ 주간 실적 (${wkMD(wkStart)}~${wkMD(wkEnd)})\n${headlinePlain}\n` + insights.map(i => `- ${i.text}`).join('\n');
+}
+
+let wkMcCollapsed = true;
+function wkMcToggleCollapse() {
+  wkMcCollapsed = !wkMcCollapsed;
+  const notes = document.getElementById('wk-notes');
+  const ch = document.getElementById('wk-mc-chevron');
+  if (notes) notes.style.display = wkMcCollapsed ? 'none' : 'block';
+  if (ch) ch.style.transform = wkMcCollapsed ? 'rotate(180deg)' : '';
 }
 
 function copyWeeklyComment() {
@@ -2348,6 +2402,19 @@ function renderWkChidDetail() {
 
 // ── 기간 조회 탭 ────────────────────────────────────────────────────
 let periodTrendChart = null;
+// 기간 내 일별 추이 차트 — 지표 선택 가능(순수주/총수주/주문건수/세션수/APP세션수/신규가입/첫구매)
+// renderPeriodView()에서 일별 배열을 한 번만 계산해 캐시해두고, 지표 전환 시엔 재조회 없이 차트만 다시 그림
+const PD_TREND_METRICS = {
+  net:     { label: '순수주',     kind: 'money' },
+  revenue: { label: '총수주',     kind: 'money' },
+  orders:  { label: '주문건수',   kind: 'count' },
+  sess:    { label: '세션수',     kind: 'count' },
+  sessApp: { label: 'APP 세션수', kind: 'count' },
+  join:    { label: '신규가입',   kind: 'count' },
+  first:   { label: '첫구매',     kind: 'count' },
+};
+let periodTrendSeries = null;
+
 function renderPeriodView() {
   const from = document.getElementById('period-from')?.value;
   const to   = document.getElementById('period-to')?.value;
@@ -2355,27 +2422,35 @@ function renderPeriodView() {
 
   let gmv = 0, net = 0, join = 0, first = 0;
   let sess = 0, sessApp = 0, sessDays = 0, totalDays = 0;
-  const labels = [], netSeries = [];
+  const labels = [];
+  const series = { net: [], revenue: [], orders: [], sess: [], sessApp: [], join: [], first: [] };
   let cur = parseLocalDate(from);
   const end = parseLocalDate(to);
   while (cur <= end) {
     const ds = localDateToStr(cur);
-    let dGmv = 0, dNet = 0;
-    (RAW[ds] || []).forEach(h => { if (h) { if (h[1]) dGmv += h[1]; if (h[2]) dNet += h[2]; } });
+    let dGmv = 0, dNet = 0, dOrders = 0;
+    (RAW[ds] || []).forEach(h => { if (h) { if (h[0]) dOrders += h[0]; if (h[1]) dGmv += h[1]; if (h[2]) dNet += h[2]; } });
     gmv += dGmv; net += dNet;
     const dd = DAILY[ds] || {};
     if (dd.join) join += dd.join;
     if (dd.first) first += dd.first;
     // 세션: TRAFFIC 전체 합계 + APP 디바이스 합계 (트래픽 시트 보유일만 집계)
     totalDays++;
+    let dSess = 0, dSessApp = 0;
     const td = (TRAFFIC[ds] || {}).__total__;
     if (td && td.s) {
-      sess += td.s; sessDays++;
+      dSess = td.s; sess += td.s; sessDays++;
       const app = td.device && td.device.app;
-      if (app && app.s) sessApp += app.s;
+      if (app && app.s) { dSessApp = app.s; sessApp += app.s; }
     }
     labels.push(`${cur.getMonth() + 1}/${cur.getDate()}`);
-    netSeries.push(dNet > 0 ? +(dNet / 1e8).toFixed(1) : 0);
+    series.net.push(dNet > 0 ? +(dNet / 1e8).toFixed(1) : 0);
+    series.revenue.push(dGmv > 0 ? +(dGmv / 1e8).toFixed(1) : 0);
+    series.orders.push(dOrders || 0);
+    series.sess.push(dSess || null);
+    series.sessApp.push(dSessApp || null);
+    series.join.push(dd.join || 0);
+    series.first.push(dd.first || 0);
     cur.setDate(cur.getDate() + 1);
   }
   const f8 = v => v > 0 ? `${(v / 1e8).toFixed(1)}억` : '-';
@@ -2396,26 +2471,45 @@ function renderPeriodView() {
   document.getElementById('pd-first').textContent = first.toLocaleString();
   document.getElementById('pd-first-sub').textContent = `${from} ~ ${to}`;
 
-  const canvas = document.getElementById('chart-period-trend');
-  if (periodTrendChart) { periodTrendChart.destroy(); periodTrendChart = null; }
-  periodTrendChart = new Chart(canvas, {
-    type: 'bar',
-    data: { labels, datasets: [{ label: '순수주(억)', data: netSeries, backgroundColor: 'rgba(16,185,129,0.7)', borderRadius: 3 }] },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 9 } } },
-        y: { grid: { color: '#f1f5f9' }, ticks: { color: '#94a3b8', font: { size: 10 } } },
-      },
-    },
-  });
+  periodTrendSeries = { labels, series, from, to };
+  renderPeriodTrendChart();
 
   renderPeriodChannelDonuts();
   renderPeriodChannelShare();
   renderPdChannelMatrix(from, to);
   renderPdChAd();
   renderPdChidDetail();
+}
+
+function renderPeriodTrendChart() {
+  if (!periodTrendSeries) return;
+  const key = document.getElementById('pd-trend-metric')?.value || 'net';
+  const m = PD_TREND_METRICS[key];
+  const sub = document.getElementById('pd-trend-sub');
+  if (sub) sub.textContent = `${m.label} 일별 추이${m.kind === 'money' ? ' (억원)' : ''}`
+    + (key === 'sess' || key === 'sessApp' ? ' · 트래픽 시트 보유 기간만 표시' : '');
+
+  const canvas = document.getElementById('chart-period-trend');
+  if (periodTrendChart) { periodTrendChart.destroy(); periodTrendChart = null; }
+  periodTrendChart = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels: periodTrendSeries.labels,
+      datasets: [{
+        label: m.label, data: periodTrendSeries.series[key],
+        borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.15)',
+        borderWidth: 2, pointRadius: 2, tension: 0.3, fill: true, spanGaps: false, datalabels: { display: false },
+      }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 9 } } },
+        y: { min: 0, grid: { color: '#f1f5f9' }, ticks: { color: '#94a3b8', font: { size: 10 }, callback: v => v.toLocaleString() } },
+      },
+    },
+  });
 }
 
 // ── 기간조회 탭 전용 채널별 비중/현황 (Daily 탭과 별개 상태로 관리) ──
@@ -4125,14 +4219,9 @@ function render() {
 // INIT
 // ═══════════════════════════════════════════════
 // ── 전환 퍼널 업데이트 ────────────────────────────────────────────
-// max: 게이지 스케일(최근 30일 실측 범위 기준), unit: 표시 단위 (s2vi는 세션당 건수)
+// 세션→신규가입만 게이지로 표시(구매 퍼널과 별도 경로) — max: 게이지 스케일(최근 30일 실측 범위 기준)
 const FUNNEL_DEFS = [
-  { id:'s2vi', max:6,   inv:false, unit:'건', dec:1 },
-  { id:'vi2c', max:10,  inv:false, unit:'%', dec:1 },
-  { id:'c2p',  max:25,  inv:false, unit:'%', dec:1 },
-  { id:'s2p',  max:10,  inv:false, unit:'%', dec:1 },
-  { id:'s2j',  max:2,   inv:false, unit:'%', dec:1 },
-  { id:'j2f',  max:100, inv:false, unit:'%', dec:0 },
+  { id:'s2j', max:2, inv:false, unit:'%', dec:1 },
 ];
 
 function funnelUpdateItem(id, v, mVal, yVal, max, inv, dec, unit) {
@@ -4161,7 +4250,7 @@ function funnelUpdateItem(id, v, mVal, yVal, max, inv, dec, unit) {
 }
 
 // ── TRAFFIC 기반 퍼널 갱신 ──────────────────────────────────────
-// 세션/상품조회/장바구니/구매는 TRAFFIC, 신규가입/첫구매는 CONV_CH — 둘 다 채널 선택 반영
+// 세션/상품조회/장바구니/구매는 TRAFFIC, 신규가입은 CONV_CH(트래픽 보유일만 매칭) — 채널 선택 반영
 function buildFunnelFromTraffic() {
   const ys  = getEffectiveDailyDate();
   const sel = document.getElementById('funnel-ch-sel');
@@ -4169,41 +4258,53 @@ function buildFunnelFromTraffic() {
   const mo  = ys.substring(0, 7);
   const yDate = parseLocalDate(ys);
 
-  // TRAFFIC(당월 위주 보유)과 CONV_CH(전 기간 보유)는 커버리지가 다르므로
-  // 세션 기반 비율은 트래픽이 있는 날의 가입만(sJoin), 가입→첫구매는 전환 데이터 전체(join/first)로 분리 합산
   const sumRange = (fromDs) => {
-    const acc = { s:0, vi:0, c:0, p:0, sJoin:0, join:0, first:0 };
+    const acc = { s:0, vi:0, c:0, p:0, join:0 };
     let cur = parseLocalDate(fromDs);
     while (cur <= yDate) {
       const ds = localDateToStr(cur);
       const t = (TRAFFIC[ds] || {})[ch];
-      const cc = (CONV_CH[ds] || {})[ch];
       if (t && t.s) {
         acc.s += t.s; acc.vi += (t.vi||0); acc.c += (t.c||0); acc.p += (t.p||0);
-        if (cc) acc.sJoin += (cc.join||0);
+        const cc = (CONV_CH[ds] || {})[ch];
+        if (cc) acc.join += (cc.join||0);
       }
-      if (cc) { acc.join += (cc.join||0); acc.first += (cc.first||0); }
       cur.setDate(cur.getDate()+1);
     }
     return acc;
   };
 
   const ratios = (a) => ({
-    s2vi: (a.s && a.vi)     ? a.vi / a.s          : null, // 세션당 상품조회 (건)
-    vi2c: (a.vi && a.c)     ? a.c / a.vi * 100    : null,
-    c2p:  (a.c && a.p)      ? a.p / a.c * 100     : null,
-    s2p:  (a.s && a.p)      ? a.p / a.s * 100     : null,
-    s2j:  (a.s && a.sJoin)  ? a.sJoin / a.s * 100 : null,
-    j2f:  (a.join && a.first) ? a.first / a.join * 100 : null,
+    s2vi: (a.s && a.vi)   ? a.vi / a.s        : null, // 세션당 상품조회 (건)
+    vi2c: (a.vi && a.c)   ? a.c / a.vi * 100  : null,
+    c2p:  (a.c && a.p)    ? a.p / a.c * 100   : null,
+    s2p:  (a.s && a.p)    ? a.p / a.s * 100   : null,
+    s2j:  (a.s && a.join) ? a.join / a.s * 100: null,
   });
 
-  const dv = ratios(sumRange(ys));                       // 전일
-  const mv = ratios(sumRange(`${mo}-01`));               // 당월 평균
-  const yv = ratios(sumRange(`${CUR_YEAR}-01-01`));      // 연 누적 평균
+  const da = sumRange(ys);                          // 전일 (원본 건수용)
+  const dv = ratios(da);
+  const mv = ratios(sumRange(`${mo}-01`));          // 당월 평균
+  const yv = ratios(sumRange(`${CUR_YEAR}-01-01`)); // 연 누적 평균
 
-  FUNNEL_DEFS.forEach(def => {
-    funnelUpdateItem(def.id, dv[def.id], mv[def.id], yv[def.id], def.max, def.inv, def.dec, def.unit);
-  });
+  // 퍼널 막대: 세션=100%, 장바구니=c/s%, 구매=p/s% (모두 세션 기준 상대값)
+  const cartPct = da.s && da.c ? Math.min(da.c / da.s * 100, 100) : 0;
+  const purchasePct = da.s && da.p ? Math.min(da.p / da.s * 100, 100) : 0;
+  const fmt1 = v => v != null ? v.toFixed(1) : '-';
+  document.getElementById('fn-sess-val').textContent = da.s ? da.s.toLocaleString() : '-';
+  document.getElementById('fn-cart-val').textContent = da.c ? da.c.toLocaleString() : '-';
+  document.getElementById('fn-purchase-val').textContent = da.p ? da.p.toLocaleString() : '-';
+  document.getElementById('fn-cart-bar').style.width = cartPct + '%';
+  document.getElementById('fn-purchase-bar').style.width = purchasePct + '%';
+  document.getElementById('fn-s2vi-lbl').textContent = `세션당 상품조회 ${fmt1(dv.s2vi)}건`;
+  document.getElementById('fn-vi2c-lbl').textContent = `상품조회→장바구니 ${fmt1(dv.vi2c)}%`;
+  document.getElementById('fn-c2p-lbl').textContent = `장바구니→구매 ${fmt1(dv.c2p)}%`;
+  document.getElementById('fn-s2p-total').textContent =
+    `세션→구매 전환율 ${fmt1(dv.s2p)}% (당월 ${fmt1(mv.s2p)}% · 26년 ${fmt1(yv.s2p)}%)`;
+
+  // 세션→신규가입 게이지
+  const s2jDef = FUNNEL_DEFS.find(f => f.id === 's2j');
+  funnelUpdateItem('s2j', dv.s2j, mv.s2j, yv.s2j, s2jDef.max, s2jDef.inv, s2jDef.dec, s2jDef.unit);
 }
 
 // ── 일별 순수주 추이 (RAW 데이터 기반) ──────────────────────────────
