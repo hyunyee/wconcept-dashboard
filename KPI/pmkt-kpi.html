@@ -928,7 +928,7 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
   <div class="card" style="overflow-x:auto">
     <div class="card-title">월별 KPI 달성률</div>
     <div class="card-sub">* 달성률 색상: <span style="color:#10b981;font-weight:700">녹색 ≥100%</span> / <span style="color:#f59e0b;font-weight:700">노랑 ≥90%</span> / <span style="color:#ef4444;font-weight:700">빨강 &lt;90%</span> / 실적은 26년 기준, YoY는 25년 동월 대비 (실적 없는 월은 목표만 표시, 당월은 YoY 공란)</div>
-    <table class="annual-table" style="min-width:1500px">
+    <table class="annual-table" style="min-width:1620px">
       <thead>
         <tr>
           <th rowspan="2" style="text-align:left;vertical-align:bottom">월</th>
@@ -939,6 +939,7 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
           <th colspan="4" style="text-align:center;border-left:2px solid #e2e8f0">첫구매 (명)</th>
           <th colspan="4" style="text-align:center;border-left:2px solid #e2e8f0">신규가입자(광고) (명)</th>
           <th colspan="4" style="text-align:center;border-left:2px solid #e2e8f0">첫구매자(광고) (명)</th>
+          <th colspan="2" style="text-align:center;border-left:2px solid #e2e8f0">CR (주문건수/세션수)</th>
         </tr>
         <tr>
           <th style="border-left:2px solid #e2e8f0">목표</th><th>실적</th><th>달성률</th><th>YoY</th>
@@ -948,6 +949,7 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
           <th style="border-left:2px solid #e2e8f0">목표</th><th>실적</th><th>달성률</th><th>YoY</th>
           <th style="border-left:2px solid #e2e8f0">목표</th><th>실적</th><th>달성률</th><th>YoY</th>
           <th style="border-left:2px solid #e2e8f0">목표</th><th>실적</th><th>달성률</th><th>YoY</th>
+          <th style="border-left:2px solid #e2e8f0">실적</th><th>YoY</th>
         </tr>
       </thead>
       <tbody id="annual-table-body"></tbody>
@@ -3270,6 +3272,41 @@ function computeMonthlyActuals() {
   }
 }
 
+// 연간 테이블 CR(주문건수/세션수) — 목표 없이 실적·YoY만. RAW(주문건수)·TRAFFIC(세션, 2025-04~ 전체 보유)에서 월별 합산
+// TRAFFIC이 2025-04-01부터만 있어 25년 1~3월은 전년 세션 데이터가 없음 — 해당 개월 YoY는 자동으로 '-' 처리됨
+function monthlyOrdersSessions(year, month) {
+  const prefix = `${year}-${String(month).padStart(2, '0')}-`;
+  let orders = 0, sess = 0, hasSess = false;
+  Object.keys(RAW).forEach(ds => {
+    if (!ds.startsWith(prefix)) return;
+    (RAW[ds] || []).forEach(h => { if (h && h[0]) orders += h[0]; });
+  });
+  Object.keys(TRAFFIC).forEach(ds => {
+    if (!ds.startsWith(prefix)) return;
+    const t = TRAFFIC[ds].__total__;
+    if (t && t.s) { sess += t.s; hasSess = true; }
+  });
+  return { orders, sess: hasSess ? sess : null };
+}
+
+function computeAnnualCR() {
+  for (let i = 0; i < ANNUAL.length; i++) {
+    const d = ANNUAL[i];
+    // 세션 데이터가 없는 달은 orders만 남아 분자·분모가 어긋나므로 둘 다 있을 때만 저장
+    // (연간 누적 행에서 sum(crOrders)/sum(crSess)로 재집계하기 때문에 개별 필드 정합성이 중요)
+    const cur = monthlyOrdersSessions(CUR_YEAR, i + 1);
+    if (cur.orders && cur.sess) {
+      d.crOrders = cur.orders; d.crSess = cur.sess;
+      d.crA = cur.orders / cur.sess * 100;
+    }
+    const ly = monthlyOrdersSessions(PREV_YEAR, i + 1);
+    if (ly.orders && ly.sess) {
+      d.crOrders_ly = ly.orders; d.crSess_ly = ly.sess;
+      d.crA_ly = ly.orders / ly.sess * 100;
+    }
+  }
+}
+
 function yoyPct(a, ly) {
   if (a == null || ly == null || ly === 0) return null;
   return (a - ly) / ly * 100;
@@ -3289,6 +3326,13 @@ function buildAnnualTable() {
     return `<span class="ann-pct ${cls}">${p}%</span>`;
   };
   const bl = 'border-left:2px solid #e2e8f0';
+  const crFmt = v => v != null ? v.toFixed(2) + '%' : na;
+  const crYoy = (isCur, a, ly) => {
+    if (isCur || a == null || ly == null || ly === 0) return na;
+    const y = (a - ly) / ly * 100;
+    const color = y >= 0 ? '#10b981' : '#ef4444';
+    return `<span style="color:${color};font-weight:700">${y >= 0 ? '+' : ''}${y.toFixed(1)}%p</span>`;
+  };
 
   // 연간 누적 행 — 실적이 채워진 마지막(마감) 월까지 집계해 1월 위에 표시
   // 진행중인 당월은 부분 데이터가 있어도 마감 실적이 아니므로 제외
@@ -3311,7 +3355,13 @@ function buildAnnualTable() {
       `<td style="${bl}">${fmtNum(sum('joinT'))}</td><td>${fmtNum(sum('joinA'))}</td><td>${pct(sum('joinT'), sum('joinA'))}</td><td>${na}</td>` +
       `<td style="${bl}">${fmtNum(sum('firstT'))}</td><td>${fmtNum(sum('firstA'))}</td><td>${pct(sum('firstT'), sum('firstA'))}</td><td>${na}</td>` +
       `<td style="${bl}">${fmtNum(sum('joinAdT'))}</td><td>${fmtNum(sum('joinAdA'))}</td><td>${pct(sum('joinAdT'), sum('joinAdA'))}</td><td>${na}</td>` +
-      `<td style="${bl}">${fmtNum(sum('firstAdT'))}</td><td>${fmtNum(sum('firstAdA'))}</td><td>${pct(sum('firstAdT'), sum('firstAdA'))}</td><td>${na}</td>`;
+      `<td style="${bl}">${fmtNum(sum('firstAdT'))}</td><td>${fmtNum(sum('firstAdA'))}</td><td>${pct(sum('firstAdT'), sum('firstAdA'))}</td><td>${na}</td>` +
+      (() => {
+        const o = sum('crOrders'), s = sum('crSess'), oLy = sum('crOrders_ly'), sLy = sum('crSess_ly');
+        const cr = s > 0 ? o / s * 100 : null;
+        const crLy = sLy > 0 ? oLy / sLy * 100 : null;
+        return `<td style="${bl}">${crFmt(cr)}</td><td>${crYoy(false, cr, crLy)}</td>`;
+      })();
     tbody.appendChild(summaryTr);
   }
 
@@ -3335,7 +3385,8 @@ function buildAnnualTable() {
       `<td style="${bl}">${fmtNum(d.joinT)}</td><td>${fmtNum(d.joinA)}</td><td>${pct(d.joinT, d.joinA)}</td><td>${yoy(d.joinA, d.joinA_ly)}</td>` +
       `<td style="${bl}">${fmtNum(d.firstT)}</td><td>${fmtNum(d.firstA)}</td><td>${pct(d.firstT, d.firstA)}</td><td>${yoy(d.firstA, d.firstA_ly)}</td>` +
       `<td style="${bl}">${fmtNum(d.joinAdT)}</td><td>${fmtNum(d.joinAdA)}</td><td>${pct(d.joinAdT, d.joinAdA)}</td><td>${yoy(d.joinAdA, d.joinAdA_ly)}</td>` +
-      `<td style="${bl}">${fmtNum(d.firstAdT)}</td><td>${fmtNum(d.firstAdA)}</td><td>${pct(d.firstAdT, d.firstAdA)}</td><td>${yoy(d.firstAdA, d.firstAdA_ly)}</td>`;
+      `<td style="${bl}">${fmtNum(d.firstAdT)}</td><td>${fmtNum(d.firstAdA)}</td><td>${pct(d.firstAdT, d.firstAdA)}</td><td>${yoy(d.firstAdA, d.firstAdA_ly)}</td>` +
+      `<td style="${bl}">${crFmt(d.crA)}</td><td>${crYoy(isCur, d.crA, d.crA_ly)}</td>`;
     tbody.appendChild(tr);
   });
 }
@@ -4470,6 +4521,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       // 26년 월별 (마감)실적 + 25년 YoY 참고값을 99_Target real_monthly 표(REAL_MONTHLY)에서 반영
       computeMonthlyActuals();
+      computeAnnualCR();
       buildAnnualTable();
       document.getElementById('rt-loading')?.remove();
       // 헤더 배지: 데이터 최종 생성(업데이트) 시각 + 신선도 경고
