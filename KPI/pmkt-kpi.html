@@ -489,6 +489,8 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
   <button class="tab-btn" id="tab-period" onclick="setPeriodView(this)">📆 기간조회</button>
   <div class="tab-divider"></div>
   <button class="tab-btn realtime-tab" id="tab-realtime" onclick="setRealtimeView(this)">📊 실시간</button>
+  <div class="tab-divider"></div>
+  <button class="tab-btn" id="tab-jiwoni" onclick="setJiwoniView(this)">🙋 지원이</button>
   <!-- 광고실적 탭: 별도 광고 대시보드로 재구성 예정이라 임시 숨김. setAdsView()/#view-ads는 코드에 유지 -->
   <span class="tab-note">* 채널ID 기준</span>
 </div>
@@ -1223,6 +1225,29 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
 </div>
 <!-- /view-period -->
 
+<!-- ════════ 지원이 (자연어 질의응답) 뷰 ════════ -->
+<div id="view-jiwoni" style="display:none">
+  <div class="sec-hd" style="margin-top:16px">
+    <h2 style="--before-color:#f43f5e">지원이 <span style="font-size:11px;color:#94a3b8;font-weight:400">자연어로 물어보는 실적 분석 (베타)</span></h2>
+    <span class="sec-note"></span>
+  </div>
+  <div class="card" style="margin-bottom:14px">
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <input type="text" id="jw-question" placeholder="예: 저번주 DA채널에서 가장 신규가입 높았던 채널ID는? 전주 대비는?"
+        onkeydown="if(event.key==='Enter') askJiwoni()"
+        style="flex:1;font-size:13px;border:1px solid #e2e8f0;border-radius:8px;padding:9px 14px;outline:none">
+      <button type="button" onclick="askJiwoni()" id="jw-ask-btn"
+        style="font-size:13px;font-weight:700;border:none;background:#0B1D3A;color:#fff;border-radius:8px;padding:9px 20px;cursor:pointer;white-space:nowrap">물어보기</button>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px" id="jw-examples"></div>
+  </div>
+  <div class="card" id="jw-answer-card" style="display:none">
+    <div class="card-title">🙋 지원이</div>
+    <div id="jw-answer-body" style="font-size:13px;line-height:1.8;color:#1e293b"></div>
+    <div id="jw-answer-meta" style="font-size:10px;color:#94a3b8;margin-top:10px;border-top:1px solid #f1f5f9;padding-top:8px"></div>
+  </div>
+</div><!-- /view-jiwoni -->
+
 </div><!-- /main -->
 
 <script>
@@ -1566,7 +1591,7 @@ function renderDailyKPI() {
 }
 
 
-const ALL_VIEWS = ['view-dash', 'view-weekly', 'view-annual', 'view-ads', 'view-realtime', 'view-period'];
+const ALL_VIEWS = ['view-dash', 'view-weekly', 'view-annual', 'view-ads', 'view-realtime', 'view-period', 'view-jiwoni'];
 function showView(viewId, el) {
   ALL_VIEWS.forEach(v => { document.getElementById(v).style.display = v === viewId ? '' : 'none'; });
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -3444,6 +3469,225 @@ function buildAnnualTable() {
       `<td style="${bl}">${crFmt(d.crA)}</td><td>${crYoy(isCur, d.crA, d.crA_ly)}</td>`;
     tbody.appendChild(tr);
   });
+}
+
+// ═══ 지원이 — 자연어 질의응답 (베타) ═══════════════════════════════
+// 설계: ①의도파싱(Flow A, LLM) → ②브라우저에서 기존 집계함수로 계산(신규 로직 없음, 100% 재사용)
+//       → ③답변 문장화(Flow B, LLM). Flow A/B URL이 비어있으면 로컬 폴백(mock)으로 동작 —
+//       Power Automate 플로우 구축 전에도 계산 로직을 검증할 수 있고, URL만 채우면 자동 전환됨.
+const JW_FLOW_A_URL = ''; // TODO: Power Automate "의도 파싱" 플로우 트리거 URL
+const JW_FLOW_B_URL = ''; // TODO: Power Automate "답변 문장화" 플로우 트리거 URL
+
+function setJiwoniView(el) {
+  showView('view-jiwoni', el);
+  buildJwExamples();
+}
+
+const JW_EXAMPLES = [
+  '저번주 DA채널에서 가장 신규가입 높았던 채널ID는? 전주 대비는?',
+  '이번주 순수주가 전주 대비 얼마나 변했어?',
+  'SA채널 요즘 잘하고 있어?',
+  '이번 주 특이사항 알려줘',
+];
+
+function buildJwExamples() {
+  const el = document.getElementById('jw-examples');
+  if (!el || el.dataset.built) return;
+  el.innerHTML = JW_EXAMPLES.map(q => `<span onclick="jwAskExample(this)" data-q="${q.replace(/"/g, '&quot;')}"
+      style="cursor:pointer;font-size:11px;padding:5px 12px;border-radius:14px;background:#f8fafc;border:1px solid #e2e8f0;color:#475569">${q}</span>`).join('');
+  el.dataset.built = '1';
+}
+
+function jwAskExample(el) {
+  const q = el.dataset.q;
+  document.getElementById('jw-question').value = q;
+  askJiwoni();
+}
+
+function jwShowAnswer(html, meta) {
+  const card = document.getElementById('jw-answer-card');
+  const body = document.getElementById('jw-answer-body');
+  const metaEl = document.getElementById('jw-answer-meta');
+  if (card) card.style.display = 'block';
+  if (body) body.innerHTML = html;
+  if (metaEl) metaEl.textContent = meta || '';
+}
+
+async function askJiwoni() {
+  const q = document.getElementById('jw-question')?.value?.trim();
+  if (!q) return;
+  const btn = document.getElementById('jw-ask-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '생각 중...'; }
+  jwShowAnswer('🤔 질문을 이해하는 중...', '');
+
+  try {
+    const intent = await jwParseIntent(q);
+    if (!intent || intent.unsupported) {
+      jwShowAnswer(
+        `아직 이런 질문은 답변드리기 어려워요 😅<br><br>이런 식으로 물어봐 주세요:<br>` +
+        JW_EXAMPLES.map(e => `· ${e}`).join('<br>'), '');
+      return;
+    }
+
+    const computed = jwCompute(intent);
+    if (computed.error) { jwShowAnswer(`계산 중 문제가 있었어요: ${computed.error}`, ''); return; }
+
+    jwShowAnswer('✍️ 답변을 정리하는 중...', '');
+    const answer = await jwPhraseAnswer(q, computed);
+    jwShowAnswer(answer.replace(/\n/g, '<br>'), `패턴: ${intent.pattern}${computed.debugRange ? ' · ' + computed.debugRange : ''}${(!JW_FLOW_A_URL || !JW_FLOW_B_URL) ? ' · (로컬 폴백 모드 — Flow 연결 전)' : ''}`);
+  } catch (e) {
+    jwShowAnswer(`오류가 발생했어요: ${e.message}`, '');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '물어보기'; }
+  }
+}
+
+// ── ① 의도 파싱 — Flow A 연결 전엔 키워드 기반 로컬 폴백으로 동작 ──────────
+function jwMockParseIntent(q) {
+  const chMatch = q.match(/DA|SA|Organic|CRM|PCS|기타/);
+  const metric = q.includes('신규가입') ? 'join' : q.includes('첫구매') ? 'first'
+    : q.includes('세션') ? 'sess' : (q.includes('총수주') || q.includes('매출')) ? 'rev' : 'join';
+  if (q.includes('채널') && (q.includes('아이디') || /channel\s*id/i.test(q) || q.includes('가장') || q.includes('제일'))) {
+    return { pattern: 'channel_id_ranking', slots: { channelGroup: chMatch ? chMatch[0] : 'ALL', metric } };
+  }
+  if (q.includes('특이사항')) {
+    return { pattern: 'highlights', slots: { period: (q.includes('이번 달') || q.includes('이번달')) ? 'this_month' : 'this_week' } };
+  }
+  if (chMatch && (q.includes('잘하고') || q.includes('어때') || q.includes('추세'))) {
+    return { pattern: 'channel_trend', slots: { channelGroup: chMatch[0] } };
+  }
+  if (q.includes('얼마나') || q.includes('대비')) {
+    const cmpMetric = q.includes('순수주') ? 'net' : q.includes('총수주') ? 'revenue' : q.includes('주문') ? 'orders'
+      : q.includes('신규가입') ? 'join' : q.includes('첫구매') ? 'first' : 'net';
+    return { pattern: 'metric_period_compare', slots: { metric: cmpMetric } };
+  }
+  return { unsupported: true };
+}
+
+async function jwParseIntent(q) {
+  if (!JW_FLOW_A_URL) return jwMockParseIntent(q);
+  const resp = await fetch(JW_FLOW_A_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question: q }) });
+  if (!resp.ok) throw new Error('의도 파싱 서버 오류');
+  return await resp.json();
+}
+
+// ── ② 계산 디스패치 — 전부 기존 Weekly/기간조회/마감코멘트 함수 재사용 ──────
+function jwCompute(intent) {
+  const dispatch = {
+    channel_id_ranking: jwComputeChannelIdRanking,
+    metric_period_compare: jwComputeMetricCompare,
+    channel_trend: jwComputeChannelTrend,
+    highlights: jwComputeHighlights,
+  };
+  const fn = dispatch[intent.pattern];
+  if (!fn) return { error: '지원하지 않는 패턴입니다.' };
+  try { return fn(intent.slots || {}); } catch (e) { return { error: e.message }; }
+}
+
+function jwComputeChannelIdRanking(slots) {
+  const metric = slots.metric || 'join';
+  const idx = WK_CHID_METRIC_IDX[metric] ?? 0;
+  const wkStart = latestClosedWeekStart();
+  const wkEnd = wkOffset(wkStart, 6);
+  const cur = aggWeekChAd(wkStart);
+  const prev = aggWeekChAd(wkOffset(wkStart, -7));
+  const meta = CH_AD_META || {};
+  let rows = Object.keys(cur).map(chid => ({
+    chid, m: meta[chid] || {}, val: cur[chid][idx], prevVal: (prev[chid] && prev[chid][idx]) || 0,
+  }));
+  if (slots.channelGroup && slots.channelGroup !== 'ALL') rows = rows.filter(r => r.m.ch === slots.channelGroup);
+  rows.sort((a, b) => b.val - a.val);
+  const top = rows[0];
+  if (!top || !top.val) return { error: '해당 조건의 채널ID 데이터가 없습니다.' };
+  return {
+    pattern: 'channel_id_ranking',
+    debugRange: `${wkMD(wkStart)}~${wkMD(wkEnd)}`,
+    data: { chid: top.chid, label: top.m.label || '', ch: top.m.ch || '', metric,
+      value: top.val, prevValue: top.prevVal, wowPct: yoyPct(top.val || null, top.prevVal || null) },
+  };
+}
+
+function jwComputeMetricCompare(slots) {
+  const metric = slots.metric || 'net';
+  const wkStart = latestClosedWeekStart();
+  const cur = aggWeekFull(wkStart)[metric];
+  const prev = aggWeekFull(wkOffset(wkStart, -7))[metric];
+  if (cur == null) return { error: '해당 지표 데이터를 찾을 수 없습니다.' };
+  return {
+    pattern: 'metric_period_compare',
+    debugRange: `${wkMD(wkStart)}~${wkMD(wkOffset(wkStart, 6))}`,
+    data: { metric, value: cur, prevValue: prev, wowPct: yoyPct(cur || null, prev || null), period: '이번 마감주', prevPeriod: '전주' },
+  };
+}
+
+function jwComputeChannelTrend(slots) {
+  const ch = slots.channelGroup;
+  if (!ch || !WK_CH_ORDER.includes(ch)) return { error: '채널을 인식하지 못했습니다.' };
+  const wkStart = latestClosedWeekStart();
+  const cur = aggWeekByChannel(wkStart)[ch];
+  const prev = aggWeekByChannel(wkOffset(wkStart, -7))[ch];
+  const ly = aggWeekByChannel(wkOffset(wkStart, -364))[ch];
+  return {
+    pattern: 'channel_trend',
+    debugRange: `${wkMD(wkStart)}~${wkMD(wkOffset(wkStart, 6))}`,
+    data: {
+      channel: ch,
+      sess: cur.sess, sessWow: yoyPct(cur.sess || null, prev.sess || null),
+      join: cur.join, joinWow: yoyPct(cur.join || null, prev.join || null),
+      first: cur.first, firstWow: yoyPct(cur.first || null, prev.first || null),
+      rev: cur.rev, revWow: yoyPct(cur.rev || null, prev.rev || null),
+      revYoy: yoyPct(cur.rev || null, ly.rev || null),
+    },
+  };
+}
+
+function jwComputeHighlights(slots) {
+  if (slots.period === 'this_month') {
+    const insights = mcDetectInsights();
+    return { pattern: 'highlights', debugRange: '이번 달', data: { scope: 'month', insights: insights.map(i => i.text) } };
+  }
+  const wkStart = latestClosedWeekStart();
+  const cur = aggWeekFull(wkStart);
+  const prev = aggWeekFull(wkOffset(wkStart, -7));
+  let tgtNet = 0;
+  const c = new Date(wkStart);
+  for (let i = 0; i < 7; i++) {
+    const t = DAILY_TGTS[localDateToStr(c)] || {};
+    if (t.net) tgtNet += t.net;
+    c.setDate(c.getDate() + 1);
+  }
+  const ach = (tgtNet > 0 && cur.net > 0) ? Math.round(cur.net / tgtNet * 100) : null;
+  const insights = wkDetectInsights(wkStart, cur, prev, ach, tgtNet);
+  return { pattern: 'highlights', debugRange: `${wkMD(wkStart)}~${wkMD(wkOffset(wkStart, 6))}`, data: { scope: 'week', insights: insights.map(i => i.text) } };
+}
+
+// ── ③ 답변 문장화 — Flow B 연결 전엔 템플릿 기반 로컬 폴백으로 동작 ────────
+function jwMockPhrase(computed) {
+  const d = computed.data;
+  const pctStr = p => p == null ? '비교 데이터 없음' : `${p >= 0 ? '+' : ''}${p.toFixed(1)}%`;
+  const metricLabel = { net: '순수주', revenue: '총수주', orders: '주문건수', join: '신규가입', first: '첫구매', rev: '총수주', sess: '세션' };
+  switch (computed.pattern) {
+    case 'channel_id_ranking': {
+      const chBadge = d.ch ? `(${d.ch})` : '';
+      return `${computed.debugRange} 기준, ${d.chid}${chBadge}${d.label ? ' · ' + d.label : ''}가 ${metricLabel[d.metric] || d.metric} ${d.value.toLocaleString()}(으)로 가장 높았습니다.\n전주(${d.prevValue.toLocaleString()}) 대비 ${pctStr(d.wowPct)}입니다.`;
+    }
+    case 'metric_period_compare':
+      return `${d.period} ${metricLabel[d.metric] || d.metric}은 ${(d.value / 1e8).toFixed(1)}억으로, ${d.prevPeriod}(${(d.prevValue / 1e8).toFixed(1)}억) 대비 ${pctStr(d.wowPct)}입니다.`;
+    case 'channel_trend':
+      return `${computed.debugRange} 기준 ${d.channel} 채널 — 세션 ${pctStr(d.sessWow)}, 신규가입 ${pctStr(d.joinWow)}, 첫구매 ${pctStr(d.firstWow)}, 총수주 ${pctStr(d.revWow)}(전주 대비) / YoY ${pctStr(d.revYoy)}.`;
+    case 'highlights':
+      return d.insights.length ? d.insights.join('\n') : '특이사항이 없습니다.';
+    default:
+      return '답변을 생성하지 못했습니다.';
+  }
+}
+
+async function jwPhraseAnswer(question, computed) {
+  if (!JW_FLOW_B_URL) return jwMockPhrase(computed);
+  const resp = await fetch(JW_FLOW_B_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question, computed }) });
+  if (!resp.ok) throw new Error('답변 생성 서버 오류');
+  const j = await resp.json();
+  return j.answer || jwMockPhrase(computed);
 }
 
 // ═══ 실시간 대시보드 JS ═══
