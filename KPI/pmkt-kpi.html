@@ -533,7 +533,6 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
   <div id="trend-section" style="display:none">
     <div class="sec-hd" style="margin-top:16px">
       <h2 style="--before-color:#0ea5e9">시장 트렌드 <span id="trend-datelabel" style="font-size:11px;font-weight:400;color:#94a3b8"></span></h2>
-      <a href="https://echo-wconcept-trend-dash.replit.app/rankings" target="_blank" rel="noopener" class="sec-note" style="color:#3b82f6;text-decoration:none">전체 대시보드 ↗</a>
     </div>
     <div class="mc-wrap">
       <div class="mc-header" style="cursor:pointer" onclick="trendToggle()">
@@ -1624,7 +1623,7 @@ function loadTrendComment() {
 function renderTrendComment(data, items) {
   // 날짜 라벨 + 신선도(전일 기준보다 오래되면 경고 배지)
   const dd = data.dataDate || '';
-  document.getElementById('trend-datelabel').textContent = dd ? `${dd} 기준${data.comparisonDate ? ` (${data.comparisonDate} 대비)` : ''}` : '';
+  document.getElementById('trend-datelabel').textContent = dd ? `${dd} 기준` : '';
   const staleEl = document.getElementById('trend-stale');
   if (staleEl) {
     const eff = (typeof getEffectiveDailyDate === 'function') ? getEffectiveDailyDate() : '';
