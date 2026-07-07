@@ -529,6 +529,24 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
     </div>
   </div>
 
+  <!-- ①-2 시장 트렌드 (외부 트렌드 대시보드 임베드) -->
+  <div class="sec-hd" style="margin-top:16px">
+    <h2 style="--before-color:#0ea5e9">시장 트렌드 <span style="font-size:11px;font-weight:400;color:#94a3b8">외부 트렌드 대시보드 · 로그인 필요</span></h2>
+    <a href="https://echo-wconcept-trend-dash.replit.app/rankings" target="_blank" rel="noopener" class="sec-note" style="color:#3b82f6;text-decoration:none">새 창에서 열기 ↗</a>
+  </div>
+  <div class="mc-wrap">
+    <div class="mc-header" style="cursor:pointer" onclick="tdTrendToggle()">
+      <h2>AI 상품 랭킹 분석 <span style="font-size:11px;font-weight:400;color:#94a3b8">W Concept · 29CM</span></h2>
+      <div class="mc-hdr-right">
+        <span id="td-trend-chevron" style="font-size:11px;color:#94a3b8;transition:transform .2s;display:inline-block">▼</span>
+      </div>
+    </div>
+    <div id="td-trend-body" style="display:none">
+      <div style="font-size:11px;color:#94a3b8;padding:6px 2px 10px">※ 본인 계정으로 트렌드 대시보드에 로그인되어 있어야 내용이 표시됩니다. 로그인 화면이 뜨면 로그인 후 새로고침하세요.</div>
+      <iframe id="td-trend-iframe" title="트렌드 대시보드" style="width:100%;height:620px;border:1px solid #e2e8f0;border-radius:8px" loading="lazy"></iframe>
+    </div>
+  </div>
+
   <!-- ② 핵심지표 달성 현황 -->
   <div class="sec-hd">
     <h2>핵심지표 달성 현황</h2>
@@ -1577,6 +1595,18 @@ function mcToggleCollapse() {
   const ch   = document.getElementById('mc-chevron');
   body.style.display = mcCollapsed ? 'none' : 'grid';
   ch.style.transform  = mcCollapsed ? 'rotate(180deg)' : '';
+}
+
+// 시장 트렌드 iframe — 기본 접힘·최초 펼칠 때만 src 로드(초기 로딩 부담·비로그인 화면 노출 방지)
+const TD_TREND_URL = 'https://echo-wconcept-trend-dash.replit.app/rankings';
+function tdTrendToggle() {
+  const body = document.getElementById('td-trend-body');
+  const chev = document.getElementById('td-trend-chevron');
+  const iframe = document.getElementById('td-trend-iframe');
+  const open = body.style.display === 'none';
+  body.style.display = open ? 'block' : 'none';
+  if (chev) chev.style.transform = open ? 'rotate(180deg)' : 'rotate(0deg)';
+  if (open && iframe && !iframe.src) iframe.src = TD_TREND_URL;
 }
 
 // mcInit()는 init()에서 RAW 로드 후 호출됨
