@@ -4356,7 +4356,9 @@ function toggleCompare(key) {
 }
 
 // 비교일 중 매출 패턴이 튀는(프로모션 등) 이상치 탐지
-// 세 비교일의 "총실적/현재시각까지실적" 배수를 서로 비교, 중앙값 대비 15% 이상 벗어나면 이상치로 판단
+// 세 비교일의 "총실적/현재시각까지실적" 배수를 서로 비교, 중앙값 대비 아래 기준 이상 벗어나면 이상치로 판단
+// 전주/전년동요일은 평소엔 기본 포함되도록 완화된 30% 기준, 전월동요일은 기존 15% 기준 유지
+const OUTLIER_THRESH_REL = { lw: 0.30, lm: 0.15, ly: 0.30 };
 function detectCompareOutliers(date) {
   const curHour = getCurrentHour(date);
   const comps = getComparisonDates(date);
@@ -4381,7 +4383,7 @@ function detectCompareOutliers(date) {
   keys.forEach(k => {
     if (accums[k] == null || !median) return;
     const dev = (accums[k] - median) / median;
-    if (Math.abs(dev) > 0.15) {
+    if (Math.abs(dev) > OUTLIER_THRESH_REL[k]) {
       const cd = comps[k];
       outliers[k] = { date: cd, dev, event: (DAILY_TGTS[cd] && DAILY_TGTS[cd].event) || null };
     }
