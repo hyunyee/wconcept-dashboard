@@ -1396,9 +1396,9 @@ function mcBuildHeadline() {
   return dayPart + mtdPart;
 }
 
-// MTD 채널별 세션/주문전환율 진단 — 전월동기간·전년동월 중 더 크게 벗어난 쪽 기준(%p 아닌 상대변화율 %)
+// MTD 채널별 세션/주문전환율 진단 — 세션은 상대변화율(%), 주문전환율은 절대 차이(%p) 기준
 const CH_DIAG_SESS_THRESH_PCT = 15;
-const CH_DIAG_CONV_THRESH_PCT = 15;
+const CH_DIAG_CONV_THRESH_PP = 0.3;
 
 // ys 기준 monthOffset개월 전의 "1일~같은 경과일수" 구간 (해당 월 말일 넘어가면 말일로 클램프)
 function mtdRangeOffset(ys, monthOffset) {
@@ -1441,14 +1441,15 @@ function getMtdChannelDiagnosis() {
     const convCur = sc > 0 ? pc / sc : null;
     const convMom = sm > 0 ? pm / sm : null;
     const convYoy = sy > 0 ? py / sy : null;
-    const convMomPct = (convCur != null && convMom > 0) ? (convCur - convMom) / convMom * 100 : null;
-    const convYoyPct = (convCur != null && convYoy > 0) ? (convCur - convYoy) / convYoy * 100 : null;
+    // 주문전환율은 값 자체가 작아(대체로 1~3%) 상대변화율보다 절대 %p 차이가 실질적 — (convCur-convMom)*100
+    const convMomPP = (convCur != null && convMom != null) ? (convCur - convMom) * 100 : null;
+    const convYoyPP = (convCur != null && convYoy != null) ? (convCur - convYoy) * 100 : null;
 
     const sessMoved = [sessMomPct, sessYoyPct].some(v => v != null && Math.abs(v) > CH_DIAG_SESS_THRESH_PCT);
-    const convMoved = [convMomPct, convYoyPct].some(v => v != null && Math.abs(v) > CH_DIAG_CONV_THRESH_PCT);
+    const convMoved = [convMomPP, convYoyPP].some(v => v != null && Math.abs(v) > CH_DIAG_CONV_THRESH_PP);
     if (!sessMoved && !convMoved) return;
 
-    results.push({ ch, sessMomPct, sessYoyPct, convMomPct, convYoyPct, sessMoved, convMoved, impact: rc - rm });
+    results.push({ ch, sessMomPct, sessYoyPct, convMomPP, convYoyPP, sessMoved, convMoved, impact: rc - rm });
   });
 
   results.sort((a, b) => Math.abs(b.impact) - Math.abs(a.impact));
@@ -1456,8 +1457,11 @@ function getMtdChannelDiagnosis() {
 }
 
 // getMtdChannelDiagnosis() 결과를 mcDetectInsights()와 동일한 {type,ico,text} 형태로 문장화 — 임팩트 상위 2건만
+// 세션·주문전환율 둘 다 항상 (전월比/전년동월比) 같이 보여주고, 실제 임계값을 넘겨 "움직인" 쪽만 원인으로 표기
+// — "세션은 유지인데 전환율이 떨어졌다" 같은 패턴을 문장만 보고도 판단할 수 있도록
 function buildChannelDiagInsights() {
   const pf = v => v == null ? null : `${v >= 0 ? '+' : ''}${v.toFixed(0)}%`;
+  const pfPP = v => v == null ? null : `${v >= 0 ? '+' : ''}${v.toFixed(1)}%p`;
   const fWon = v => {
     const a = Math.abs(v), sign = v >= 0 ? '+' : '-';
     return a >= 1e8 ? `${sign}${(a / 1e8).toFixed(1)}억원` : `${sign}${Math.round(a / 1e4).toLocaleString()}만원`;
@@ -1465,18 +1469,14 @@ function buildChannelDiagInsights() {
   return getMtdChannelDiagnosis().slice(0, 2).map(d => {
     const good = d.impact >= 0;
     const causeParts = [];
-    if (d.sessMoved) {
-      const parts = [pf(d.sessMomPct) && `전월比 ${pf(d.sessMomPct)}`, pf(d.sessYoyPct) && `전년동월比 ${pf(d.sessYoyPct)}`].filter(Boolean);
-      causeParts.push(`세션 ${parts.join(', ')}`);
-    }
-    if (d.convMoved) {
-      const parts = [pf(d.convMomPct) && `전월比 ${pf(d.convMomPct)}`, pf(d.convYoyPct) && `전년동월比 ${pf(d.convYoyPct)}`].filter(Boolean);
-      causeParts.push(`주문전환율 ${parts.join(', ')}`);
-    }
+    const sessParts = [pf(d.sessMomPct) && `전월比 ${pf(d.sessMomPct)}`, pf(d.sessYoyPct) && `전년동월比 ${pf(d.sessYoyPct)}`].filter(Boolean);
+    if (sessParts.length) causeParts.push(`세션 ${sessParts.join(', ')}${d.sessMoved ? '' : ' (변동 미미)'}`);
+    const convParts = [pfPP(d.convMomPP) && `전월比 ${pfPP(d.convMomPP)}`, pfPP(d.convYoyPP) && `전년동월比 ${pfPP(d.convYoyPP)}`].filter(Boolean);
+    if (convParts.length) causeParts.push(`주문전환율 ${convParts.join(', ')}${d.convMoved ? '' : ' (변동 미미)'}`);
     return {
       type: good ? 'good' : 'warn',
       ico: good ? '📈' : '📉',
-      text: `[${d.ch}] MTD ${causeParts.join(' · ')} 영향으로 매출 ${fWon(d.impact)} (전월 동기간 대비)`,
+      text: `[${d.ch}] MTD ${causeParts.join(' · ')} → 매출 ${fWon(d.impact)} (전월 동기간 대비)`,
     };
   });
 }
