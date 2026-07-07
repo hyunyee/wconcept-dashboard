@@ -1633,21 +1633,10 @@ function renderTrendComment(data, items) {
   const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   document.getElementById('trend-content').innerHTML = items.map((it, i) => {
     const accent = it.kind === 'self' ? '#0ea5e9' : '#94a3b8';
-    const kf = (it.keyFindings || []).filter(Boolean);
-    const kfId = `trend-kf-${i}`;
-    const kfHtml = kf.length ? `
-      <div style="margin-top:6px">
-        <span onclick="document.getElementById('${kfId}').style.display=(document.getElementById('${kfId}').style.display==='none'?'block':'none')"
-          style="cursor:pointer;font-size:11px;color:#3b82f6;user-select:none">핵심 포인트 ${kf.length}개 보기 ▾</span>
-        <ul id="${kfId}" style="display:none;margin:6px 0 0;padding-left:16px;font-size:12px;line-height:1.7;color:#475569">
-          ${kf.map(f => `<li style="margin-bottom:3px">${esc(f)}</li>`).join('')}
-        </ul>
-      </div>` : '';
     return `
       <div style="padding:10px 0;${i > 0 ? 'border-top:1px solid #f1f5f9' : ''}">
         <div style="font-size:12px;font-weight:700;color:${accent};margin-bottom:4px">${esc(it.label)}</div>
         <div style="font-size:12.5px;line-height:1.75;color:#1e293b">${esc(it.summary)}</div>
-        ${kfHtml}
       </div>`;
   }).join('');
 }
