@@ -1396,6 +1396,91 @@ function mcBuildHeadline() {
   return dayPart + mtdPart;
 }
 
+// MTD 채널별 세션/주문전환율 진단 — 전월동기간·전년동월 중 더 크게 벗어난 쪽 기준(%p 아닌 상대변화율 %)
+const CH_DIAG_SESS_THRESH_PCT = 15;
+const CH_DIAG_CONV_THRESH_PCT = 15;
+
+// ys 기준 monthOffset개월 전의 "1일~같은 경과일수" 구간 (해당 월 말일 넘어가면 말일로 클램프)
+function mtdRangeOffset(ys, monthOffset) {
+  const d = parseLocalDate(ys);
+  const day = d.getDate();
+  const tgt = new Date(d.getFullYear(), d.getMonth() + monthOffset, 1);
+  const daysInTgt = new Date(tgt.getFullYear(), tgt.getMonth() + 1, 0).getDate();
+  const toDay = Math.min(day, daysInTgt);
+  return { from: localDateToStr(tgt), to: localDateToStr(new Date(tgt.getFullYear(), tgt.getMonth(), toDay)) };
+}
+
+// 채널버킷별 MTD 세션/주문전환율(세션→구매)을 전월 동기간·전년 동월과 비교해
+// 유의미하게(임계값 초과) 움직인 채널만 반환, 매출 임팩트(전월 대비 실제 증감액) 큰 순 정렬
+function getMtdChannelDiagnosis() {
+  const ys = getEffectiveDailyDate();
+  if (!ys || !TRAFFIC || !CONV_CH) return [];
+  const monthStart = `${ys.substring(0, 7)}-01`;
+  const mom = mtdRangeOffset(ys, -1);
+  const yoy = mtdRangeOffset(ys, -12);
+
+  const byLabel = arr => Object.fromEntries(arr.map(x => [x.label, x.val]));
+  const sessCur = byLabel(getChannelBreakdownRange(TRAFFIC, monthStart, ys, 's', 'all', false));
+  const sessMom = byLabel(getChannelBreakdownRange(TRAFFIC, mom.from, mom.to, 's', 'all', false));
+  const sessYoy = byLabel(getChannelBreakdownRange(TRAFFIC, yoy.from, yoy.to, 's', 'all', false));
+  const purCur  = byLabel(getChannelBreakdownRange(TRAFFIC, monthStart, ys, 'p', 'all', false));
+  const purMom  = byLabel(getChannelBreakdownRange(TRAFFIC, mom.from, mom.to, 'p', 'all', false));
+  const purYoy  = byLabel(getChannelBreakdownRange(TRAFFIC, yoy.from, yoy.to, 'p', 'all', false));
+  const revCur  = byLabel(getChannelBreakdownRange(CONV_CH, monthStart, ys, 'rev', 'all', false));
+  const revMom  = byLabel(getChannelBreakdownRange(CONV_CH, mom.from, mom.to, 'rev', 'all', false));
+
+  const results = [];
+  CH_BUCKET_ORDER.forEach(ch => {
+    const sc = sessCur[ch] || 0, sm = sessMom[ch] || 0, sy = sessYoy[ch] || 0;
+    const pc = purCur[ch] || 0, pm = purMom[ch] || 0, py = purYoy[ch] || 0;
+    const rc = revCur[ch] || 0, rm = revMom[ch] || 0;
+    if (sc === 0 && sm === 0 && sy === 0) return;
+
+    const sessMomPct = sm > 0 ? (sc - sm) / sm * 100 : null;
+    const sessYoyPct = sy > 0 ? (sc - sy) / sy * 100 : null;
+    const convCur = sc > 0 ? pc / sc : null;
+    const convMom = sm > 0 ? pm / sm : null;
+    const convYoy = sy > 0 ? py / sy : null;
+    const convMomPct = (convCur != null && convMom > 0) ? (convCur - convMom) / convMom * 100 : null;
+    const convYoyPct = (convCur != null && convYoy > 0) ? (convCur - convYoy) / convYoy * 100 : null;
+
+    const sessMoved = [sessMomPct, sessYoyPct].some(v => v != null && Math.abs(v) > CH_DIAG_SESS_THRESH_PCT);
+    const convMoved = [convMomPct, convYoyPct].some(v => v != null && Math.abs(v) > CH_DIAG_CONV_THRESH_PCT);
+    if (!sessMoved && !convMoved) return;
+
+    results.push({ ch, sessMomPct, sessYoyPct, convMomPct, convYoyPct, sessMoved, convMoved, impact: rc - rm });
+  });
+
+  results.sort((a, b) => Math.abs(b.impact) - Math.abs(a.impact));
+  return results;
+}
+
+// getMtdChannelDiagnosis() 결과를 mcDetectInsights()와 동일한 {type,ico,text} 형태로 문장화 — 임팩트 상위 2건만
+function buildChannelDiagInsights() {
+  const pf = v => v == null ? null : `${v >= 0 ? '+' : ''}${v.toFixed(0)}%`;
+  const fWon = v => {
+    const a = Math.abs(v), sign = v >= 0 ? '+' : '-';
+    return a >= 1e8 ? `${sign}${(a / 1e8).toFixed(1)}억원` : `${sign}${Math.round(a / 1e4).toLocaleString()}만원`;
+  };
+  return getMtdChannelDiagnosis().slice(0, 2).map(d => {
+    const good = d.impact >= 0;
+    const causeParts = [];
+    if (d.sessMoved) {
+      const parts = [pf(d.sessMomPct) && `전월比 ${pf(d.sessMomPct)}`, pf(d.sessYoyPct) && `전년동월比 ${pf(d.sessYoyPct)}`].filter(Boolean);
+      causeParts.push(`세션 ${parts.join(', ')}`);
+    }
+    if (d.convMoved) {
+      const parts = [pf(d.convMomPct) && `전월比 ${pf(d.convMomPct)}`, pf(d.convYoyPct) && `전년동월比 ${pf(d.convYoyPct)}`].filter(Boolean);
+      causeParts.push(`주문전환율 ${parts.join(', ')}`);
+    }
+    return {
+      type: good ? 'good' : 'warn',
+      ico: good ? '📈' : '📉',
+      text: `[${d.ch}] MTD ${causeParts.join(' · ')} 영향으로 매출 ${fWon(d.impact)} (전월 동기간 대비)`,
+    };
+  });
+}
+
 function mcDetectInsights() {
   const cd = mcCalcData();
   if (!cd) return [];
@@ -1446,6 +1531,9 @@ function mcDetectInsights() {
     if (Math.abs(joinWow) > 20) ins.push({ type:joinWow>0?'good':'warn', ico:'👥',
       text:`신규가입 전주동요일 대비 ${joinWow>0?'+':''}${joinWow.toFixed(1)}% (${dy2.join.toLocaleString()}명 vs ${lwDy2.join.toLocaleString()}명)` });
   }
+
+  // 6. MTD 채널별 세션/주문전환율 진단 (임팩트 상위 2건)
+  buildChannelDiagInsights().forEach(x => ins.push(x));
 
   if (ins.length === 0) ins.push({ type:'info', ico:'✔️', text:'특이사항 없음 · 정상 범위 내 실적' });
   return ins;
