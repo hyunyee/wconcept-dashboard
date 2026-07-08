@@ -1035,21 +1035,12 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
     <span style="font-size:12px;color:#94a3b8;">직접선택</span>
     <input type="date" id="custom-date" onchange="setCustomDate(this.value)" style="background:#fff;border:1px solid #cbd5e1;border-radius:6px;color:#0f172a;padding:5px 10px;font-size:12px;cursor:pointer;outline:none;">
     <div style="width:1px;height:20px;background:#e2e8f0;margin:0 4px"></div>
-    <span style="font-size:11px;color:#94a3b8;font-weight:600;letter-spacing:.05em;text-transform:uppercase">비교</span>
+    <span style="font-size:11px;color:#94a3b8;font-weight:600;letter-spacing:.05em;text-transform:uppercase">예상마감 기준</span>
     <button class="compare-btn active" id="btn-lw" onclick="toggleCompare('lw')">전주동요일</button>
     <button class="compare-btn active" id="btn-lm" onclick="toggleCompare('lm')">전월동요일</button>
     <button class="compare-btn active" id="btn-ly" onclick="toggleCompare('ly')">전년동요일</button>
+    <button class="compare-btn active" id="btn-w10" onclick="toggleCompare('w10')">최근10주</button>
     <span id="compare-outlier-note" style="font-size:11px;color:#f59e0b;font-weight:600;margin-left:auto;text-align:right;flex:1;min-width:0;"></span>
-  </div>
-
-  <!-- 예상마감 산출 기준 (단일선택) -->
-  <div style="display:flex;flex-wrap:nowrap;align-items:center;gap:10px;padding:8px 16px;margin-top:8px;background:#fff;border-radius:10px;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(0,0,0,.06);">
-    <span style="font-size:11px;color:#94a3b8;font-weight:600;letter-spacing:.05em;text-transform:uppercase">예상마감 기준</span>
-    <button class="compare-btn active" id="fc-w10" onclick="setForecastMethod('w10',this)">최근10주</button>
-    <button class="compare-btn" id="fc-lw" onclick="setForecastMethod('lw',this)">전주동요일</button>
-    <button class="compare-btn" id="fc-lm" onclick="setForecastMethod('lm',this)">전월동요일</button>
-    <button class="compare-btn" id="fc-ly" onclick="setForecastMethod('ly',this)">전년동요일</button>
-    <span style="font-size:11px;color:#cbd5e1;margin-left:auto">단일선택 · ③예상마감·달성률에 반영</span>
   </div>
 
   <div class="summary-box" id="summary-box"></div>
@@ -4272,7 +4263,7 @@ let CH_AD = {}, CH_AD_META = {};
 
 // State
 let selectedDate = '';
-let compareFlags = { lw: true, lm: true, ly: true };
+let compareFlags = { lw: true, lm: true, ly: true, w10: true };
 let charts = {};
 
 // ═══════════════════════════════════════════════
@@ -4421,8 +4412,7 @@ function getFilteredCompDates(date) {
 // 수렴하고(그 날의 진행배수만 반영), 거르는 기준(매출규모)과 쓰는 값(진행배수)이 달라
 // 예상마감이 편향됐다. 동일요일 표본을 늘려 배수의 중앙값을 쓰는 게 백테스트상 꼬리위험이
 // 크게 낮다(11시 최악오차 88%→40%). 비교 토글과도 분리돼 토글을 껐다 켜도 예상마감 불변.
-const FORECAST_WEEKS = 8;
-let forecastMethod = 'w10';   // 'lw' | 'lm' | 'ly' | 'w10' — 예상마감 산출 기준(필터바 2줄 토글). 기본=최근10주
+const FORECAST_WEEKS = 10;   // 최근10주 기준 진행배수 중앙값
 function getForecastCompDates(date, maxWeeks = FORECAST_WEEKS) {
   const out = [];
   for (let w = 1; out.length < maxWeeks && w <= maxWeeks + 8; w++) {
@@ -4436,7 +4426,28 @@ function median(arr) {
   const s = [...arr].sort((a, b) => a - b), m = s.length >> 1;
   return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
 }
+function mean(arr) { return arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null; }
 
+// 특정 비교일의 진행배수 r = 종일합/현재시각누적 (주문·총수주·순수주)
+function dayRatios(cd, curHour, curNetHour) {
+  const cr = getHourlyData(cd);
+  const acc_o = cr.slice(0, curHour + 1).reduce((a, r) => a + r[0], 0);
+  const acc_r = cr.slice(0, curHour + 1).reduce((a, r) => a + r[1], 0);
+  const tot_o = cr.reduce((a, r) => a + r[0], 0);
+  const tot_r = cr.reduce((a, r) => a + r[1], 0);
+  let r_n = null;
+  if (curNetHour >= 0) {
+    const acc_n = getNetCumul(cd, curNetHour);
+    const tot_n = getDailyTotal(cd).net_rev;
+    if (acc_n && acc_n > 0 && tot_n !== null) r_n = tot_n / acc_n;
+  }
+  return { r_o: acc_o > 0 ? tot_o / acc_o : null, r_r: acc_r > 0 ? tot_r / acc_r : null, r_n };
+}
+
+// 예상마감 = 선택된 비교기준들의 진행배수 평균 × 오늘 누적.
+// 비교기준(필터바 4토글, 다중선택):
+//   전주/전월/전년동요일(lw/lm/ly) — 그 1일 배수. 이상치 감지로 튀는 날은 init에서 자동 해제되어 여기 안 들어옴.
+//   최근10주(w10) — 동일요일 10주 배수의 중앙값(하나의 안정 앵커, 이상치 자동해제 대상 아님).
 function getForecast(date) {
   const curHour    = getCurrentHour(date);
   const curNetHour = getCurrentNetHour(date);
@@ -4445,40 +4456,43 @@ function getForecast(date) {
   const accum_rev    = rows.slice(0,curHour+1).reduce((a,r)=>a+r[1],0);
   const accum_net    = curNetHour >= 0 ? getNetCumul(date, curNetHour) : null;
 
-  let compDates;
-  if (forecastMethod === 'w10') {
-    compDates = getForecastCompDates(date, 10);
-  } else {
-    const cd = getDateByOffset(date, forecastMethod === 'lm' ? -28 : forecastMethod === 'ly' ? -364 : -7);
-    compDates = RAW[cd] ? [cd] : [];
+  const comps = getComparisonDates(date);
+  let ratios_o = [], ratios_r = [], ratios_n = [];
+
+  // 요일 기반 단일 비교일 (이상치 자동해제되면 compareFlags false라 제외)
+  ['lw', 'lm', 'ly'].forEach(k => {
+    if (!compareFlags[k]) return;
+    const cd = comps[k];
+    if (!cd || !RAW[cd]) return;
+    const r = dayRatios(cd, curHour, curNetHour);
+    if (r.r_o !== null) ratios_o.push(r.r_o);
+    if (r.r_r !== null) ratios_r.push(r.r_r);
+    if (r.r_n !== null) ratios_n.push(r.r_n);
+  });
+
+  // 최근10주: 동일요일 10주 배수의 중앙값을 하나의 기준으로 추가
+  if (compareFlags.w10) {
+    const c10 = getForecastCompDates(date, 10);
+    const w_o = [], w_r = [], w_n = [];
+    c10.forEach(cd => {
+      const r = dayRatios(cd, curHour, curNetHour);
+      if (r.r_o !== null) w_o.push(r.r_o);
+      if (r.r_r !== null) w_r.push(r.r_r);
+      if (r.r_n !== null) w_n.push(r.r_n);
+    });
+    const mo = median(w_o), mr = median(w_r), mn = median(w_n);
+    if (mo !== null) ratios_o.push(mo);
+    if (mr !== null) ratios_r.push(mr);
+    if (mn !== null) ratios_n.push(mn);
   }
 
-  if (compDates.length === 0) {
+  if (ratios_r.length === 0) {
     return { orders: accum_orders, revenue: accum_rev, net_rev: accum_net, curHour, curNetHour };
   }
 
-  // 동일 시각까지의 누적 대비 종일합 배수 r을 비교일마다 구해 중앙값 사용
-  let ratios_o = [], ratios_r = [], ratios_n = [];
-  compDates.forEach(cd => {
-    const cr = getHourlyData(cd);
-    const acc_o = cr.slice(0,curHour+1).reduce((a,r)=>a+r[0],0);
-    const acc_r = cr.slice(0,curHour+1).reduce((a,r)=>a+r[1],0);
-    const tot_o = cr.reduce((a,r)=>a+r[0],0);
-    const tot_r = cr.reduce((a,r)=>a+r[1],0);
-    if (acc_o > 0) ratios_o.push(tot_o / acc_o);
-    if (acc_r > 0) ratios_r.push(tot_r / acc_r);
-
-    // 순수주 비율 (curNetHour 기준)
-    if (curNetHour >= 0) {
-      const acc_n = getNetCumul(cd, curNetHour);
-      const tot_n = getDailyTotal(cd).net_rev;
-      if (acc_n && acc_n > 0 && tot_n !== null) ratios_n.push(tot_n / acc_n);
-    }
-  });
-
-  const avg_o = median(ratios_o) ?? 1;
-  const avg_r = median(ratios_r) ?? 1;
-  const avg_n = median(ratios_n);
+  const avg_o = mean(ratios_o) ?? 1;
+  const avg_r = mean(ratios_r) ?? 1;
+  const avg_n = mean(ratios_n);
 
   return {
     orders:   Math.round(accum_orders * avg_o),
@@ -4685,14 +4699,6 @@ function toggleCompare(key) {
   compareFlags[key] = !compareFlags[key];
   const btn = document.getElementById('btn-'+key);
   btn.classList.toggle('active', compareFlags[key]);
-  render();
-}
-
-// 예상마감 산출 기준 (단일선택) — 비교라인 토글(다중)과 독립
-function setForecastMethod(m, el) {
-  forecastMethod = m;
-  ['fc-w10','fc-lw','fc-lm','fc-ly'].forEach(id => document.getElementById(id)?.classList.remove('active'));
-  el.classList.add('active');
   render();
 }
 
