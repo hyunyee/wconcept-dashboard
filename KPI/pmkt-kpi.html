@@ -4406,6 +4406,26 @@ function getFilteredCompDates(date) {
     .map(k => comps[k]);
 }
 
+// 예상마감 비교일: 같은 요일 최근 N주(-7,-14,...). 기존엔 전주/전월/전년동요일 3개를
+// 이상치 필터로 걸렀는데, 3개의 중앙값은 항상 그 중 한 점이라 필터가 늘 "가운데 날 1개"로
+// 수렴하고(그 날의 진행배수만 반영), 거르는 기준(매출규모)과 쓰는 값(진행배수)이 달라
+// 예상마감이 편향됐다. 동일요일 표본을 늘려 배수의 중앙값을 쓰는 게 백테스트상 꼬리위험이
+// 크게 낮다(11시 최악오차 88%→40%). 비교 토글과도 분리돼 토글을 껐다 켜도 예상마감 불변.
+const FORECAST_WEEKS = 8;
+function getForecastCompDates(date, maxWeeks = FORECAST_WEEKS) {
+  const out = [];
+  for (let w = 1; out.length < maxWeeks && w <= maxWeeks + 8; w++) {
+    const cd = getDateByOffset(date, -7 * w);
+    if (RAW[cd]) out.push(cd);
+  }
+  return out;
+}
+function median(arr) {
+  if (!arr.length) return null;
+  const s = [...arr].sort((a, b) => a - b), m = s.length >> 1;
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+}
+
 function getForecast(date) {
   const curHour    = getCurrentHour(date);
   const curNetHour = getCurrentNetHour(date);
@@ -4414,13 +4434,13 @@ function getForecast(date) {
   const accum_rev    = rows.slice(0,curHour+1).reduce((a,r)=>a+r[1],0);
   const accum_net    = curNetHour >= 0 ? getNetCumul(date, curNetHour) : null;
 
-  const compDates = getFilteredCompDates(date);
+  const compDates = getForecastCompDates(date);
 
   if (compDates.length === 0) {
     return { orders: accum_orders, revenue: accum_rev, net_rev: accum_net, curHour, curNetHour };
   }
 
-  // 총수주·주문 예상마감 비율
+  // 동일 시각까지의 누적 대비 종일합 배수 r을 비교일마다 구해 중앙값 사용
   let ratios_o = [], ratios_r = [], ratios_n = [];
   compDates.forEach(cd => {
     const cr = getHourlyData(cd);
@@ -4439,9 +4459,9 @@ function getForecast(date) {
     }
   });
 
-  const avg_o = ratios_o.length ? ratios_o.reduce((a,b)=>a+b)/ratios_o.length : 1;
-  const avg_r = ratios_r.length ? ratios_r.reduce((a,b)=>a+b)/ratios_r.length : 1;
-  const avg_n = ratios_n.length ? ratios_n.reduce((a,b)=>a+b)/ratios_n.length : null;
+  const avg_o = median(ratios_o) ?? 1;
+  const avg_r = median(ratios_r) ?? 1;
+  const avg_n = median(ratios_n);
 
   return {
     orders:   Math.round(accum_orders * avg_o),
