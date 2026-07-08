@@ -1042,6 +1042,16 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
     <span id="compare-outlier-note" style="font-size:11px;color:#f59e0b;font-weight:600;margin-left:auto;text-align:right;flex:1;min-width:0;"></span>
   </div>
 
+  <!-- 예상마감 산출 기준 (단일선택) -->
+  <div style="display:flex;flex-wrap:nowrap;align-items:center;gap:10px;padding:8px 16px;margin-top:8px;background:#fff;border-radius:10px;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(0,0,0,.06);">
+    <span style="font-size:11px;color:#94a3b8;font-weight:600;letter-spacing:.05em;text-transform:uppercase">예상마감 기준</span>
+    <button class="compare-btn active" id="fc-w10" onclick="setForecastMethod('w10',this)">최근10주</button>
+    <button class="compare-btn" id="fc-lw" onclick="setForecastMethod('lw',this)">전주동요일</button>
+    <button class="compare-btn" id="fc-lm" onclick="setForecastMethod('lm',this)">전월동요일</button>
+    <button class="compare-btn" id="fc-ly" onclick="setForecastMethod('ly',this)">전년동요일</button>
+    <span style="font-size:11px;color:#cbd5e1;margin-left:auto">단일선택 · ③예상마감·달성률에 반영</span>
+  </div>
+
   <div class="summary-box" id="summary-box"></div>
 
   <!-- KPI -->
@@ -4412,6 +4422,7 @@ function getFilteredCompDates(date) {
 // 예상마감이 편향됐다. 동일요일 표본을 늘려 배수의 중앙값을 쓰는 게 백테스트상 꼬리위험이
 // 크게 낮다(11시 최악오차 88%→40%). 비교 토글과도 분리돼 토글을 껐다 켜도 예상마감 불변.
 const FORECAST_WEEKS = 8;
+let forecastMethod = 'w10';   // 'lw' | 'lm' | 'ly' | 'w10' — 예상마감 산출 기준(필터바 2줄 토글). 기본=최근10주
 function getForecastCompDates(date, maxWeeks = FORECAST_WEEKS) {
   const out = [];
   for (let w = 1; out.length < maxWeeks && w <= maxWeeks + 8; w++) {
@@ -4434,7 +4445,13 @@ function getForecast(date) {
   const accum_rev    = rows.slice(0,curHour+1).reduce((a,r)=>a+r[1],0);
   const accum_net    = curNetHour >= 0 ? getNetCumul(date, curNetHour) : null;
 
-  const compDates = getForecastCompDates(date);
+  let compDates;
+  if (forecastMethod === 'w10') {
+    compDates = getForecastCompDates(date, 10);
+  } else {
+    const cd = getDateByOffset(date, forecastMethod === 'lm' ? -28 : forecastMethod === 'ly' ? -364 : -7);
+    compDates = RAW[cd] ? [cd] : [];
+  }
 
   if (compDates.length === 0) {
     return { orders: accum_orders, revenue: accum_rev, net_rev: accum_net, curHour, curNetHour };
@@ -4668,6 +4685,14 @@ function toggleCompare(key) {
   compareFlags[key] = !compareFlags[key];
   const btn = document.getElementById('btn-'+key);
   btn.classList.toggle('active', compareFlags[key]);
+  render();
+}
+
+// 예상마감 산출 기준 (단일선택) — 비교라인 토글(다중)과 독립
+function setForecastMethod(m, el) {
+  forecastMethod = m;
+  ['fc-w10','fc-lw','fc-lm','fc-ly'].forEach(id => document.getElementById(id)?.classList.remove('active'));
+  el.classList.add('active');
   render();
 }
 
