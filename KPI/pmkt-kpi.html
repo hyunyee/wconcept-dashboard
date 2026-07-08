@@ -722,6 +722,27 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
     </div>
   </div>
 
+  <!-- ⑦ 채널별 MTD 성과 -->
+  <div class="sec-hd">
+    <h2>채널별 MTD 성과</h2>
+    <span class="sec-note" style="display:flex;align-items:center;gap:10px">
+      <span id="ch-mtd-range"></span>
+      <span style="display:inline-flex;border:1px solid #e2e8f0;border-radius:6px;overflow:hidden">
+        <button type="button" class="ch-scope-btn active" data-basis="yoy" onclick="setChannelMtdBasis('yoy',this)">YoY</button>
+        <button type="button" class="ch-scope-btn" data-basis="mom" onclick="setChannelMtdBasis('mom',this)">MoM</button>
+      </span>
+    </span>
+  </div>
+  <div class="card">
+    <table class="dt">
+      <thead><tr>
+        <th>채널</th><th>세션</th><th>신규가입</th><th>첫구매</th><th>총수주(백만)</th><th>세션→첫구매 CR</th>
+      </tr></thead>
+      <tbody id="ch-mtd-matrix"><tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:12px">데이터 로딩 중...</td></tr></tbody>
+    </table>
+    <div id="ch-mtd-note" style="font-size:10px;color:#94a3b8;margin-top:6px"></div>
+  </div>
+
 </div><!-- /view-dash -->
 
 <!-- ════════ Weekly 뷰 ════════ -->
@@ -2101,7 +2122,7 @@ function aggRangeFull(from, to) {
 }
 
 // 주간 채널그룹별 합산 — DA/SA 분리 버킷 (Daily 탭 groupChannel의 Ads 통합과 별개)
-const WK_CH_ORDER = ['Organic', 'DA', 'SA', 'CRM', 'PCS', '기타'];
+const WK_CH_ORDER = ['Organic', 'DA', 'SA', 'CRM', 'PCS', 'OwnedMedia', '기타'];
 WK_CH_TREND_ON = new Set(WK_CH_ORDER);
 function wkChannelBucket(ch) {
   return WK_CH_ORDER.includes(ch) ? ch : '기타';
@@ -2762,10 +2783,10 @@ function renderPeriodChannelDonuts() {
   const firstEl = document.getElementById('pd-donut-first-total'); if (firstEl) firstEl.textContent = `Total ${totalOf(firstData).toLocaleString()}명`;
 }
 
-// 기간×채널그룹(DA/SA 분리) 합산 — Weekly 탭과 동일 버킷 기준, 임의 기간 지원
-function aggChannelRange(from, to) {
+// 기간×**원본 채널명** 단위 합산 (버킷 접기 전) — aggChannelRange의 기반이자 '기타' 세부채널 드릴다운용
+function aggRawChannelRange(from, to) {
   const out = {};
-  WK_CH_ORDER.forEach(b => out[b] = { sess: 0, join: 0, first: 0, rev: 0 });
+  const touch = ch => out[ch] || (out[ch] = { sess: 0, join: 0, first: 0, rev: 0 });
   let cur = parseLocalDate(from);
   const end = parseLocalDate(to);
   while (cur <= end) {
@@ -2773,12 +2794,12 @@ function aggChannelRange(from, to) {
     const t = TRAFFIC[ds] || {};
     Object.keys(t).forEach(ch => {
       if (ch === '__total__') return;
-      if (t[ch].s) out[wkChannelBucket(ch)].sess += t[ch].s;
+      if (t[ch].s) touch(ch).sess += t[ch].s;
     });
     const c = CONV_CH[ds] || {};
     Object.keys(c).forEach(ch => {
       if (ch === '__total__') return;
-      const b = out[wkChannelBucket(ch)];
+      const b = touch(ch);
       if (c[ch].join)  b.join  += c[ch].join;
       if (c[ch].first) b.first += c[ch].first;
       if (c[ch].rev)   b.rev   += c[ch].rev;
@@ -2786,6 +2807,121 @@ function aggChannelRange(from, to) {
     cur.setDate(cur.getDate() + 1);
   }
   return out;
+}
+
+// 원본 채널명 → WK_CH_ORDER 버킷으로 접기 (제로필)
+function foldChannelBuckets(raw) {
+  const out = {};
+  WK_CH_ORDER.forEach(b => out[b] = { sess: 0, join: 0, first: 0, rev: 0 });
+  Object.keys(raw).forEach(ch => {
+    const b = out[wkChannelBucket(ch)], v = raw[ch];
+    b.sess += v.sess; b.join += v.join; b.first += v.first; b.rev += v.rev;
+  });
+  return out;
+}
+
+// 기간×채널그룹(DA/SA 분리) 합산 — Weekly 탭과 동일 버킷 기준, 임의 기간 지원
+function aggChannelRange(from, to) {
+  return foldChannelBuckets(aggRawChannelRange(from, to));
+}
+
+// ── Daily 탭: 채널별 MTD 성과 매트릭스 (YoY 기본 / MoM 토글, 기타 드릴다운) ──────
+// 창(window)은 getMtdChannelDiagnosis와 동일 조합: MTD = 1일~전일, 비교 = mtdRangeOffset(-1|-12)
+let chMtdBasis = 'yoy';
+let chMtdEtcOpen = false;
+
+function setChannelMtdBasis(basis, el) {
+  chMtdBasis = basis;
+  el.parentElement.querySelectorAll('.ch-scope-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderChannelMtdMatrix();
+}
+function toggleChMtdEtc() { chMtdEtcOpen = !chMtdEtcOpen; renderChannelMtdMatrix(); }
+
+function renderChannelMtdMatrix() {
+  const tbody = document.getElementById('ch-mtd-matrix');
+  if (!tbody) return;
+  const ys = getEffectiveDailyDate();
+  if (!ys || !TRAFFIC || !CONV_CH) return;
+
+  const curFrom = `${ys.substring(0, 7)}-01`, curTo = ys;
+  const cmpR = mtdRangeOffset(ys, chMtdBasis === 'mom' ? -1 : -12);
+  const rawCur = aggRawChannelRange(curFrom, curTo);
+  const rawCmp = aggRawChannelRange(cmpR.from, cmpR.to);
+  const bCur = foldChannelBuckets(rawCur), bCmp = foldChannelBuckets(rawCmp);
+
+  const Z = { sess: 0, join: 0, first: 0, rev: 0 };
+  const add = (...xs) => xs.reduce((a, x) => ({ sess: a.sess + x.sess, join: a.join + x.join, first: a.first + x.first, rev: a.rev + x.rev }), { ...Z });
+  const md = s => `${+s.substring(5, 7)}/${+s.substring(8, 10)}`;
+  document.getElementById('ch-mtd-range').textContent =
+    `MTD ${md(curFrom)}~${md(curTo)} · vs ${chMtdBasis === 'mom' ? '전월' : '전년'} ${md(cmpR.from)}~${md(cmpR.to)} · 전체 디바이스 기준`;
+
+  const GREY = '#94a3b8';
+  // 소규모 가드: 비교모수(base)가 0이면 '신규', 30 미만이면 회색(노이즈) — 데이터는 숨기지 않음
+  const deltaHtml = (a, b) => {
+    if (!b) return a ? ` <span style="font-size:10px;font-weight:700;color:${GREY}">신규</span>` : '';
+    const p = yoyPct(a || null, b || null);
+    if (p == null) return '';
+    const color = b < 30 ? GREY : (p >= 0 ? '#10b981' : '#ef4444');
+    return ` <span style="font-size:10px;font-weight:700;color:${color}">${p >= 0 ? '+' : ''}${p.toFixed(0)}%</span>`;
+  };
+  const cell    = (a, b) => `<td>${(a || 0).toLocaleString()}${deltaHtml(a, b)}</td>`;
+  const revCell = (a, b) => `<td><b>${Math.round((a || 0) / 1e6).toLocaleString()}</b>${deltaHtml(a, b)}</td>`;
+  // CR은 이미 %(비율)이므로 증감은 상대변화율이 아니라 두 값의 차(%p) — R7
+  const crCell = (c, m) => {
+    const cr = c.sess ? c.first / c.sess * 100 : null;
+    if (cr == null) return '<td style="color:#cbd5e1">—</td>';
+    const crM = m.sess ? m.first / m.sess * 100 : null;
+    let d = '';
+    if (crM != null) {
+      const diff = cr - crM;
+      const color = Math.max(c.first, m.first) < 30 ? GREY : (diff >= 0 ? '#10b981' : '#ef4444');
+      d = ` <span style="font-size:10px;font-weight:700;color:${color}">${diff >= 0 ? '+' : ''}${diff.toFixed(2)}%p</span>`;
+    }
+    return `<td>${cr.toFixed(2)}%${d}</td>`;
+  };
+  // 유입↑ 전환↓ 괴리 표식 (부호만 판정)
+  const warn = (c, m) => {
+    const s = yoyPct(c.sess || null, m.sess || null), f = yoyPct(c.first || null, m.first || null);
+    return (s != null && f != null && s > 0 && f < 0)
+      ? ` <span title="유입↑ 전환↓" style="color:#f59e0b;font-size:11px">⚠</span>` : '';
+  };
+  const row = (label, c, m, o = {}) => {
+    const tdStyle = o.indent ? 'color:#64748b;padding-left:18px' : (o.bold ? 'font-weight:700' : '');
+    const name = (o.indent ? '<span style="color:#cbd5e1">└</span> ' : '') + label + (o.caret || '');
+    const attrs = o.onclick ? ` onclick="${o.onclick}" style="cursor:pointer"` : '';
+    // 전체 행은 요약이라 괴리표식 제외(액션 대상 채널이 아님)
+    const flag = o.noWarn ? '' : warn(c, m);
+    return `<tr${attrs}><td style="${tdStyle}">${name}${flag}</td>${cell(c.sess, m.sess)}${cell(c.join, m.join)}${cell(c.first, m.first)}${revCell(c.rev, m.rev)}${crCell(c, m)}</tr>`;
+  };
+
+  const allCur = add(...WK_CH_ORDER.map(b => bCur[b]));
+  const allCmp = add(...WK_CH_ORDER.map(b => bCmp[b]));
+  const adsCur = add(bCur.DA, bCur.SA), adsCmp = add(bCmp.DA, bCmp.SA);
+
+  let html = row('전체', allCur, allCmp, { bold: true, noWarn: true });
+  html += row('Organic', bCur.Organic, bCmp.Organic);
+  html += row('Ads', adsCur, adsCmp, { bold: true });
+  html += row('DA', bCur.DA, bCmp.DA, { indent: true });
+  html += row('SA', bCur.SA, bCmp.SA, { indent: true });
+  html += row('PCS', bCur.PCS, bCmp.PCS);
+  html += row('CRM', bCur.CRM, bCmp.CRM);
+  html += row('OwnedMedia', bCur.OwnedMedia, bCmp.OwnedMedia);
+
+  // 기타: 클릭 시 원본 채널명 단위 세부행 펼침
+  const etcNames = Object.keys(rawCur).filter(ch => !WK_CH_ORDER.includes(ch))
+    .sort((a, b) => rawCur[b].sess - rawCur[a].sess);
+  html += row('기타', bCur['기타'], bCmp['기타'],
+    { bold: true, onclick: 'toggleChMtdEtc()', caret: ` <span style="color:#94a3b8;font-size:10px">${chMtdEtcOpen ? '▾' : '▸'}</span>` });
+  if (chMtdEtcOpen) {
+    etcNames.forEach(ch => { html += row(ch, rawCur[ch], rawCmp[ch] || Z, { indent: true }); });
+  }
+  tbody.innerHTML = html;
+
+  const note = document.getElementById('ch-mtd-note');
+  if (note) note.textContent = etcNames.length
+    ? `기타 = ${etcNames.join(', ')} (기타 행 클릭 시 상세) · ⚠ = 유입↑ 전환↓ · 비교모수 30 미만은 증감 회색(노이즈)`
+    : '';
 }
 
 // 기간조회 ③ 채널 스코어카드 — Weekly와 동일 매트릭스, WoW 대신 전년 동기간 YoY
@@ -3860,7 +3996,7 @@ function jwGetTabScope() {
 
 // ── ① 의도 파싱 — Flow A 연결 전엔 키워드 기반 로컬 폴백으로 동작 ──────────
 function jwMockParseIntent(q, scope) {
-  const chMatch = q.match(/DA|SA|Organic|CRM|PCS|기타/);
+  const chMatch = q.match(/DA|SA|Organic|CRM|PCS|OwnedMedia|기타/);
   const metric = q.includes('신규가입') ? 'join' : q.includes('첫구매') ? 'first'
     : q.includes('세션') ? 'sess' : (q.includes('총수주') || q.includes('매출')) ? 'rev' : 'join';
 
@@ -5250,6 +5386,7 @@ document.addEventListener('DOMContentLoaded', () => {
       buildFunnelFromTraffic();
       renderChannelShare();
       renderChannelStatusChart();
+      renderChannelMtdMatrix();
       loadTrendComment();  // 시장 트렌드(외부 대시보드 AI 분석) — 독립 fetch, 데이터 있을 때만 표시
       // 데이터 로드 전에 Weekly 탭에 진입해 있었으면 로드 완료 시점에 렌더
       if (document.getElementById('view-weekly').style.display !== 'none') renderWeekly();
