@@ -736,9 +736,9 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
   <div class="card">
     <table class="dt">
       <thead><tr>
-        <th>채널</th><th>세션</th><th>신규가입</th><th>첫구매</th><th>총수주(백만)</th><th>세션→첫구매 CR</th>
+        <th>채널</th><th>세션</th><th>APP 세션</th><th>신규가입</th><th>첫구매</th><th>주문건수</th><th>총수주(백만)</th><th>세션→주문 CR</th>
       </tr></thead>
-      <tbody id="ch-mtd-matrix"><tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:12px">데이터 로딩 중...</td></tr></tbody>
+      <tbody id="ch-mtd-matrix"><tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:12px">데이터 로딩 중...</td></tr></tbody>
     </table>
     <div id="ch-mtd-note" style="font-size:10px;color:#94a3b8;margin-top:6px"></div>
   </div>
@@ -2786,7 +2786,7 @@ function renderPeriodChannelDonuts() {
 // 기간×**원본 채널명** 단위 합산 (버킷 접기 전) — aggChannelRange의 기반이자 '기타' 세부채널 드릴다운용
 function aggRawChannelRange(from, to) {
   const out = {};
-  const touch = ch => out[ch] || (out[ch] = { sess: 0, join: 0, first: 0, rev: 0 });
+  const touch = ch => out[ch] || (out[ch] = { sess: 0, sessApp: 0, orders: 0, join: 0, first: 0, rev: 0 });
   let cur = parseLocalDate(from);
   const end = parseLocalDate(to);
   while (cur <= end) {
@@ -2794,7 +2794,11 @@ function aggRawChannelRange(from, to) {
     const t = TRAFFIC[ds] || {};
     Object.keys(t).forEach(ch => {
       if (ch === '__total__') return;
-      if (t[ch].s) touch(ch).sess += t[ch].s;
+      const b = touch(ch);
+      if (t[ch].s) b.sess += t[ch].s;
+      if (t[ch].p) b.orders += t[ch].p;            // Purchase Cnt = 주문건수
+      const app = t[ch].device && t[ch].device.app;
+      if (app && app.s) b.sessApp += app.s;        // APP 세션
     });
     const c = CONV_CH[ds] || {};
     Object.keys(c).forEach(ch => {
@@ -2812,10 +2816,11 @@ function aggRawChannelRange(from, to) {
 // 원본 채널명 → WK_CH_ORDER 버킷으로 접기 (제로필)
 function foldChannelBuckets(raw) {
   const out = {};
-  WK_CH_ORDER.forEach(b => out[b] = { sess: 0, join: 0, first: 0, rev: 0 });
+  WK_CH_ORDER.forEach(b => out[b] = { sess: 0, sessApp: 0, orders: 0, join: 0, first: 0, rev: 0 });
   Object.keys(raw).forEach(ch => {
     const b = out[wkChannelBucket(ch)], v = raw[ch];
-    b.sess += v.sess; b.join += v.join; b.first += v.first; b.rev += v.rev;
+    b.sess += v.sess; b.sessApp += v.sessApp; b.orders += v.orders;
+    b.join += v.join; b.first += v.first; b.rev += v.rev;
   });
   return out;
 }
@@ -2850,8 +2855,11 @@ function renderChannelMtdMatrix() {
   const rawCmp = aggRawChannelRange(cmpR.from, cmpR.to);
   const bCur = foldChannelBuckets(rawCur), bCmp = foldChannelBuckets(rawCmp);
 
-  const Z = { sess: 0, join: 0, first: 0, rev: 0 };
-  const add = (...xs) => xs.reduce((a, x) => ({ sess: a.sess + x.sess, join: a.join + x.join, first: a.first + x.first, rev: a.rev + x.rev }), { ...Z });
+  const Z = { sess: 0, sessApp: 0, orders: 0, join: 0, first: 0, rev: 0 };
+  const add = (...xs) => xs.reduce((a, x) => {
+    Object.keys(Z).forEach(k => a[k] += x[k]);
+    return a;
+  }, { ...Z });
   const md = s => `${+s.substring(5, 7)}/${+s.substring(8, 10)}`;
   document.getElementById('ch-mtd-range').textContent =
     `MTD ${md(curFrom)}~${md(curTo)} · vs ${chMtdBasis === 'mom' ? '전월' : '전년'} ${md(cmpR.from)}~${md(cmpR.to)} · 전체 디바이스 기준`;
@@ -2867,24 +2875,24 @@ function renderChannelMtdMatrix() {
   };
   const cell    = (a, b) => `<td>${(a || 0).toLocaleString()}${deltaHtml(a, b)}</td>`;
   const revCell = (a, b) => `<td><b>${Math.round((a || 0) / 1e6).toLocaleString()}</b>${deltaHtml(a, b)}</td>`;
-  // CR은 이미 %(비율)이므로 증감은 상대변화율이 아니라 두 값의 차(%p) — R7
+  // 세션→주문 CR. 이미 %(비율)이므로 증감은 상대변화율이 아니라 두 값의 차(%p) — R7
   const crCell = (c, m) => {
-    const cr = c.sess ? c.first / c.sess * 100 : null;
+    const cr = c.sess ? c.orders / c.sess * 100 : null;
     if (cr == null) return '<td style="color:#cbd5e1">—</td>';
-    const crM = m.sess ? m.first / m.sess * 100 : null;
+    const crM = m.sess ? m.orders / m.sess * 100 : null;
     let d = '';
     if (crM != null) {
       const diff = cr - crM;
-      const color = Math.max(c.first, m.first) < 30 ? GREY : (diff >= 0 ? '#10b981' : '#ef4444');
+      const color = Math.max(c.orders, m.orders) < 30 ? GREY : (diff >= 0 ? '#10b981' : '#ef4444');
       d = ` <span style="font-size:10px;font-weight:700;color:${color}">${diff >= 0 ? '+' : ''}${diff.toFixed(2)}%p</span>`;
     }
     return `<td>${cr.toFixed(2)}%${d}</td>`;
   };
-  // 유입↑ 전환↓ 괴리 표식 (부호만 판정)
+  // 유입↑ 전환↓ 괴리 표식 (세션 증가 & 주문건수 감소, 부호만 판정)
   const warn = (c, m) => {
-    const s = yoyPct(c.sess || null, m.sess || null), f = yoyPct(c.first || null, m.first || null);
-    return (s != null && f != null && s > 0 && f < 0)
-      ? ` <span title="유입↑ 전환↓" style="color:#f59e0b;font-size:11px">⚠</span>` : '';
+    const s = yoyPct(c.sess || null, m.sess || null), o = yoyPct(c.orders || null, m.orders || null);
+    return (s != null && o != null && s > 0 && o < 0)
+      ? ` <span title="유입↑ 주문↓" style="color:#f59e0b;font-size:11px">⚠</span>` : '';
   };
   const row = (label, c, m, o = {}) => {
     const tdStyle = o.indent ? 'color:#64748b;padding-left:18px' : (o.bold ? 'font-weight:700' : '');
@@ -2892,7 +2900,10 @@ function renderChannelMtdMatrix() {
     const attrs = o.onclick ? ` onclick="${o.onclick}" style="cursor:pointer"` : '';
     // 전체 행은 요약이라 괴리표식 제외(액션 대상 채널이 아님)
     const flag = o.noWarn ? '' : warn(c, m);
-    return `<tr${attrs}><td style="${tdStyle}">${name}${flag}</td>${cell(c.sess, m.sess)}${cell(c.join, m.join)}${cell(c.first, m.first)}${revCell(c.rev, m.rev)}${crCell(c, m)}</tr>`;
+    const appPct = c.sess ? ` <span style="font-size:9.5px;color:#cbd5e1">(${Math.round(c.sessApp / c.sess * 100)}%)</span>` : '';
+    return `<tr${attrs}><td style="${tdStyle}">${name}${flag}</td>${cell(c.sess, m.sess)}` +
+      `<td>${(c.sessApp || 0).toLocaleString()}${appPct}${deltaHtml(c.sessApp, m.sessApp)}</td>` +
+      `${cell(c.join, m.join)}${cell(c.first, m.first)}${cell(c.orders, m.orders)}${revCell(c.rev, m.rev)}${crCell(c, m)}</tr>`;
   };
 
   const allCur = add(...WK_CH_ORDER.map(b => bCur[b]));
@@ -2920,7 +2931,7 @@ function renderChannelMtdMatrix() {
 
   const note = document.getElementById('ch-mtd-note');
   if (note) note.textContent = etcNames.length
-    ? `기타 = ${etcNames.join(', ')} (기타 행 클릭 시 상세) · ⚠ = 유입↑ 전환↓ · 비교모수 30 미만은 증감 회색(노이즈)`
+    ? `기타 = ${etcNames.join(', ')} (기타 행 클릭 시 상세) · APP 세션 괄호는 전체 세션 대비 비중 · ⚠ = 유입↑ 주문↓ · 비교모수 30 미만은 증감 회색(노이즈)`
     : '';
 }
 
