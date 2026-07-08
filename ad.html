@@ -667,7 +667,7 @@ async function init(){
   document.getElementById('period').innerHTML=`데이터 ${selMin} ~ ${maxDate} (YoY 비교 ${m.yoyFrom}~${m.yoyTo} 포함) · ${m.source}${gapNote}`;
   document.getElementById('updated').textContent='갱신 '+m.generated.slice(5,16).replace('T',' ');
   document.getElementById('costNote').innerHTML=`<b>지표 기준</b> — ${m.metrics}. ${m.note}`
-    +(gapDates.length?`<br><b style="color:#c026d3">⚡ Airbridge 보강(${gapDates.join(', ')})</b> — 광고비=Gross(×1.1), 매출=App+Web×2.4 보정. UV 미집계.`:'');
+    +(gapDates.length?`<br><b style="color:#c026d3">⚡ Airbridge 보강(${gapDates.join(', ')})</b> — 광고비=Gross(DA×1.1·SA×1.0), 매출=App+Web 보정(DA×1.9·SA×1.5). SA=search 채널. UV 미집계.`:'');
   document.getElementById('foot').textContent='지원이(JIWON-AI) · W컨셉 퍼포먼스마케팅팀 · 광고raw 마스터파일 기반';
   renderFilters(); renderSelsum(); bind(); renderAll();
 }
