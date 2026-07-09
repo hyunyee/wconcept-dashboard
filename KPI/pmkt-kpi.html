@@ -679,7 +679,7 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
         </div>
       </div>
       <div class="funnel-connector">
-        <span id="fn-vi2c-lbl">조회→담기 -%</span>
+        <span id="fn-vi2c-lbl">조회→장바구니담기 -%</span>
       </div>
       <div class="funnel-stage">
         <div class="funnel-stage-head"><span class="funnel-stage-lbl">장바구니</span><span class="funnel-stage-val" id="fn-cart-val">-</span></div>
@@ -690,7 +690,7 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
         </div>
       </div>
       <div class="funnel-connector">
-        <span id="fn-c2p-lbl">담기→구매 -%</span>
+        <span id="fn-c2p-lbl">장바구니담기→구매 -%</span>
       </div>
       <div class="funnel-stage">
         <div class="funnel-stage-head"><span class="funnel-stage-lbl">구매완료</span><span class="funnel-stage-val" id="fn-purchase-val">-</span></div>
@@ -700,13 +700,13 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
           <div class="fi-mark yavg" id="fn-purchase-y" style="display:none"></div>
         </div>
       </div>
-      <div class="funnel-total" id="fn-s2p-total">세션→구매 CR -%</div>
+      <div class="funnel-total" id="fn-s2p-total">세션→구매 -%</div>
     </div>
     <div class="card">
-      <div class="card-title">핵심 전환율</div>
+      <div class="card-title">전환율</div>
       <div class="card-sub">당월 vs 전월·전년동월 (동기간)</div>
       <div class="fi">
-        <div class="fi-head"><span class="fi-lbl">세션→구매 CR</span><span class="fi-val" id="fx-s2p-disp">-</span></div>
+        <div class="fi-head"><span class="fi-lbl">세션→구매</span><span class="fi-val" id="fx-s2p-disp">-</span></div>
         <div class="fi-gauge-wrap">
           <div class="fi-gauge-fill good" id="fx-s2p-fill" style="width:0%"></div>
           <div class="fi-mark mavg" id="fx-s2p-m" style="display:none"></div>
@@ -771,7 +771,7 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
       <div class="ch-legend" id="first-legend"></div>
     </div>
     <div class="card">
-      <div class="card-title">채널별 총수주 <span id="rev-scope-badge" style="display:none;font-size:10px;font-weight:600;color:#94a3b8;background:#f1f5f9;border-radius:4px;padding:1px 6px;vertical-align:1px">전체 기준</span></div>
+      <div class="card-title">채널별 총수주</div>
       <div class="card-sub" id="rev-total">Total -</div>
       <div class="chart-box h180"><canvas id="chart-ch-rev"></canvas></div>
       <div class="ch-legend" id="rev-legend"></div>
@@ -808,7 +808,7 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
       <div class="chart-box h220"><canvas id="chart-ch-status-first"></canvas></div>
     </div>
     <div class="card">
-      <div class="card-title" style="text-align:center">총수주(백만) <span id="rev-status-scope-badge" style="display:none;font-size:10px;font-weight:600;color:#94a3b8;background:#f1f5f9;border-radius:4px;padding:1px 6px;vertical-align:1px">전체 기준</span></div>
+      <div class="card-title" style="text-align:center">총수주(백만)</div>
       <div class="chart-box h220"><canvas id="chart-ch-status-rev"></canvas></div>
     </div>
   </div>
@@ -1997,16 +1997,12 @@ function renderChannelShare() {
   const sessData  = getChannelBreakdownRange(TRAFFIC,  monthStart, ys, 's',     channelDeviceScope, excludePc);
   const joinData  = getChannelBreakdownRange(CONV_CH,  monthStart, ys, 'join',  channelDeviceScope, excludePc);
   const firstData = getChannelBreakdownRange(CONV_CH,  monthStart, ys, 'first', channelDeviceScope, excludePc);
-  // 총수주(rev)는 CONV_CH에 디바이스 분해가 없어 항상 전체 기준 — 스코프 선택 시 배지로 안내
-  const revData   = getChannelBreakdownRange(CONV_CH,  monthStart, ys, 'rev',   'all', false);
+  const revData   = getChannelBreakdownRange(CONV_CH,  monthStart, ys, 'rev',   channelDeviceScope, excludePc);
 
   mkDonut('chart-ch-sess',  sessData,  'sess-legend');
   mkDonut('chart-ch-join',  joinData,  'join-legend');
   mkDonut('chart-ch-first', firstData, 'first-legend');
   mkDonut('chart-ch-rev',   revData,   'rev-legend');
-
-  const revBadge = document.getElementById('rev-scope-badge');
-  if (revBadge) revBadge.style.display = (channelDeviceScope !== 'all' || excludePc) ? 'inline-block' : 'none';
 
   const totalOf = arr => arr.reduce((s, d) => s + d.val, 0);
   const sessEl  = document.getElementById('sess-total');  if (sessEl)  sessEl.textContent  = `Total ${totalOf(sessData).toLocaleString()}`;
@@ -2082,19 +2078,13 @@ function renderChannelStatusChart() {
 
   const labels = Array.from({ length: daysInMonth }, (_, i) => String(i + 1));
 
-  // rev(총수주)는 CONV_CH에 디바이스 분해가 없어 항상 전체 기준(스코프 무시) — 배지로 안내. 값은 백만 단위로 축소.
-  const revBadge2 = document.getElementById('rev-status-scope-badge');
-  if (revBadge2) revBadge2.style.display = (channelDeviceScope !== 'all' || excludePc) ? 'inline-block' : 'none';
-
   [['s', TRAFFIC, 'chart-ch-status-sess'], ['join', CONV_CH, 'chart-ch-status-join'], ['first', CONV_CH, 'chart-ch-status-first'], ['rev', CONV_CH, 'chart-ch-status-rev']].forEach(([metric, source, canvasId]) => {
     const isRev = metric === 'rev';
-    const scope = isRev ? 'all' : channelDeviceScope;
-    const exPc  = isRev ? false : excludePc;
     const lastDs = lastMetricDate(source, metric, ys);
-    const curDays = getChannelBreakdownByDay(source, `${mo}-01`, ys, metric, scope, exPc);
+    const curDays = getChannelBreakdownByDay(source, `${mo}-01`, ys, metric, channelDeviceScope, excludePc);
     const lyFrom = `${lyMo}-01`;
     const lyTo = `${lyMo}-${String(daysInLastYearMonth).padStart(2, '0')}`;
-    const lyDays = getChannelBreakdownByDay(source, lyFrom, lyTo, metric, scope, exPc);
+    const lyDays = getChannelBreakdownByDay(source, lyFrom, lyTo, metric, channelDeviceScope, excludePc);
 
     const toDisp = v => v == null ? null : (isRev ? Math.round(v / 1e6) : v);
     const curSeries = labels.map((_, i) => {
@@ -5398,8 +5388,8 @@ function buildFunnelFromTraffic() {
   const fv = (v, dec) => v != null ? v.toFixed(dec) : '-';
   const cmp = (p, y, dec) => `(전월 ${fv(p, dec)} · 전년 ${fv(y, dec)})`;
   document.getElementById('fn-s2vi-lbl').textContent = `세션당 상품조회 ${fv(cv.s2vi,1)}건 ${cmp(pv.s2vi, yv.s2vi, 1)}`;
-  document.getElementById('fn-vi2c-lbl').textContent = `조회→담기 ${fv(cv.vi2c,1)}% ${cmp(pv.vi2c, yv.vi2c, 1)}`;
-  document.getElementById('fn-c2p-lbl').textContent = `담기→구매 ${fv(cv.c2p,1)}% ${cmp(pv.c2p, yv.c2p, 1)}`;
+  document.getElementById('fn-vi2c-lbl').textContent = `조회→장바구니담기 ${fv(cv.vi2c,1)}% ${cmp(pv.vi2c, yv.vi2c, 1)}`;
+  document.getElementById('fn-c2p-lbl').textContent = `장바구니담기→구매 ${fv(cv.c2p,1)}% ${cmp(pv.c2p, yv.c2p, 1)}`;
 
   // 하단 요약 + 우측 불릿 공용: %p 델타 (퍼센트 지표의 증감은 %p — R7)
   const dTxt = (c, b) => {
@@ -5409,7 +5399,7 @@ function buildFunnelFromTraffic() {
     return `<b style="color:${col}">${d >= 0 ? '+' : '△'}${Math.abs(d).toFixed(2)}%p</b>`;
   };
   document.getElementById('fn-s2p-total').innerHTML =
-    `세션→구매 CR ${fv(cv.s2p,2)}% · 전월대비 ${dTxt(cv.s2p, pv.s2p)} · 전년대비 ${dTxt(cv.s2p, yv.s2p)}`;
+    `세션→구매 ${fv(cv.s2p,2)}% · 전월대비 ${dTxt(cv.s2p, pv.s2p)} · 전년대비 ${dTxt(cv.s2p, yv.s2p)}`;
 
   // 우측 핵심 전환율 3종 불릿 (막대=당월, ┃=전월, ┊=전년동월)
   [['s2p', 2], ['s2j', 2], ['j2f', 1]].forEach(([k, dec]) => {
