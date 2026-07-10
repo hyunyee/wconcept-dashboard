@@ -4298,7 +4298,9 @@ function jwComputeRealtimeDiagnosis() {
         devPt: +diag.stageCancel.devPt.toFixed(1),
       } : null,
       impacts: diag.impacts.map(imp => ({ key: imp.key, impact: Math.round(imp.impact) })),
-      warnings: diag.warnings.map(w => ({ key: w.key, devPct: +(w.dev * 100).toFixed(1) })),
+      warnings: diag.warnings.map(w => w.key === 'orders'
+        ? { key: w.key, devPct: +(w.dev * 100).toFixed(1) }
+        : { key: w.key, devPt: +w.devPt.toFixed(1) }),
       gapToTarget: gapToTarget != null ? Math.round(gapToTarget) : null,
     },
   };
@@ -4361,7 +4363,10 @@ function jwMockPhrase(computed) {
       if (!d.impacts.length && !d.warnings.length) return `${d.date} 기준 특이사항 없음 — 주문건수·취반품률 모두 정상 범위입니다(비교: ${d.baselineLabel}).`;
       if (!d.impacts.length) {
         const w = d.warnings[0];
-        return `${d.date} 기준 위험 단계 이슈는 없지만, 주문건수가 ${d.baselineLabel} 대비 ${w.devPct}%로 주의가 필요한 수준입니다(비교: ${d.baselineLabel}).`;
+        const warnTxt = w.key === 'orders'
+          ? `주문건수가 ${d.baselineLabel} 대비 ${w.devPct}%`
+          : `취반품률이 ${d.baselineLabel} 대비 +${w.devPt}%p`;
+        return `${d.date} 기준 위험 단계 이슈는 없지만, ${warnTxt}로 주의가 필요한 수준입니다(비교: ${d.baselineLabel}).`;
       }
       const lines = d.impacts.map(imp => imp.key === 'orders'
         ? `주문건수 부진(오늘 ${d.orders.today.toLocaleString()}건, ${d.baselineLabel} ${d.orders.base.toLocaleString()}건 대비 ${d.orders.devPct}%)`
@@ -4655,7 +4660,10 @@ function getTargets(date) {
 const DIAG_MIN_HOUR    = 2;    // 이 시각 이전엔 진단 보류(노이즈가 큼)
 const DIAG_THRESH_REL  = 0.15; // 주문건수 "위험" 기준: 상대편차 기준(기존 이상치 감지와 동일 기준)
 const DIAG_THRESH_WARN_REL = 0.10; // 주문건수 "주의" 기준: 위험 미만이라도 10%↑ 감소는 눈에 띄게 표시 (2026-07-09 도입)
-const DIAG_THRESH_NETPT = 5;   // 취반품률: 절대 %p 기준
+// 취반품률(절대 %p): 2024-01~2026-07 전체(RAW), mean(전주동요일,전년동요일) 대비 시간대별(14~20시) %p편차 실측 분포
+// 기준 p75≈9~11%p·p90≈16~21%p에 근거해 재설정(기존 5%p는 중앙값과 거의 같아 정상일의 절반가량이 오탐되던 결함) (2026-07-09 재설계)
+const DIAG_THRESH_NETPT = 20;      // 취반품률 "위험" 기준(%p, 실측 p90 근사)
+const DIAG_THRESH_NETPT_WARN = 10; // 취반품률 "주의" 기준(%p, 실측 p75 근사)
 
 function getFunnelDiagnosis(date) {
   const curHour = getCurrentHour(date);
@@ -4706,6 +4714,9 @@ function getFunnelDiagnosis(date) {
   }
   if (stageCancel && stageCancel.devPt > DIAG_THRESH_NETPT) {
     impacts.push({ key: 'cancel', impact: stageCancel.todayRevAtNH * (stageCancel.today - stageCancel.base), devPt: stageCancel.devPt, stage: stageCancel });
+  } else if (stageCancel && stageCancel.devPt > DIAG_THRESH_NETPT_WARN) {
+    // 위험 기준(20%p)엔 못 미치지만 10%p보다 크게 벌어진 경우: 원화 임팩트/1순위 진단엔 안 넣고 "주의"로만 노출
+    warnings.push({ key: 'cancel', devPt: stageCancel.devPt, stage: stageCancel });
   }
   impacts.sort((a, b) => b.impact - a.impact);
 
@@ -4756,7 +4767,10 @@ function renderFunnelDiagnosis(date) {
   if (diag.stageCancel) {
     const s = diag.stageCancel;
     const bad = s.devPt > DIAG_THRESH_NETPT;
-    checklistRows.push(`<div class="diag-check-row${bad ? ' bad' : ''}"><span class="diag-check-label">${bad ? '🔴' : '⚪'} ${s.label}</span><span class="diag-check-val">${(s.today*100).toFixed(1)}%</span><span class="diag-check-base">${baselineLabel} ${(s.base*100).toFixed(1)}%</span><span class="diag-check-dev">${s.devPt >= 0 ? '+' : ''}${s.devPt.toFixed(1)}%p</span></div>`);
+    const warn = !bad && s.devPt > DIAG_THRESH_NETPT_WARN;
+    const rowClass = bad ? ' bad' : (warn ? ' warn' : '');
+    const icon = bad ? '🔴' : (warn ? '⚠️' : '⚪');
+    checklistRows.push(`<div class="diag-check-row${rowClass}"><span class="diag-check-label">${icon} ${s.label}</span><span class="diag-check-val">${(s.today*100).toFixed(1)}%</span><span class="diag-check-base">${baselineLabel} ${(s.base*100).toFixed(1)}%</span><span class="diag-check-dev">${s.devPt >= 0 ? '+' : ''}${s.devPt.toFixed(1)}%p</span></div>`);
   }
   const checklistHtml = `<div class="diag-checklist">${checklistRows.join('')}</div>`;
 
@@ -4769,9 +4783,17 @@ function renderFunnelDiagnosis(date) {
 
   const warnRowsHtml = diag.warnings.map(w => {
     const s = w.stage;
+    let bodyLine, thresholdTxt;
+    if (w.key === 'orders') {
+      bodyLine = `📉 주문건수 감소 — ${s.hour}시 기준 ${s.today.toLocaleString()}건, ${baselineLabel} ${Math.round(s.base).toLocaleString()}건 대비 ${(w.dev*100).toFixed(1)}%`;
+      thresholdTxt = `위험 기준(-${(DIAG_THRESH_REL*100).toFixed(0)}%)`;
+    } else {
+      bodyLine = `📈 취반품률 상승 — ${s.hour}시 기준 ${(s.today*100).toFixed(1)}%, ${baselineLabel} ${(s.base*100).toFixed(1)}% 대비 +${w.devPt.toFixed(1)}%p`;
+      thresholdTxt = `위험 기준(+${DIAG_THRESH_NETPT}%p)`;
+    }
     return `<div class="rec-scenario-row" style="flex-direction:column;align-items:flex-start;gap:4px">
-      <div style="font-size:12px;font-weight:700;color:var(--text-1)"><span class="diag-priority-tag diag-priority-2">⚠️ 주의</span>📉 주문건수 완만한 감소 — ${s.hour}시 기준 ${s.today.toLocaleString()}건, ${baselineLabel} ${Math.round(s.base).toLocaleString()}건 대비 ${(w.dev*100).toFixed(1)}%</div>
-      <div class="diag-row-detail">위험 기준(-${(DIAG_THRESH_REL*100).toFixed(0)}%)엔 못 미쳐 1순위 진단에는 포함되지 않았지만, 추세 확인이 필요한 수준입니다.</div>
+      <div style="font-size:12px;font-weight:700;color:var(--text-1)"><span class="diag-priority-tag diag-priority-2">⚠️ 주의</span>${bodyLine}</div>
+      <div class="diag-row-detail">${thresholdTxt}엔 못 미쳐 1순위 진단에는 포함되지 않았지만, 추세 확인이 필요한 수준입니다.</div>
     </div>`;
   }).join('');
 
