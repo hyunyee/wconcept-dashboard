@@ -914,6 +914,8 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
           style="font-size:12px;font-weight:600;border:1.5px solid #6366f1;border-radius:6px;padding:3px 8px;color:#0B1D3A;background:#fff;cursor:pointer;outline:none">
           <option value="net" selected>순수주</option>
           <option value="revenue">총수주</option>
+          <option value="join">신규가입</option>
+          <option value="first">첫구매</option>
         </select>
       </div>
       <div class="card-sub" id="wk-pace-chart-sub">주간 합계 (억원) · 회색: 목표 / 보라: 실적</div>
@@ -938,6 +940,14 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
     </div>
     <div class="card-sub" id="wk-chart-sub">주간 합계 · 막대: 금년 / 라인: 전년동주(-364일)</div>
     <div class="chart-box h260"><canvas id="chart-weekly-trend"></canvas></div>
+  </div>
+
+  <!-- ③-2 전환율 추이 (신규) — Daily 탭 "전환 퍼널"의 전환율(세션→구매/신규가입, 신규가입→첫구매)을
+       주간 시계열 라인차트로. Daily는 당월 스냅샷 게이지, Weekly는 10주 추이 라인으로 표현. -->
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-title">전환율 추이 <span style="font-size:10px;color:#94a3b8;font-weight:400">최근 10주 · 세션/신규가입 대비</span></div>
+    <div class="card-sub">세션→구매 · 세션→신규가입 (좌축) · 신규가입→첫구매 (우축)</div>
+    <div class="chart-box h220"><canvas id="chart-weekly-cr"></canvas></div>
   </div>
 
   <!-- ④ 채널별 비중 -->
@@ -2358,6 +2368,7 @@ function renderWeekly() {
   renderWeeklyKpiStrip(wkStart);
   renderWeeklyPace(wkStart);
   renderWeeklyTrend(wkStart);
+  renderWeeklyCrTrend(wkStart);
   renderWeeklyChannelShare(wkStart);
   renderWeeklyChannelMatrix(wkStart);
   renderWeeklyChannelTrend(wkStart);
@@ -2366,19 +2377,23 @@ function renderWeekly() {
 }
 
 // 주간(월~일) 목표 합산 — DAILY_TGTS를 7일치 더함. 코멘트/목표대비 페이스 카드가 공용으로 사용.
+// 핵심지표 스트립의 6개 지표 중 DAILY_TGTS에 실제 목표가 있는 건 revenue/net/join/first뿐
+// (주문건수·세션수는 타겟 데이터가 없어 페이스 카드에선 제외).
 function weekTargetAgg(start) {
-  let tgtRevenue = 0, tgtNet = 0;
+  const tgt = { revenue: 0, net: 0, join: 0, first: 0 };
   const eventTokens = new Set();
   const c = new Date(start);
   for (let i = 0; i < 7; i++) {
     const ds = localDateToStr(c);
     const t = DAILY_TGTS[ds] || {};
-    if (t.revenue) tgtRevenue += t.revenue;
-    if (t.net) tgtNet += t.net;
+    if (t.revenue) tgt.revenue += t.revenue;
+    if (t.net) tgt.net += t.net;
+    if (t.join) tgt.join += t.join;
+    if (t.first) tgt.first += t.first;
     if (t.event) t.event.split('/').map(s => s.trim()).filter(Boolean).forEach(tok => eventTokens.add(tok));
     c.setDate(c.getDate() + 1);
   }
-  return { revenue: tgtRevenue, net: tgtNet, events: [...eventTokens] };
+  return { ...tgt, events: [...eventTokens] };
 }
 
 // ①-2 핵심지표 스트립 — 6개 지표 카드(WoW 배지 + YoY/전주 서브라인 + 10주 스파크라인)
@@ -2420,21 +2435,29 @@ function renderWeeklyKpiStrip(wkStart) {
   });
 }
 
-// ①-3 주간 목표 대비 페이스 (신규) — 좌: 금주 목표/실적 표, 우: 8주 목표 vs 실적 막대
+// ①-3 주간 목표 대비 페이스 (신규) — 좌: 핵심지표 4종 목표/실적 표, 우: 8주 목표 vs 실적 막대(선택 지표)
+// 핵심지표 스트립(6종) 중 DAILY_TGTS에 실제 목표값이 있는 4종만 대상(주문건수·세션수는 타겟 없음)
+const WK_PACE_METRICS = {
+  revenue: { label: '총수주',   scale: 1e8, dec: 1, unit: '억' },
+  net:     { label: '순수주',   scale: 1e8, dec: 1, unit: '억' },
+  join:    { label: '신규가입', scale: 1,   dec: 0, unit: '명' },
+  first:   { label: '첫구매',   scale: 1,   dec: 0, unit: '명' },
+};
 let wkPaceChart = null;
 function renderWeeklyPace(wkStart) {
-  const metric = document.getElementById('wk-pace-metric')?.value || 'net';
+  const metricKey = document.getElementById('wk-pace-metric')?.value || 'net';
+  const mc = WK_PACE_METRICS[metricKey];
   const labels = [], tgtSeries = [], actSeries = [];
   for (let w = 7; w >= 0; w--) {
     const s = wkOffset(wkStart, -7 * w);
     const wt = weekTargetAgg(s);
-    const act = aggWeekFull(s)[metric];
+    const act = aggWeekFull(s)[metricKey];
     labels.push(`${wkMD(s)}주`);
-    tgtSeries.push(wt[metric] ? +(wt[metric] / 1e8).toFixed(1) : null);
-    actSeries.push(act ? +(act / 1e8).toFixed(1) : null);
+    tgtSeries.push(wt[metricKey] ? +(wt[metricKey] / mc.scale).toFixed(mc.dec) : null);
+    actSeries.push(act ? +(act / mc.scale).toFixed(mc.dec) : null);
   }
   const sub = document.getElementById('wk-pace-chart-sub');
-  if (sub) sub.textContent = `${metric === 'net' ? '순수주' : '총수주'} 주간 합계 (억원) · 회색: 목표 / 보라: 실적`;
+  if (sub) sub.textContent = `${mc.label} 주간 합계 (${mc.unit}) · 회색: 목표 / 보라: 실적`;
 
   const canvas = document.getElementById('chart-weekly-pace');
   if (canvas) {
@@ -2455,29 +2478,32 @@ function renderWeeklyPace(wkStart) {
         scales: {
           x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 9 } } },
           y: { min: 0, grid: { color: '#f1f5f9' }, border: { display: false },
-            ticks: { color: '#94a3b8', font: { size: 10 }, callback: v => v.toLocaleString() + '억' } },
+            ticks: { color: '#94a3b8', font: { size: 10 }, callback: v => v.toLocaleString() + mc.unit } },
         },
       },
     });
   }
 
-  // 좌측 Target vs Actual 표 (총수주/순수주 2행 고정 — 어떤 지표를 골라도 둘 다 보이게)
+  // 좌측 Target vs Actual 표 — 핵심지표 중 목표가 있는 4종 전부
   const cur = aggWeekFull(wkStart);
   const ly = aggWeekFull(wkOffset(wkStart, -364));
   const wtCur = weekTargetAgg(wkStart);
-  const row = (label, actVal, tgtVal, lyVal) => {
+  const row = (key) => {
+    const c = WK_PACE_METRICS[key];
+    const actVal = cur[key], tgtVal = wtCur[key], lyVal = ly[key];
+    const fmt = v => v ? (c.scale === 1 ? Math.round(v).toLocaleString() : (v / c.scale).toFixed(c.dec)) + c.unit : '-';
     const ach = tgtVal > 0 ? Math.round(actVal / tgtVal * 100) : null;
     const achColor = ach == null ? '#94a3b8' : ach >= 100 ? '#16a34a' : ach >= 85 ? '#64748b' : '#dc2626';
     return `<tr>
-      <td>${label}</td>
-      <td>${tgtVal ? (tgtVal / 1e8).toFixed(1) + '억' : '-'}</td>
-      <td><b>${actVal ? (actVal / 1e8).toFixed(1) + '억' : '-'}</b></td>
+      <td>${c.label}</td>
+      <td>${fmt(tgtVal)}</td>
+      <td><b>${fmt(actVal)}</b></td>
       <td style="color:${achColor};font-weight:700">${ach != null ? ach + '%' : '-'}</td>
       <td>${wkPctCell(yoyPct(actVal || null, lyVal || null))}</td>
     </tr>`;
   };
   const body = document.getElementById('wk-pace-table-body');
-  if (body) body.innerHTML = row('총수주', cur.revenue, wtCur.revenue, ly.revenue) + row('순수주', cur.net, wtCur.net, ly.net);
+  if (body) body.innerHTML = Object.keys(WK_PACE_METRICS).map(row).join('');
 }
 
 // ① 주간 실적 코멘트 — 룰 기반 자동 생성 (헤드라인 + 근거 있는 특이사항)
@@ -2621,6 +2647,50 @@ function renderWeeklyTrend(wkStart) {
   });
 }
 
+// ③-2 전환율 추이 (신규) — Daily 탭 "전환 퍼널"의 전환율 지표를 10주 시계열로.
+// aggWeekFull()이 이미 주는 sess/orders/join/first만으로 계산 가능(별도 데이터 조회 불필요).
+let weeklyCrChart = null;
+function renderWeeklyCrTrend(wkStart) {
+  const labels = [], s2p = [], s2j = [], j2f = [];
+  for (let w = 9; w >= 0; w--) {
+    const s = wkOffset(wkStart, -7 * w);
+    const a = aggWeekFull(s);
+    labels.push(`${wkMD(s)}주`);
+    s2p.push(a.sess ? +(a.orders / a.sess * 100).toFixed(2) : null);
+    s2j.push(a.sess ? +(a.join / a.sess * 100).toFixed(2) : null);
+    j2f.push(a.join ? +(a.first / a.join * 100).toFixed(1) : null);
+  }
+  const canvas = document.getElementById('chart-weekly-cr');
+  if (!canvas) return;
+  if (weeklyCrChart) { weeklyCrChart.destroy(); weeklyCrChart = null; }
+  weeklyCrChart = new Chart(canvas, {
+    type: 'line',
+    data: { labels, datasets: [
+      { label: '세션→구매', data: s2p, borderColor: '#10b981', backgroundColor: '#10b981',
+        borderWidth: 2, pointRadius: 2, tension: 0.3, spanGaps: true, datalabels: { display: false } },
+      { label: '세션→신규가입', data: s2j, borderColor: '#6366f1', backgroundColor: '#6366f1',
+        borderWidth: 2, pointRadius: 2, tension: 0.3, spanGaps: true, datalabels: { display: false } },
+      { label: '신규가입→첫구매', data: j2f, borderColor: '#f59e0b', backgroundColor: '#f59e0b',
+        borderWidth: 2, pointRadius: 2, tension: 0.3, spanGaps: true, datalabels: { display: false }, yAxisID: 'y1' },
+    ] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true, position: 'bottom', labels: { font: { size: 10 }, boxWidth: 10 } },
+        datalabels: { display: false },
+        tooltip: { mode: 'index', intersect: false },
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 9 } } },
+        y: { min: 0, position: 'left', grid: { color: '#f1f5f9' }, border: { display: false },
+          ticks: { color: '#94a3b8', font: { size: 10 }, callback: v => v + '%' } },
+        y1: { min: 0, position: 'right', grid: { display: false }, border: { display: false },
+          ticks: { color: '#94a3b8', font: { size: 10 }, callback: v => v + '%' } },
+      },
+    },
+  });
+}
+
 // ④-1 채널별 비중 — 선택 지표(세션/신규가입/첫구매) 기준 주간 합계 비중
 const WK_SHARE_LABEL = { sess: '세션', join: '신규가입', first: '첫구매' };
 function setWkShareMetric(metric, el) {
@@ -2648,6 +2718,8 @@ function renderWeeklyChannelShare(wkStart) {
 }
 
 // ④-2 채널 스코어카드 — 채널그룹 × (세션/신규가입/첫구매), 값 + WoW
+// Ads(=DA+SA) 롤업 후 DA/SA를 하위 들여쓰기로 표시 — Daily 탭 채널별 MTD 성과의
+// groupChannel('DA'|'SA' → 'Ads') 계층 표시 방식과 동일하게 맞춤(coco 요청, 2026-07-13).
 function renderWeeklyChannelMatrix(wkStart) {
   const cur = aggWeekByChannel(wkStart);
   const prev = aggWeekByChannel(wkOffset(wkStart, -7));
@@ -2663,18 +2735,32 @@ function renderWeeklyChannelMatrix(wkStart) {
     const pTxt = p == null ? '' : ` <span style="font-size:10px;font-weight:700;color:${p >= 0 ? '#10b981' : '#ef4444'}">${p >= 0 ? '+' : ''}${p.toFixed(0)}%</span>`;
     return `<td><b>${Math.round(a / 1e6).toLocaleString()}</b>${pTxt}</td>`;
   };
-  const sumAll = agg => WK_CH_ORDER.reduce((s, b) => ({
-    sess: s.sess + (agg[b].sess || 0), join: s.join + (agg[b].join || 0),
-    first: s.first + (agg[b].first || 0), rev: s.rev + (agg[b].rev || 0),
+  const add = (...xs) => xs.reduce((s, x) => ({
+    sess: s.sess + ((x && x.sess) || 0), join: s.join + ((x && x.join) || 0),
+    first: s.first + ((x && x.first) || 0), rev: s.rev + ((x && x.rev) || 0),
   }), { sess: 0, join: 0, first: 0, rev: 0 });
+  const sumAll = agg => WK_CH_ORDER.reduce((s, b) => add(s, agg[b]), { sess: 0, join: 0, first: 0, rev: 0 });
   const curTotal = sumAll(cur), prevTotal = sumAll(prev);
-  const totalRow = `<tr style="background:#f8fafc"><td style="font-weight:700">전체</td>${revCell(curTotal.rev, prevTotal.rev)}${cell(curTotal.sess, prevTotal.sess)}${cell(curTotal.join, prevTotal.join)}${cell(curTotal.first, prevTotal.first)}</tr>`;
+  const adsCur = add(cur.DA, cur.SA), adsPrev = add(prev.DA, prev.SA);
+
+  const row = (label, a, b, opt = {}) => {
+    const nameStyle = opt.indent ? 'color:#64748b;padding-left:18px' : (opt.bold ? 'font-weight:700' : '');
+    const name = (opt.indent ? '<span style="color:#cbd5e1">└</span> ' : '') + label;
+    return `<tr><td style="${nameStyle}">${name}</td>${revCell(a.rev, b.rev)}${cell(a.sess, b.sess)}${cell(a.join, b.join)}${cell(a.first, b.first)}</tr>`;
+  };
+
+  let html = `<tr style="background:#f8fafc"><td style="font-weight:700">전체</td>${revCell(curTotal.rev, prevTotal.rev)}${cell(curTotal.sess, prevTotal.sess)}${cell(curTotal.join, prevTotal.join)}${cell(curTotal.first, prevTotal.first)}</tr>`;
+  html += row('Organic', cur.Organic, prev.Organic);
+  html += row('Ads', adsCur, adsPrev, { bold: true });
+  html += row('DA', cur.DA, prev.DA, { indent: true });
+  html += row('SA', cur.SA, prev.SA, { indent: true });
+  html += row('PCS', cur.PCS, prev.PCS);
+  html += row('CRM', cur.CRM, prev.CRM);
+  html += row('OwnedMedia', cur.OwnedMedia, prev.OwnedMedia);
+  if (cur['기타'].sess || cur['기타'].join || cur['기타'].first) html += row('기타', cur['기타'], prev['기타']);
 
   const el = document.getElementById('wk-ch-matrix');
-  if (el) el.innerHTML = totalRow + WK_CH_ORDER
-    .filter(b => cur[b].sess || cur[b].join || cur[b].first)
-    .map(b => `<tr><td style="font-weight:700">${b}</td>${revCell(cur[b].rev, prev[b].rev)}${cell(cur[b].sess, prev[b].sess)}${cell(cur[b].join, prev[b].join)}${cell(cur[b].first, prev[b].first)}</tr>`)
-    .join('');
+  if (el) el.innerHTML = html;
 }
 
 // ④-3 채널별 10주 추이 — 채널그룹별 라인, 지표 선택 + 채널 토글
