@@ -878,18 +878,46 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
     <ul id="wk-notes" style="display:none;font-size:12px;line-height:1.5;padding:12px 20px 16px;margin:0;border-top:1px solid #f1f5f9;list-style:none"></ul>
   </div>
 
-  <!-- ② 주간 실적 비교 -->
-  <div class="card" style="margin-bottom:14px">
-    <div class="card-title">주간 실적 비교 <span style="font-size:10px;color:#94a3b8;font-weight:400">금액단위: 백만원</span></div>
-    <div class="card-sub" id="wk-table-sub"></div>
-    <table class="dt">
-      <thead><tr>
-        <th>지표</th><th id="wk-col-cur">실적</th><th>WoW</th><th>YoY</th>
-      </tr></thead>
-      <tbody id="wk-table-body"><tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:12px">데이터 로딩 중...</td></tr></tbody>
-    </table>
-    <div style="font-size:10px;color:#94a3b8;margin-top:6px">
-      WoW=직전 주(월~일)比 · YoY=전년 동주(-364일)比 · 세션은 트래픽 시트 보유 기간만 집계(과거 주·전년은 미보유 시 — 표시)
+  <!-- ② 핵심지표 스트립 (10주 스파크라인 포함) -->
+  <div class="sec-hd" style="margin-top:0;margin-bottom:8px">
+    <div class="card-title" style="margin-bottom:0">핵심지표 스트립</div>
+    <span class="sec-note" id="wk-kpi-period-label" style="font-size:10px;color:#94a3b8">WoW=직전 주比 · 스파크라인=최근 10주</span>
+  </div>
+  <div class="kpi-grid" style="margin-bottom:14px">
+    <div class="kpi-card c-indigo"><div class="kpi-lbl">총수주 <span style="font-size:10px;color:#94a3b8">(억)</span></div><div class="kpi-val" id="wk-k-revenue">-</div><div class="kpi-sub" id="wk-k-revenue-sub">-</div><span class="yoy" id="wk-k-revenue-yoy">-</span><div id="wk-k-revenue-spark" style="margin-top:6px"></div></div>
+    <div class="kpi-card c-green"><div class="kpi-lbl">순수주 <span style="font-size:10px;color:#94a3b8">(억)</span></div><div class="kpi-val" id="wk-k-net">-</div><div class="kpi-sub" id="wk-k-net-sub">-</div><span class="yoy" id="wk-k-net-yoy">-</span><div id="wk-k-net-spark" style="margin-top:6px"></div></div>
+    <div class="kpi-card c-blue"><div class="kpi-lbl">주문건수</div><div class="kpi-val" id="wk-k-orders">-</div><div class="kpi-sub" id="wk-k-orders-sub">-</div><span class="yoy" id="wk-k-orders-yoy">-</span><div id="wk-k-orders-spark" style="margin-top:6px"></div></div>
+    <div class="kpi-card c-orange"><div class="kpi-lbl">신규가입</div><div class="kpi-val" id="wk-k-join">-</div><div class="kpi-sub" id="wk-k-join-sub">-</div><span class="yoy" id="wk-k-join-yoy">-</span><div id="wk-k-join-spark" style="margin-top:6px"></div></div>
+    <div class="kpi-card c-rose"><div class="kpi-lbl">첫구매</div><div class="kpi-val" id="wk-k-first">-</div><div class="kpi-sub" id="wk-k-first-sub">-</div><span class="yoy" id="wk-k-first-yoy">-</span><div id="wk-k-first-spark" style="margin-top:6px"></div></div>
+    <div class="kpi-card c-teal"><div class="kpi-lbl">세션수</div><div class="kpi-val" id="wk-k-sess">-</div><div class="kpi-sub" id="wk-k-sess-sub">-</div><span class="yoy" id="wk-k-sess-yoy">-</span><div id="wk-k-sess-spark" style="margin-top:6px"></div></div>
+  </div>
+
+  <!-- ②-2 주간 목표 대비 페이스 (신규) -->
+  <div class="sec-hd">
+    <h2 style="font-size:14px;--before-color:#6366f1">주간 목표 대비 페이스</h2>
+    <span class="sec-note" id="wk-pace-period-label"></span>
+  </div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Target vs Actual</div>
+      <div class="card-sub">주간 누적 목표 달성률 (DAILY_TGTS 주 합산)</div>
+      <table class="achv-table" style="table-layout:fixed">
+        <colgroup><col style="width:20%"><col style="width:20%"><col style="width:20%"><col style="width:20%"><col style="width:20%"></colgroup>
+        <thead><tr><th>지표</th><th>주간 목표</th><th>주간 실적</th><th>달성률</th><th>YoY</th></tr></thead>
+        <tbody id="wk-pace-table-body"><tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:12px">데이터 로딩 중...</td></tr></tbody>
+      </table>
+    </div>
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
+        <div class="card-title" style="margin-bottom:0">8주 목표 대비 실적</div>
+        <select id="wk-pace-metric" onchange="renderWeeklyPace(weeklySelStart)"
+          style="font-size:12px;font-weight:600;border:1.5px solid #6366f1;border-radius:6px;padding:3px 8px;color:#0B1D3A;background:#fff;cursor:pointer;outline:none">
+          <option value="net" selected>순수주</option>
+          <option value="revenue">총수주</option>
+        </select>
+      </div>
+      <div class="card-sub" id="wk-pace-chart-sub">주간 합계 (억원) · 회색: 목표 / 보라: 실적</div>
+      <div class="chart-box h260"><canvas id="chart-weekly-pace"></canvas></div>
     </div>
   </div>
 
@@ -2320,31 +2348,136 @@ function renderWeekly() {
     nextBtn.style.cursor  = canNext ? 'pointer' : 'default';
   }
 
-  // ② 주간 실적 비교 테이블
-  const colCur = document.getElementById('wk-col-cur');
-  if (colCur) colCur.textContent = `${wkMD(wkStart)}~${wkMD(wkEnd)}`;
-  const sub = document.getElementById('wk-table-sub');
-  if (sub) sub.textContent = `WoW: ${wkMD(wkOffset(wkStart, -7))}~ 주 대비 · YoY: 전년 ${wkMD(wkOffset(wkStart, -364))}~ 주 대비`;
-
-  const fmtVal = (v, kind) => !v ? '-' : kind === 'money' ? Math.round(v / 1e6).toLocaleString() : v.toLocaleString();
-  const tbody = document.getElementById('wk-table-body');
-  if (tbody) tbody.innerHTML = WK_METRICS.map(m => {
-    const a = cur[m.key], b = prev[m.key], c = ly[m.key];
-    return `<tr>
-      <td>${m.label}</td>
-      <td><b>${fmtVal(a, m.kind)}</b></td>
-      <td>${wkPctCell(yoyPct(a || null, b || null))}</td>
-      <td>${wkPctCell(yoyPct(a || null, c || null))}</td>
-    </tr>`;
-  }).join('');
+  // ② 핵심지표 스트립 / 목표 대비 페이스
+  const kpiLabel = document.getElementById('wk-kpi-period-label');
+  if (kpiLabel) kpiLabel.textContent = `${wkMD(wkStart)}~${wkMD(wkEnd)} · WoW=직전 주比 · 스파크라인=최근 10주`;
+  const paceLabel = document.getElementById('wk-pace-period-label');
+  if (paceLabel) paceLabel.textContent = `${wkMD(wkStart)}~${wkMD(wkEnd)} 기준`;
 
   renderWeeklyComment(wkStart, wkEnd, cur, prev, ly);
+  renderWeeklyKpiStrip(wkStart);
+  renderWeeklyPace(wkStart);
   renderWeeklyTrend(wkStart);
   renderWeeklyChannelShare(wkStart);
   renderWeeklyChannelMatrix(wkStart);
   renderWeeklyChannelTrend(wkStart);
   renderWeeklyChAd(wkStart);
   renderWkChidDetail();
+}
+
+// 주간(월~일) 목표 합산 — DAILY_TGTS를 7일치 더함. 코멘트/목표대비 페이스 카드가 공용으로 사용.
+function weekTargetAgg(start) {
+  let tgtRevenue = 0, tgtNet = 0;
+  const eventTokens = new Set();
+  const c = new Date(start);
+  for (let i = 0; i < 7; i++) {
+    const ds = localDateToStr(c);
+    const t = DAILY_TGTS[ds] || {};
+    if (t.revenue) tgtRevenue += t.revenue;
+    if (t.net) tgtNet += t.net;
+    if (t.event) t.event.split('/').map(s => s.trim()).filter(Boolean).forEach(tok => eventTokens.add(tok));
+    c.setDate(c.getDate() + 1);
+  }
+  return { revenue: tgtRevenue, net: tgtNet, events: [...eventTokens] };
+}
+
+// ①-2 핵심지표 스트립 — 6개 지표 카드(WoW 배지 + YoY/전주 서브라인 + 10주 스파크라인)
+// 기존 "주간 실적 비교" 표를 대체 — 표 대신 한눈에 추이가 보이도록 스파크라인 병기
+const WK_KPI_CFG = {
+  revenue: { scale: 1e8, dec: 1, unit: '억', color: '#6366f1' },
+  net:     { scale: 1e8, dec: 1, unit: '억', color: '#10b981' },
+  orders:  { scale: 1,   dec: 0, unit: '',   color: '#3b82f6' },
+  join:    { scale: 1,   dec: 0, unit: '',   color: '#f59e0b' },
+  first:   { scale: 1,   dec: 0, unit: '',   color: '#f43f5e' },
+  sess:    { scale: 1,   dec: 0, unit: '',   color: '#14b8a6' },
+};
+function renderWeeklyKpiStrip(wkStart) {
+  // 최근 10주(과거→현재) aggWeekFull 결과 — 스파크라인과 현재/전주 값을 여기서 함께 뽑는다
+  const series = [];
+  for (let w = 9; w >= 0; w--) series.push(aggWeekFull(wkOffset(wkStart, -7 * w)));
+  const cur = series[series.length - 1];
+  const prev = aggWeekFull(wkOffset(wkStart, -7));
+  const ly = aggWeekFull(wkOffset(wkStart, -364));
+
+  const fmt = (v, cfg) => !v ? '-' : cfg.scale === 1 ? Math.round(v).toLocaleString() : (v / cfg.scale).toFixed(cfg.dec) + cfg.unit;
+
+  Object.keys(WK_KPI_CFG).forEach(key => {
+    const cfg = WK_KPI_CFG[key];
+    const a = cur[key], b = prev[key], l = ly[key];
+    const valEl = document.getElementById(`wk-k-${key}`);
+    if (valEl) valEl.textContent = fmt(a, cfg);
+    const wow = yoyPct(a || null, b || null);
+    const yoy = yoyPct(a || null, l || null);
+    const subEl = document.getElementById(`wk-k-${key}-sub`);
+    if (subEl) subEl.textContent = `전주 ${fmt(b, cfg)} · YoY ${yoy == null ? '-' : (yoy >= 0 ? '+' : '') + yoy.toFixed(1) + '%'}`;
+    const yoyEl = document.getElementById(`wk-k-${key}-yoy`);
+    if (yoyEl) {
+      yoyEl.textContent = wow == null ? 'WoW -' : `WoW ${wow >= 0 ? '+' : ''}${wow.toFixed(1)}%`;
+      yoyEl.className = 'yoy ' + (wow == null ? 'flat' : wow >= 0 ? 'up' : 'dn');
+    }
+    const sparkEl = document.getElementById(`wk-k-${key}-spark`);
+    if (sparkEl) sparkEl.innerHTML = sparkSvg(series.map(s => s[key] || null), cfg.color);
+  });
+}
+
+// ①-3 주간 목표 대비 페이스 (신규) — 좌: 금주 목표/실적 표, 우: 8주 목표 vs 실적 막대
+let wkPaceChart = null;
+function renderWeeklyPace(wkStart) {
+  const metric = document.getElementById('wk-pace-metric')?.value || 'net';
+  const labels = [], tgtSeries = [], actSeries = [];
+  for (let w = 7; w >= 0; w--) {
+    const s = wkOffset(wkStart, -7 * w);
+    const wt = weekTargetAgg(s);
+    const act = aggWeekFull(s)[metric];
+    labels.push(`${wkMD(s)}주`);
+    tgtSeries.push(wt[metric] ? +(wt[metric] / 1e8).toFixed(1) : null);
+    actSeries.push(act ? +(act / 1e8).toFixed(1) : null);
+  }
+  const sub = document.getElementById('wk-pace-chart-sub');
+  if (sub) sub.textContent = `${metric === 'net' ? '순수주' : '총수주'} 주간 합계 (억원) · 회색: 목표 / 보라: 실적`;
+
+  const canvas = document.getElementById('chart-weekly-pace');
+  if (canvas) {
+    if (wkPaceChart) { wkPaceChart.destroy(); wkPaceChart = null; }
+    wkPaceChart = new Chart(canvas, {
+      type: 'bar',
+      data: { labels, datasets: [
+        { label: '목표', data: tgtSeries, backgroundColor: 'rgba(148,163,184,0.5)', borderRadius: 3, datalabels: { display: false } },
+        { label: '실적', data: actSeries, backgroundColor: 'rgba(99,102,241,0.75)', borderRadius: 3, datalabels: { display: false } },
+      ] },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: true, position: 'bottom', labels: { font: { size: 10 }, boxWidth: 10 } },
+          datalabels: { display: false },
+          tooltip: { mode: 'index', intersect: false },
+        },
+        scales: {
+          x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 9 } } },
+          y: { min: 0, grid: { color: '#f1f5f9' }, border: { display: false },
+            ticks: { color: '#94a3b8', font: { size: 10 }, callback: v => v.toLocaleString() + '억' } },
+        },
+      },
+    });
+  }
+
+  // 좌측 Target vs Actual 표 (총수주/순수주 2행 고정 — 어떤 지표를 골라도 둘 다 보이게)
+  const cur = aggWeekFull(wkStart);
+  const ly = aggWeekFull(wkOffset(wkStart, -364));
+  const wtCur = weekTargetAgg(wkStart);
+  const row = (label, actVal, tgtVal, lyVal) => {
+    const ach = tgtVal > 0 ? Math.round(actVal / tgtVal * 100) : null;
+    const achColor = ach == null ? '#94a3b8' : ach >= 100 ? '#16a34a' : ach >= 85 ? '#64748b' : '#dc2626';
+    return `<tr>
+      <td>${label}</td>
+      <td>${tgtVal ? (tgtVal / 1e8).toFixed(1) + '억' : '-'}</td>
+      <td><b>${actVal ? (actVal / 1e8).toFixed(1) + '억' : '-'}</b></td>
+      <td style="color:${achColor};font-weight:700">${ach != null ? ach + '%' : '-'}</td>
+      <td>${wkPctCell(yoyPct(actVal || null, lyVal || null))}</td>
+    </tr>`;
+  };
+  const body = document.getElementById('wk-pace-table-body');
+  if (body) body.innerHTML = row('총수주', cur.revenue, wtCur.revenue, ly.revenue) + row('순수주', cur.net, wtCur.net, ly.net);
 }
 
 // ① 주간 실적 코멘트 — 룰 기반 자동 생성 (헤드라인 + 근거 있는 특이사항)
@@ -2390,18 +2523,9 @@ function wkDetectInsights(wkStart, cur, prev, ach, tgtNet) {
 }
 
 function renderWeeklyComment(wkStart, wkEnd, cur, prev, ly) {
-  let tgtNet = 0;
-  const eventTokens = new Set();
-  const c = new Date(wkStart);
-  for (let i = 0; i < 7; i++) {
-    const ds = localDateToStr(c);
-    const t = DAILY_TGTS[ds] || {};
-    if (t.net) tgtNet += t.net;
-    // 이벤트 라벨이 주 중 누적/확장되는 경우가 있어 '/' 토큰 단위로 분리 후 중복 제거
-    if (t.event) t.event.split('/').map(s => s.trim()).filter(Boolean).forEach(tok => eventTokens.add(tok));
-    c.setDate(c.getDate() + 1);
-  }
-  const events = [...eventTokens];
+  const wt = weekTargetAgg(wkStart);
+  const tgtNet = wt.net;
+  const events = wt.events;
   const ach = (tgtNet > 0 && cur.net > 0) ? Math.round(cur.net / tgtNet * 100) : null;
   const pctStr = p => p == null ? '-' : `${p >= 0 ? '+' : ''}${p.toFixed(1)}%`;
   const wow = yoyPct(cur.net || null, prev.net || null);
