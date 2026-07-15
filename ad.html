@@ -144,6 +144,8 @@
   <div class="tabs">
     <button data-tab="perf" class="on">광고 성과</button>
     <button data-tab="budget">광고비용 편성</button>
+    <button data-tab="da">DA상세</button>
+    <button data-tab="sa">SA상세</button>
   </div>
 
   <div class="fpanel" id="fpanel"></div>
@@ -231,6 +233,52 @@
     <div class="morebtn" id="promoMore"></div>
   </div>
  </div><!-- /tab2 -->
+
+ <div id="tab3" style="display:none">
+  <div class="kpis" id="kpis_DA"></div>
+  <div class="card">
+    <div class="card-h"><div class="card-t"><span class="bar"></span>DA 일별 추이</div>
+      <span class="card-sub" id="detSub_DA"></span></div>
+    <div class="chart-box"><canvas id="trend_DA"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="card-h"><div class="card-t"><span class="bar"></span>DA 일별 상세</div></div>
+    <div class="tbl-wrap"><table id="dailyTbl_DA"></table></div>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <div class="card-h"><div class="card-t"><span class="bar"></span>광고유형별 성과</div></div>
+      <div class="tbl-wrap"><table id="typeTbl_DA"></table></div>
+    </div>
+    <div class="card">
+      <div class="card-h"><div class="card-t"><span class="bar"></span>매체별 성과</div></div>
+      <div class="tbl-wrap"><table id="mediaTblD_DA"></table></div>
+    </div>
+  </div>
+ </div><!-- /tab3 -->
+
+ <div id="tab4" style="display:none">
+  <div class="kpis" id="kpis_SA"></div>
+  <div class="card">
+    <div class="card-h"><div class="card-t"><span class="bar"></span>SA 일별 추이</div>
+      <span class="card-sub" id="detSub_SA"></span></div>
+    <div class="chart-box"><canvas id="trend_SA"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="card-h"><div class="card-t"><span class="bar"></span>SA 일별 상세</div></div>
+    <div class="tbl-wrap"><table id="dailyTbl_SA"></table></div>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <div class="card-h"><div class="card-t"><span class="bar"></span>광고유형별 성과</div></div>
+      <div class="tbl-wrap"><table id="typeTbl_SA"></table></div>
+    </div>
+    <div class="card">
+      <div class="card-h"><div class="card-t"><span class="bar"></span>매체별 성과</div></div>
+      <div class="tbl-wrap"><table id="mediaTblD_SA"></table></div>
+    </div>
+  </div>
+ </div><!-- /tab4 -->
 
   <div class="note"><span>ℹ️</span><div id="costNote"></div></div>
   <div class="foot" id="foot"></div>
@@ -562,12 +610,80 @@ function renderBudget(){
   safe('PromoTbl',renderPromoTbl);
   const sub=document.getElementById('budgetSub'); if(sub)sub.textContent=`${state.start} ~ ${state.end} · 광고비 기준`;
 }
-function refresh(){ if(state.tab==='budget') renderBudget(); else renderAll(); }
+function refresh(){
+  if(state.tab==='budget') renderBudget();
+  else if(state.tab==='da') renderDetail('DA');
+  else if(state.tab==='sa') renderDetail('SA');
+  else renderAll();
+}
 function switchTab(t){ state.tab=t;
   document.getElementById('tab1').style.display=(t==='perf')?'':'none';
   document.getElementById('tab2').style.display=(t==='budget')?'':'none';
+  document.getElementById('tab3').style.display=(t==='da')?'':'none';
+  document.getElementById('tab4').style.display=(t==='sa')?'':'none';
   document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
   refresh();
+}
+
+// ── DA/SA 상세 탭 ─────────────────────────────────────────────
+// 광고구분 필터는 무시하고 g를 강제 적용 (기간·다른 필터는 그대로 연동)
+const matchFEx=r=>DIMS.every(d=>d==='g'||state.f[d]==='전체'||r[d]===state.f[d]);
+const detDaily=g=>DATA.daily.filter(r=>r.g===g&&r.dt>=state.start&&r.dt<=state.end&&matchFEx(r));
+const detRows =g=>DATA.rows .filter(r=>r.g===g&&r.dt>=state.start&&r.dt<=state.end&&matchFEx(r));
+let detailCharts={};
+
+function renderDetail(g){
+  const rows=detDaily(g);
+  // KPI
+  const cur=derive(rows.reduce(add,emptyAgg()));
+  const days=dayspan(state.start,state.end);
+  const defs=[
+    {cls:'k-cost',lab:'광고비',f:WC,get:o=>o.c,sub:o=>o.c>0?`일평균 ${WC(o.c/days)}`:null},
+    {cls:'k-rev', lab:'매출(보고)',f:WC,get:o=>o.rv},
+    {cls:'k-roas',lab:'ROAS',f:v=>v==null?'—':v.toFixed(0)+'%',get:o=>o.roas},
+    {cls:'',lab:'설치',f:F.num,get:o=>o.ins},
+    {cls:'',lab:'가입',f:F.num,get:o=>o.su},
+    {cls:'',lab:'첫구매',f:F.num,get:o=>o.fo},
+    {cls:'k-cpa',lab:'가입 CPA',f:F.won,get:o=>o.cpaSu},
+    {cls:'k-cpa',lab:'첫구매 CPA',f:F.won,get:o=>o.cpaFo},
+  ];
+  document.getElementById('kpis_'+g).innerHTML=defs.map(d=>{
+    const sub=d.sub?d.sub(cur):null;
+    return `<div class="kpi ${d.cls}"><div class="lab">${g} ${d.lab}</div><div class="val">${d.f(d.get(cur))}${sub?`<span class="kpi-sub">${sub}</span>`:''}</div></div>`;
+  }).join('');
+  const sub=document.getElementById('detSub_'+g); if(sub)sub.textContent=`${state.start} ~ ${state.end}`;
+  // 일별 집계
+  const byDate={}; rows.forEach(r=>{(byDate[r.dt]=byDate[r.dt]||emptyAgg())&&add(byDate[r.dt],r);});
+  const labels=Object.keys(byDate).sort(); const gd=labels.map(d=>byDate[d]);
+  // 추이 차트 (광고비·매출·ROAS)
+  const ctx=document.getElementById('trend_'+g);
+  if(detailCharts[g])detailCharts[g].destroy();
+  detailCharts[g]=new Chart(ctx,{type:'bar',data:{labels:labels.map(md),datasets:[
+    {label:'광고비',data:gd.map(x=>x.c),backgroundColor:'rgba(37,99,235,0.55)',borderRadius:4,yAxisID:'y',order:2},
+    {label:'매출',type:'line',data:gd.map(x=>x.rv),borderColor:'#059669',backgroundColor:'rgba(5,150,105,0.08)',borderWidth:2.5,tension:.35,fill:true,pointRadius:0,yAxisID:'y',order:1},
+    {label:'ROAS(%)',type:'line',data:gd.map(x=>x.c>0?x.rv/x.c*100:null),borderColor:'#d97706',borderWidth:2,borderDash:[5,4],tension:.35,pointRadius:0,yAxisID:'y1',order:0},
+  ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+    plugins:{legend:{labels:{color:'#475569',usePointStyle:true,pointStyleWidth:10,font:{size:12}}},
+      tooltip:{callbacks:{label:c=>{const v=c.parsed.y;if(v==null)return c.dataset.label+': —';
+        return c.dataset.label==='ROAS(%)'?' ROAS: '+v.toFixed(0)+'%':' '+c.dataset.label+': '+F.won(v);}}}},
+    scales:{x:{grid:{color:'rgba(15,23,42,0.07)'},ticks:{color:'#64748b',font:{size:10},maxRotation:0,autoSkip:true,maxTicksLimit:12}},
+      y:{position:'left',grid:{color:'rgba(15,23,42,0.07)'},ticks:{color:'#64748b',font:{size:10},callback:v=>(v/100000000).toFixed(1)+'억'}},
+      y1:{position:'right',grid:{drawOnChartArea:false},ticks:{color:'#d97706',font:{size:10},callback:v=>v+'%'}}}}});
+  // 일별 상세 표
+  const dHead='<thead><tr><th class="lft">날짜</th><th>광고비</th><th>매출</th><th>ROAS</th><th>설치</th><th>가입</th><th>첫구매</th><th>가입CPA</th><th>첫구매CPA</th></tr></thead>';
+  const dBody=labels.map((d,i)=>{const a=derive(gd[i]);
+    return `<tr><td><b>${d}</b>${GAPSET.has(d)?' <span style="color:#c026d3;font-size:10px">⚡</span>':''}</td><td>${WC(a.c)}</td><td>${WC(a.rv)}</td>${roasCell(a.roas)}<td>${F.num(a.ins)}</td><td>${F.num(a.su)}</td><td>${F.num(a.fo)}</td><td>${a.cpaSu==null?'<span class=muted>—</span>':F.won(a.cpaSu)}</td><td>${a.cpaFo==null?'<span class=muted>—</span>':F.won(a.cpaFo)}</td></tr>`;}).join('');
+  document.getElementById('dailyTbl_'+g).innerHTML=dHead+'<tbody>'+(dBody||'<tr><td colspan=9 class=muted style="text-align:center;padding:20px">데이터 없음</td></tr>')+'</tbody>';
+  // 유형별/매체별 표
+  const grpTbl=(rowsArr,key,elId,label)=>{
+    const by={}; rowsArr.forEach(r=>{const k=r[key]||'(미지정)';(by[k]=by[k]||emptyAgg())&&add(by[k],r);});
+    const list=Object.entries(by).map(([k,a])=>({k,...derive(a)})).sort((a,b)=>b.c-a.c);
+    const head=`<thead><tr><th class="lft">${label}</th><th>광고비</th><th>매출</th><th>ROAS</th><th>가입</th><th>첫구매</th><th>첫구매CPA</th></tr></thead>`;
+    const body=list.map(m=>`<tr><td><b>${m.k}</b></td><td>${WC(m.c)}</td><td>${WC(m.rv)}</td>${roasCell(m.roas)}<td>${F.num(m.su)}</td><td>${F.num(m.fo)}</td><td>${m.cpaFo==null?'<span class=muted>—</span>':F.won(m.cpaFo)}</td></tr>`).join('');
+    document.getElementById(elId).innerHTML=head+'<tbody>'+(body||'<tr><td colspan=7 class=muted style="text-align:center;padding:20px">데이터 없음</td></tr>')+'</tbody>';
+  };
+  grpTbl(rows,'t','typeTbl_'+g,'광고유형');
+  grpTbl(detRows(g),'media','mediaTblD_'+g,'매체');
 }
 
 function safe(name,fn){ try{ fn(); }catch(e){ console.error('['+name+'] 렌더 오류:',e); } }
