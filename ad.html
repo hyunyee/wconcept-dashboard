@@ -241,6 +241,18 @@
       <span class="card-sub" id="detSub_DA"></span></div>
     <div class="chart-box"><canvas id="trend_DA"></canvas></div>
   </div>
+  <div class="grid2">
+    <div class="card">
+      <div class="card-h"><div class="card-t"><span class="bar"></span>광고비 + APP CVR</div>
+        <span class="card-sub">CVR = 첫구매 ÷ 클릭</span></div>
+      <div class="chart-box" style="height:280px"><canvas id="trendCVR_DA"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-h"><div class="card-t"><span class="bar"></span>노출 · 클릭 추이</div>
+        <span class="card-sub">⚡보강일 메타 노출·클릭 미전달</span></div>
+      <div class="chart-box" style="height:280px"><canvas id="trendIC_DA"></canvas></div>
+    </div>
+  </div>
   <div class="card">
     <div class="card-h"><div class="card-t"><span class="bar"></span>DA 일별 상세</div></div>
     <div class="tbl-wrap"><table id="dailyTbl_DA"></table></div>
@@ -263,6 +275,18 @@
     <div class="card-h"><div class="card-t"><span class="bar"></span>SA 일별 추이</div>
       <span class="card-sub" id="detSub_SA"></span></div>
     <div class="chart-box"><canvas id="trend_SA"></canvas></div>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <div class="card-h"><div class="card-t"><span class="bar"></span>광고비 + APP CVR</div>
+        <span class="card-sub">CVR = 첫구매 ÷ 클릭</span></div>
+      <div class="chart-box" style="height:280px"><canvas id="trendCVR_SA"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-h"><div class="card-t"><span class="bar"></span>노출 · 클릭 추이</div>
+        <span class="card-sub">⚡보강일 일부 매체 노출·클릭 미전달</span></div>
+      <div class="chart-box" style="height:280px"><canvas id="trendIC_SA"></canvas></div>
+    </div>
   </div>
   <div class="card">
     <div class="card-h"><div class="card-t"><span class="bar"></span>SA 일별 상세</div></div>
@@ -296,7 +320,7 @@ const WC=v=>{ if(v==null)return'—'; const a=Math.abs(v);
 const campLabel=c=>(!c||c==='-'||c==='(미지정)')?'(캠페인 미지정 · 매체 보고분)':c;
 const DIMS=['s','g','t','o1','o2'];
 const DIMKEY={s:'daehyo',g:'gubun',t:'yuhyeong',o1:'mokpyo1',o2:'mokpyo2'};
-const M=['c','ins','su','rv','fo','uv','auv'];
+const M=['c','ins','su','rv','fo','uv','auv','imp','clk'];
 let DATA, minDate, maxDate, selMin, GAPSET=new Set();
 let state={ start:null, end:null, preset:7, metric:'money',
   f:{s:'전체',g:'전체',t:'전체',o1:'전체',o2:'전체'},
@@ -669,11 +693,36 @@ function renderDetail(g){
     scales:{x:{grid:{color:'rgba(15,23,42,0.07)'},ticks:{color:'#64748b',font:{size:10},maxRotation:0,autoSkip:true,maxTicksLimit:12}},
       y:{position:'left',grid:{color:'rgba(15,23,42,0.07)'},ticks:{color:'#64748b',font:{size:10},callback:v=>(v/100000000).toFixed(1)+'억'}},
       y1:{position:'right',grid:{drawOnChartArea:false},ticks:{color:'#d97706',font:{size:10},callback:v=>v+'%'}}}}});
+  // 광고비 + APP CVR (첫구매÷클릭)
+  const ctxC=document.getElementById('trendCVR_'+g);
+  if(detailCharts[g+'cvr'])detailCharts[g+'cvr'].destroy();
+  detailCharts[g+'cvr']=new Chart(ctxC,{type:'bar',data:{labels:labels.map(md),datasets:[
+    {label:'광고비',data:gd.map(x=>x.c),backgroundColor:'rgba(37,99,235,0.55)',borderRadius:4,yAxisID:'y',order:2},
+    {label:'APP CVR(%)',type:'line',data:gd.map(x=>x.clk>0?x.fo/x.clk*100:null),borderColor:'#db2777',borderWidth:2.4,tension:.35,pointRadius:2,yAxisID:'y1',order:0},
+  ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+    plugins:{legend:{labels:{color:'#475569',usePointStyle:true,pointStyleWidth:10,font:{size:12}}},
+      tooltip:{callbacks:{label:c=>{const v=c.parsed.y;if(v==null)return c.dataset.label+': —';
+        return c.dataset.label==='광고비'?' 광고비: '+F.won(v):' CVR: '+v.toFixed(2)+'%';}}}},
+    scales:{x:{grid:{color:'rgba(15,23,42,0.07)'},ticks:{color:'#64748b',font:{size:10},maxRotation:0,autoSkip:true,maxTicksLimit:10}},
+      y:{position:'left',grid:{color:'rgba(15,23,42,0.07)'},ticks:{color:'#64748b',font:{size:10},callback:v=>(v/100000000).toFixed(1)+'억'}},
+      y1:{position:'right',grid:{drawOnChartArea:false},ticks:{color:'#db2777',font:{size:10},callback:v=>v.toFixed(1)+'%'}}}}});
+  // 노출·클릭 추이
+  const ctxI=document.getElementById('trendIC_'+g);
+  if(detailCharts[g+'ic'])detailCharts[g+'ic'].destroy();
+  detailCharts[g+'ic']=new Chart(ctxI,{type:'bar',data:{labels:labels.map(md),datasets:[
+    {label:'노출',data:gd.map(x=>x.imp),backgroundColor:'rgba(124,58,237,0.45)',borderRadius:4,yAxisID:'y',order:2},
+    {label:'클릭',type:'line',data:gd.map(x=>x.clk),borderColor:'#0891b2',borderWidth:2.4,tension:.35,pointRadius:2,yAxisID:'y1',order:0},
+  ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+    plugins:{legend:{labels:{color:'#475569',usePointStyle:true,pointStyleWidth:10,font:{size:12}}},
+      tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+F.num(c.parsed.y)}}},
+    scales:{x:{grid:{color:'rgba(15,23,42,0.07)'},ticks:{color:'#64748b',font:{size:10},maxRotation:0,autoSkip:true,maxTicksLimit:10}},
+      y:{position:'left',grid:{color:'rgba(15,23,42,0.07)'},ticks:{color:'#7c3aed',font:{size:10},callback:v=>v>=1e6?(v/1e6).toFixed(1)+'M':(v/1e3).toFixed(0)+'K'}},
+      y1:{position:'right',grid:{drawOnChartArea:false},ticks:{color:'#0891b2',font:{size:10},callback:v=>v>=1e3?(v/1e3).toFixed(0)+'K':v}}}}});
   // 일별 상세 표
-  const dHead='<thead><tr><th class="lft">날짜</th><th>광고비</th><th>매출</th><th>ROAS</th><th>설치</th><th>가입</th><th>첫구매</th><th>가입CPA</th><th>첫구매CPA</th></tr></thead>';
-  const dBody=labels.map((d,i)=>{const a=derive(gd[i]);
-    return `<tr><td><b>${d}</b>${GAPSET.has(d)?' <span style="color:#c026d3;font-size:10px">⚡</span>':''}</td><td>${WC(a.c)}</td><td>${WC(a.rv)}</td>${roasCell(a.roas)}<td>${F.num(a.ins)}</td><td>${F.num(a.su)}</td><td>${F.num(a.fo)}</td><td>${a.cpaSu==null?'<span class=muted>—</span>':F.won(a.cpaSu)}</td><td>${a.cpaFo==null?'<span class=muted>—</span>':F.won(a.cpaFo)}</td></tr>`;}).join('');
-  document.getElementById('dailyTbl_'+g).innerHTML=dHead+'<tbody>'+(dBody||'<tr><td colspan=9 class=muted style="text-align:center;padding:20px">데이터 없음</td></tr>')+'</tbody>';
+  const dHead='<thead><tr><th class="lft">날짜</th><th>광고비</th><th>노출</th><th>클릭</th><th>매출</th><th>ROAS</th><th>CVR</th><th>설치</th><th>가입</th><th>첫구매</th><th>가입CPA</th><th>첫구매CPA</th></tr></thead>';
+  const dBody=labels.map((d,i)=>{const a=derive(gd[i]); const cvr=a.clk>0?a.fo/a.clk*100:null;
+    return `<tr><td><b>${d}</b>${GAPSET.has(d)?' <span style="color:#c026d3;font-size:10px">⚡</span>':''}</td><td>${WC(a.c)}</td><td>${F.num(a.imp)}</td><td>${F.num(a.clk)}</td><td>${WC(a.rv)}</td>${roasCell(a.roas)}<td>${cvr==null?'<span class=muted>—</span>':cvr.toFixed(2)+'%'}</td><td>${F.num(a.ins)}</td><td>${F.num(a.su)}</td><td>${F.num(a.fo)}</td><td>${a.cpaSu==null?'<span class=muted>—</span>':F.won(a.cpaSu)}</td><td>${a.cpaFo==null?'<span class=muted>—</span>':F.won(a.cpaFo)}</td></tr>`;}).join('');
+  document.getElementById('dailyTbl_'+g).innerHTML=dHead+'<tbody>'+(dBody||'<tr><td colspan=12 class=muted style="text-align:center;padding:20px">데이터 없음</td></tr>')+'</tbody>';
   // 유형별/매체별 표
   const grpTbl=(rowsArr,key,elId,label)=>{
     const by={}; rowsArr.forEach(r=>{const k=r[key]||'(미지정)';(by[k]=by[k]||emptyAgg())&&add(by[k],r);});
