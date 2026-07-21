@@ -505,7 +505,6 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
   <!-- ① 마감 코멘트 -->
   <div class="sec-hd" style="margin-top:16px">
     <h2 style="--before-color:#8b5cf6">마감 코멘트</h2>
-    <span class="sec-note" id="mc-period-note"></span>
   </div>
   <div class="mc-wrap" id="mc-wrap">
     <div class="mc-header" style="cursor:pointer" onclick="mcToggleCollapse()">
@@ -529,26 +528,6 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
       <div class="mc-insights-panel">
         <div style="font-size:10px;font-weight:700;color:#64748b;letter-spacing:.04em;text-transform:uppercase;margin-bottom:10px">📌 특이사항 / 인사이트</div>
         <div id="mc-insights-list"><div class="mc-insight neutral"><span class="mc-insight-ico">⏳</span><span>데이터 분석 중...</span></div></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ①-2 시장 트렌드 — 외부 트렌드 대시보드의 AI 상품랭킹 분석 텍스트(trend_comment.json)를 렌더. 데이터 있을 때만 표시. -->
-  <div id="trend-section" style="display:none">
-    <div class="sec-hd" style="margin-top:16px">
-      <h2 style="--before-color:#0ea5e9">시장 트렌드 <span id="trend-datelabel" style="font-size:11px;font-weight:400;color:#94a3b8"></span></h2>
-    </div>
-    <div class="mc-wrap">
-      <div class="mc-header" style="cursor:pointer" onclick="trendToggle()">
-        <h2>AI 상품 랭킹 분석 <span style="font-size:11px;font-weight:400;color:#94a3b8">자사 · 경쟁사</span></h2>
-        <div class="mc-hdr-right">
-          <span id="trend-stale" style="font-size:10px;color:#f59e0b;font-weight:700;margin-right:8px"></span>
-          <span id="trend-chevron" style="font-size:11px;color:#94a3b8;transition:transform .2s;display:inline-block;transform:rotate(180deg)">▲</span>
-        </div>
-      </div>
-      <div id="trend-body" style="padding:4px 2px 2px">
-        <div id="trend-content"></div>
-        <div style="font-size:10px;color:#cbd5e1;margin-top:8px;border-top:1px solid #f1f5f9;padding-top:6px">출처: echo-wconcept-trend-dash · AI 분석(Gemini) 요약 · 매일 자동 갱신</div>
       </div>
     </div>
   </div>
@@ -600,10 +579,32 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
     </div>
   </div>
 
+  <!-- ②-3 시장 트렌드 — 외부 트렌드 대시보드의 AI 상품랭킹 분석 텍스트(trend_comment.json)를 렌더. 데이터 있을 때만 표시.
+       2026-07-21: 임원 보고 흐름 정비 — 자사 전일 실적(마감 코멘트→핵심지표→APP지표) 뒤,
+       월간 진행(MTD) 앞으로 이동. "우리 실적 먼저, 시장 맥락은 그 다음" 순서. -->
+  <div id="trend-section" style="display:none">
+    <div class="sec-hd" style="margin-top:16px">
+      <h2 style="--before-color:#0ea5e9">시장 트렌드 <span id="trend-datelabel" style="font-size:11px;font-weight:400;color:#94a3b8"></span></h2>
+    </div>
+    <div class="mc-wrap">
+      <div class="mc-header" style="cursor:pointer" onclick="trendToggle()">
+        <h2>AI 상품 랭킹 분석 <span style="font-size:11px;font-weight:400;color:#94a3b8">자사 · 경쟁사</span></h2>
+        <div class="mc-hdr-right">
+          <span id="trend-stale" style="font-size:10px;color:#f59e0b;font-weight:700;margin-right:8px"></span>
+          <span id="trend-chevron" style="font-size:11px;color:#94a3b8;transition:transform .2s;display:inline-block;transform:rotate(180deg)">▲</span>
+        </div>
+      </div>
+      <div id="trend-body" style="padding:4px 2px 2px">
+        <div id="trend-content"></div>
+        <div style="font-size:10px;color:#cbd5e1;margin-top:8px;border-top:1px solid #f1f5f9;padding-top:6px">출처: echo-wconcept-trend-dash · AI 분석(Gemini) 요약 · 매일 자동 갱신</div>
+      </div>
+    </div>
+  </div>
+
   <!-- ③ MTD 달성현황 -->
   <div class="sec-hd">
     <h2>MTD 달성현황</h2>
-    <span class="sec-note" id="mtd-period-note">6/1~ 기준 · 목표 대비 진도율</span>
+    <span class="sec-note" id="mtd-period-note">목표 대비 진도율</span>
   </div>
   <div class="grid-2">
     <div class="card">
@@ -648,11 +649,13 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
       <select id="funnel-ch-sel" onchange="buildFunnelFromTraffic()"
         style="font-size:11px;border:1px solid #e2e8f0;border-radius:6px;padding:2px 6px;color:#475569;background:#fff;cursor:pointer;outline:none">
         <option value="__total__">전체</option>
-        <option value="DA">DA</option>
-        <option value="SA">SA</option>
         <option value="Organic">Organic</option>
-        <option value="CRM">CRM</option>
+        <option value="Ads">Ads</option>
+        <option value="DA">└ DA</option>
+        <option value="SA">└ SA</option>
         <option value="PCS">PCS</option>
+        <option value="CRM">CRM</option>
+        <option value="기타">기타</option>
       </select>
       <span id="funnel-period-note">· 당월 일평균 · <span style="color:#f59e0b;font-weight:700">┃</span> 전월 <span style="color:#94a3b8;font-weight:700">┊</span> 전년동월 (동기간)</span>
     </span>
@@ -742,7 +745,7 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
   <div class="sec-hd">
     <h2>채널별 비중</h2>
     <span class="sec-note" style="display:flex;align-items:center;gap:10px">
-      <span id="ch-date-note">Daily 기준</span>
+      <span id="ch-date-note"></span>
       <span style="display:inline-flex;border:1px solid #e2e8f0;border-radius:6px;overflow:hidden">
         <button type="button" class="ch-scope-btn active" data-scope="all" onclick="setChannelDeviceScope('all',this)">전체</button>
         <button type="button" class="ch-scope-btn" data-scope="app" onclick="setChannelDeviceScope('app',this)">APP</button>
@@ -789,6 +792,8 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
         <option value="전체">전체</option>
         <option value="Organic">Organic</option>
         <option value="Ads">Ads</option>
+        <option value="DA">└ DA</option>
+        <option value="SA">└ SA</option>
         <option value="PCS">PCS</option>
         <option value="CRM">CRM</option>
         <option value="기타">기타</option>
@@ -3544,11 +3549,18 @@ function getChannelBreakdownByDay(source, from, to, metric, deviceScope, exclude
     const dayData = (source || {})[ds];
     const buckets = {};
     CH_BUCKET_ORDER.forEach(b => buckets[b] = 0);
+    // DA/SA는 Ads로 합산하면서 개별 키로도 병행 보존 — 채널별 현황 선택자에서
+    // Ads뿐 아니라 DA/SA 단독 추이도 볼 수 있게(2026-07-21). '전체' 합산과
+    // 기간조회 렌더러는 CH_BUCKET_ORDER 명시 목록만 순회하므로 이중계산 없음.
+    buckets.DA = 0; buckets.SA = 0;
     if (dayData) {
       Object.keys(dayData).forEach(ch => {
         if (ch === '__total__') return;
         const v = deviceVal(dayData[ch], metric, deviceScope, excludePc);
-        if (v) buckets[groupChannel(ch)] += v;
+        if (v) {
+          buckets[groupChannel(ch)] += v;
+          if (ch === 'DA' || ch === 'SA') buckets[ch] += v;
+        }
       });
     }
     days.push({ date: ds, buckets });
@@ -5690,20 +5702,35 @@ function buildFunnelFromTraffic() {
   };
   const pmY = mn === 1 ? yr - 1 : yr, pmM = mn === 1 ? 12 : mn - 1;
 
+  // 2026-07-21: 선택자에 Ads 집계·기타가 추가되면서 하루에 여러 채널 키를 합산해야 함.
+  // TRAFFIC/CONV_CH엔 'Ads'/'기타' 키가 없으므로(원본은 DA·SA 등 개별 채널) 여기서 풀어준다.
+  // '기타' 멤버십은 groupChannel()의 판정 기준과 동일해야 채널별 현황·MTD 표와 수치가 맞는다.
+  const FN_KNOWN = ['DA', 'SA', 'Organic', 'CRM', 'PCS'];
+  const chKeysOf = (dayData) => {
+    if (ch === 'Ads')  return ['DA', 'SA'];
+    if (ch === '기타') return Object.keys(dayData).filter(k => k !== '__total__' && !FN_KNOWN.includes(k));
+    return [ch];
+  };
+
   const sumRange = (r) => {
     const acc = { s:0, vi:0, c:0, p:0, join:0, first:0, days:0 };
     let cur = parseLocalDate(r.from);
     const end = parseLocalDate(r.to);
     while (cur <= end) {
       const ds = localDateToStr(cur);
-      let t = (TRAFFIC[ds] || {})[ch];
-      if (t && app) t = (t.device || {}).app;
-      if (t && t.s) {
-        acc.s += t.s; acc.vi += (t.vi||0); acc.c += (t.c||0); acc.p += (t.p||0); acc.days++;
-        let cc = (CONV_CH[ds] || {})[ch];
-        if (cc && app) cc = (cc.device || {}).app;
-        if (cc) { acc.join += (cc.join||0); acc.first += (cc.first||0); }
-      }
+      const dayT = TRAFFIC[ds] || {};
+      let dayHasSess = false;   // days는 하루 1회만 증가 (키 수만큼 부풀리면 일평균이 깨짐)
+      chKeysOf(dayT).forEach(k => {
+        let t = dayT[k];
+        if (t && app) t = (t.device || {}).app;
+        if (t && t.s) {
+          acc.s += t.s; acc.vi += (t.vi||0); acc.c += (t.c||0); acc.p += (t.p||0); dayHasSess = true;
+          let cc = (CONV_CH[ds] || {})[k];
+          if (cc && app) cc = (cc.device || {}).app;
+          if (cc) { acc.join += (cc.join||0); acc.first += (cc.first||0); }
+        }
+      });
+      if (dayHasSess) acc.days++;
       cur.setDate(cur.getDate()+1);
     }
     return acc;
