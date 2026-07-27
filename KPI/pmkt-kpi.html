@@ -776,8 +776,18 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
       <div style="font-size:10px;color:#94a3b8;margin-top:6px">※ 이미 퍼센트인 지표라 증감은 %p · 비율은 원 단위 금액에서 계산 · <b>▲</b>는 할인 확대, <b>▼</b>는 축소(좋고 나쁨 판정 아님)</div>
     </div>
     <div class="card">
-      <div class="card-title">당월 일자별 추이</div>
-      <div class="card-sub">쿠폰율 · 체감할인율 (좌축) · 세션전환율 (우축, 점선) — 할인 대비 전환이 따라왔는지</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
+        <div class="card-title" style="margin-bottom:0">할인 ↔ 전환</div>
+        <select id="coupon-chart-mode" onchange="renderCouponEfficiency()"
+          style="font-size:12px;font-weight:600;border:1.5px solid #6366f1;border-radius:6px;padding:3px 8px;color:#0B1D3A;background:#fff;cursor:pointer;outline:none">
+          <!-- 기본값=90일 산점도. 당월 26일은 표본이 얇아 r이 불안정하고(7월 실측 -0.28),
+               90일에서야 할인↔전환 관계가 안정적으로 보인다(r=0.50). -->
+          <option value="scatter90" selected>상관 산점도 · 최근 90일</option>
+          <option value="scatter30">상관 산점도 · 당월</option>
+          <option value="trend">일자별 추이 · 당월</option>
+        </select>
+      </div>
+      <div class="card-sub" id="coupon-chart-sub"></div>
       <div class="chart-box h220"><canvas id="chart-coupon-trend"></canvas></div>
     </div>
   </div>
@@ -3409,6 +3419,42 @@ const couponRate   = a => (a.days && a.net)  ? a.wck  / a.net  * 100 : null;  //
 const feltDiscount = a => (a.days && a.cnet) ? a.cost / a.cnet * 100 : null;  // 체감할인율
 const sessionCr    = a => (a.sess && a.ord)  ? a.ord  / a.sess * 100 : null;  // 세션→구매
 
+// 일자별 비율 시리즈 — 추이/산점도가 같은 계산을 공유한다(정의가 갈리지 않게).
+function couponDailySeries(from, to) {
+  const out = [];
+  let d = parseLocalDate(from);
+  const end = parseLocalDate(to);
+  while (d <= end) {
+    const ds = localDateToStr(d), row = DAILY[ds] || {};
+    const t = (TRAFFIC[ds] || {}).__total__ || {};
+    const one = { cost: row.coupon_cost ?? 0, wck: row.coupon_wck ?? 0, cnet: row.coupon_net ?? 0,
+                  net: row.net ?? 0, sess: t.s ?? 0, ord: t.p ?? 0 };
+    one.days = (one.cost || one.wck || one.cnet) ? 1 : 0;   // sumCouponRange와 같은 의미
+    out.push({ ds, day: +ds.substring(8, 10),
+               rate: couponRate(one), felt: feltDiscount(one), cr: sessionCr(one) });
+    d.setDate(d.getDate() + 1);
+  }
+  return out;
+}
+
+// 피어슨 상관계수 + 최소제곱 회귀선. 상관을 "선 두 개 눈대중"이 아니라 숫자로 보여주기 위함 —
+// 이중축 자동 스케일에서는 축 범위만 바뀌어도 겹쳐 보이거나 반대로 보여서 눈대중이 신뢰가 안 된다.
+function linFit(xs, ys) {
+  const n = xs.length;
+  if (n < 3) return null;
+  const mx = xs.reduce((a, b) => a + b, 0) / n, my = ys.reduce((a, b) => a + b, 0) / n;
+  let sxy = 0, sxx = 0, syy = 0;
+  for (let i = 0; i < n; i++) { const dx = xs[i] - mx, dy = ys[i] - my; sxy += dx * dy; sxx += dx * dx; syy += dy * dy; }
+  if (!sxx || !syy) return null;
+  const slope = sxy / sxx;
+  return { n, r: sxy / Math.sqrt(sxx * syy), slope, intercept: my - slope * mx };
+}
+function corrLabel(r) {
+  const a = Math.abs(r);
+  const s = a < 0.2 ? '거의 없음' : a < 0.4 ? '약함' : a < 0.6 ? '중간' : a < 0.8 ? '강함' : '매우 강함';
+  return `${r >= 0 ? '양' : '음'}의 상관 · ${s}`;
+}
+
 function renderCouponEfficiency() {
   const tbody = document.getElementById('coupon-table-body');
   const section = document.getElementById('coupon-section');
@@ -3453,45 +3499,89 @@ function renderCouponEfficiency() {
   tbody.innerHTML = rowFor('쿠폰율', couponRate, '쿠폰비_WCK ÷ 순수주')
                   + rowFor('체감할인율', feltDiscount, '쿠폰비(전체) ÷ 쿠폰연관순수주');
 
-  // 당월 일자별 추이 — 2026-07-27: 쿠폰비(억) 막대를 빼고 세션전환율을 넣었다.
-  // 쿠폰비 절대액은 이미 쿠폰율의 분자라 같은 얘기를 두 번 하는 셈이었고, 이 카드가
-  // 답해야 할 질문은 "할인을 태운 만큼 전환이 따라왔나"라서 결과 지표를 같이 놓는 쪽이 낫다.
-  // ⚠ 축 분리 필수: 쿠폰율·체감할인율은 15~25% 대역인데 세션전환율은 2~3%라
-  //   한 축에 두면 CR이 바닥에 붙은 직선으로만 보인다 → CR만 우축(Weekly 전환율
-  //   추이가 신규가입→첫구매를 우축에 두는 것과 같은 처리).
-  const labels = [], rateS = [], feltS = [], crS = [];
-  let d = parseLocalDate(curFrom);
-  const end = parseLocalDate(curTo);
-  while (d <= end) {
-    const ds = localDateToStr(d), row = DAILY[ds] || {};
-    // days는 sumCouponRange와 동일한 의미(쿠폰 데이터 존재 여부) — 비율 함수의 가드에 쓰인다
-    const t = (TRAFFIC[ds] || {}).__total__ || {};
-    const one = { cost: row.coupon_cost ?? 0, wck: row.coupon_wck ?? 0, cnet: row.coupon_net ?? 0, net: row.net ?? 0,
-                  sess: t.s ?? 0, ord: t.p ?? 0 };
-    one.days = (one.cost || one.wck || one.cnet) ? 1 : 0;
-    labels.push(`${+ds.substring(8, 10)}`);
-    const r = couponRate(one), f = feltDiscount(one), c = sessionCr(one);
-    rateS.push(r == null ? null : +r.toFixed(2));
-    feltS.push(f == null ? null : +f.toFixed(2));
-    crS.push(c == null ? null : +c.toFixed(2));
-    d.setDate(d.getDate() + 1);
-  }
+  // ── 차트: 추이 / 상관 산점도 ────────────────────────────────────────────
+  // 2026-07-27: "할인이 오르면 전환도 오른다"를 이중축 라인 두 개로 눈대중하려던 게
+  // 문제였다. 축을 각자 자동 스케일하면 같은 데이터도 겹쳐 보이거나 반대로 보여서
+  // 상관 판단 근거가 못 된다 → 산점도 + 회귀선 + r 값으로 직접 보여주는 뷰를 추가.
+  const mode = document.getElementById('coupon-chart-mode')?.value || 'scatter90';
   const canvas = document.getElementById('chart-coupon-trend');
+  const chartSub = document.getElementById('coupon-chart-sub');
   if (!canvas) return;
   if (couponChart) { couponChart.destroy(); couponChart = null; }
+
+  if (mode === 'trend') {
+    const S = couponDailySeries(curFrom, curTo);
+    if (chartSub) chartSub.innerHTML = '쿠폰율 · 체감할인율 (좌축) · 세션전환율 (우축, 점선) '
+      + '<span style="color:#f59e0b">— 두 축은 각자 범위라 선의 높낮이 비교는 무의미(상관은 산점도로)</span>';
+    couponChart = new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels: S.map(x => `${x.day}`),
+        datasets: [
+          { label: '쿠폰율', data: S.map(x => x.rate == null ? null : +x.rate.toFixed(2)),
+            borderColor: '#6366f1', backgroundColor: '#6366f1',
+            borderWidth: 2, pointRadius: 2, tension: 0.3, spanGaps: true, datalabels: { display: false } },
+          { label: '체감할인율', data: S.map(x => x.felt == null ? null : +x.felt.toFixed(2)),
+            borderColor: '#f43f5e', backgroundColor: '#f43f5e',
+            borderWidth: 2, pointRadius: 2, tension: 0.3, spanGaps: true, datalabels: { display: false } },
+          { label: '세션전환율 (우축)', data: S.map(x => x.cr == null ? null : +x.cr.toFixed(2)),
+            borderColor: '#10b981', backgroundColor: '#10b981',
+            borderWidth: 2, borderDash: [4, 3], pointRadius: 2, tension: 0.3, spanGaps: true,
+            yAxisID: 'y1', datalabels: { display: false } },
+        ],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: true, position: 'bottom', labels: { font: { size: 10 }, boxWidth: 10 } },
+          datalabels: { display: false },
+          tooltip: { mode: 'index', intersect: false, callbacks: { label: c => `${c.dataset.label}: ${c.parsed.y}%` } },
+        },
+        scales: {
+          x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 9 } } },
+          // beginAtZero:false는 의도된 설정 — 쿠폰율 14~17%, CR 2~3%처럼 좁은 대역의
+          // 변동을 보려는 차트라 0 기준선을 강제하면 전부 평평한 직선이 된다.
+          // (막대였다면 면적이 값을 뜻하므로 0 기준이 필수였지만 지금은 선이다.)
+          y:  { position: 'left', beginAtZero: false, grid: { color: '#f1f5f9' }, border: { display: false },
+                ticks: { color: '#94a3b8', font: { size: 10 }, callback: v => v + '%' } },
+          y1: { position: 'right', beginAtZero: false, grid: { display: false }, border: { display: false },
+                ticks: { color: '#10b981', font: { size: 10 }, callback: v => v + '%' } },
+        },
+      },
+    });
+    return;
+  }
+
+  // 상관 산점도 — x: 체감할인율, y: 세션전환율, 점 하나 = 하루
+  const days = mode === 'scatter90' ? 90 : null;
+  const from = days
+    ? localDateToStr(new Date(parseLocalDate(curTo).getTime() - (days - 1) * 864e5))
+    : curFrom;
+  const pts = couponDailySeries(from, curTo).filter(x => x.felt != null && x.cr != null);
+  const fit = linFit(pts.map(p => p.felt), pts.map(p => p.cr));
+
+  if (chartSub) {
+    chartSub.innerHTML = fit
+      ? `체감할인율(가로) ↔ 세션전환율(세로) · 점 1개 = 하루 · n=${fit.n}일 · `
+        + `<b style="color:${Math.abs(fit.r) < 0.2 ? '#94a3b8' : (fit.r > 0 ? '#10b981' : '#ef4444')}">r=${fit.r.toFixed(2)} (${corrLabel(fit.r)})</b>`
+        + (fit.n < 30 ? ' <span style="color:#f59e0b">· 표본이 얇아 참고용</span>' : '')
+      : '표본 부족';
+  }
+
+  const xs = pts.map(p => p.felt);
+  const xMin = Math.min(...xs), xMax = Math.max(...xs);
   couponChart = new Chart(canvas, {
-    type: 'line',
     data: {
-      labels,
       datasets: [
-        { label: '쿠폰율', data: rateS, borderColor: '#6366f1', backgroundColor: '#6366f1',
-          borderWidth: 2, pointRadius: 2, tension: 0.3, spanGaps: true, datalabels: { display: false } },
-        { label: '체감할인율', data: feltS, borderColor: '#f43f5e', backgroundColor: '#f43f5e',
-          borderWidth: 2, pointRadius: 2, tension: 0.3, spanGaps: true, datalabels: { display: false } },
-        // 점선 + 우축으로 "다른 축의 결과 지표"임을 시각적으로도 구분
-        { label: '세션전환율 (우축)', data: crS, borderColor: '#10b981', backgroundColor: '#10b981',
-          borderWidth: 2, borderDash: [4, 3], pointRadius: 2, tension: 0.3, spanGaps: true,
-          yAxisID: 'y1', datalabels: { display: false } },
+        { type: 'scatter', label: '일자', data: pts.map(p => ({ x: +p.felt.toFixed(2), y: +p.cr.toFixed(2), ds: p.ds })),
+          backgroundColor: 'rgba(99,102,241,0.55)', pointRadius: 4, pointHoverRadius: 6, datalabels: { display: false } },
+        ...(fit ? [{
+          type: 'line', label: `추세선 (r=${fit.r.toFixed(2)})`,
+          data: [{ x: +xMin.toFixed(2), y: +(fit.intercept + fit.slope * xMin).toFixed(3) },
+                 { x: +xMax.toFixed(2), y: +(fit.intercept + fit.slope * xMax).toFixed(3) }],
+          borderColor: fit.r >= 0 ? '#10b981' : '#ef4444', borderWidth: 2, borderDash: [5, 4],
+          pointRadius: 0, fill: false, datalabels: { display: false },
+        }] : []),
       ],
     },
     options: {
@@ -3499,15 +3589,21 @@ function renderCouponEfficiency() {
       plugins: {
         legend: { display: true, position: 'bottom', labels: { font: { size: 10 }, boxWidth: 10 } },
         datalabels: { display: false },
-        tooltip: { mode: 'index', intersect: false,
-          callbacks: { label: c => `${c.dataset.label}: ${c.parsed.y}%` } },
+        tooltip: {
+          callbacks: {
+            label: c => c.dataset.type === 'scatter'
+              ? `${c.raw.ds} · 체감할인율 ${c.parsed.x}% → 전환율 ${c.parsed.y}%`
+              : `추세선`,
+          },
+        },
       },
       scales: {
-        x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 9 } } },
-        y: { position: 'left', grid: { color: '#f1f5f9' }, border: { display: false },
-          ticks: { color: '#94a3b8', font: { size: 10 }, callback: v => v + '%' } },
-        y1: { position: 'right', grid: { display: false }, border: { display: false },
-          ticks: { color: '#10b981', font: { size: 10 }, callback: v => v + '%' } },
+        x: { type: 'linear', title: { display: true, text: '체감할인율 (%)', color: '#94a3b8', font: { size: 10 } },
+             grid: { color: '#f1f5f9' }, border: { display: false },
+             ticks: { color: '#94a3b8', font: { size: 10 }, callback: v => v + '%' } },
+        y: { type: 'linear', title: { display: true, text: '세션전환율 (%)', color: '#94a3b8', font: { size: 10 } },
+             grid: { color: '#f1f5f9' }, border: { display: false },
+             ticks: { color: '#94a3b8', font: { size: 10 }, callback: v => v + '%' } },
       },
     },
   });
