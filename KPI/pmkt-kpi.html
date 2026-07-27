@@ -1384,37 +1384,99 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
 <div id="view-period" style="display:none">
   <div class="sec-hd">
     <h2>기간 조회</h2>
-    <span class="sec-note" style="display:flex;align-items:center;gap:8px">
-      <input type="date" id="period-from" style="font-size:11px;border:1px solid #e2e8f0;border-radius:6px;padding:3px 6px;color:#475569">
+    <span class="sec-note" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+      <!-- 2026-07-27: 프리셋 추가. 매번 날짜 두 개를 손으로 찍는 것보다 빠르고,
+           선택 즉시 조회까지 돌려 "기간을 바꿨는데 화면이 그대로"인 상태를 없앤다. -->
+      <span style="display:inline-flex;border:1px solid #e2e8f0;border-radius:6px;overflow:hidden">
+        <button type="button" class="ch-scope-btn" onclick="setPeriodPreset('7d')">최근 7일</button>
+        <button type="button" class="ch-scope-btn" onclick="setPeriodPreset('30d')">30일</button>
+        <button type="button" class="ch-scope-btn" onclick="setPeriodPreset('mtd')">당월</button>
+        <button type="button" class="ch-scope-btn" onclick="setPeriodPreset('lastmonth')">전월</button>
+      </span>
+      <!-- onchange 추가 — 예전엔 날짜를 바꿔도 '조회'를 눌러야만 KPI·추이가 갱신되는데
+           아래 채널 카드들은 input을 즉시 다시 읽어서, 한 화면에 서로 다른 두 기간이 공존했다. -->
+      <input type="date" id="period-from" onchange="renderPeriodView()" style="font-size:11px;border:1px solid #e2e8f0;border-radius:6px;padding:3px 6px;color:#475569">
       <span>~</span>
-      <input type="date" id="period-to" style="font-size:11px;border:1px solid #e2e8f0;border-radius:6px;padding:3px 6px;color:#475569">
+      <input type="date" id="period-to" onchange="renderPeriodView()" style="font-size:11px;border:1px solid #e2e8f0;border-radius:6px;padding:3px 6px;color:#475569">
       <button type="button" onclick="renderPeriodView()" style="font-size:11px;border:1px solid #0B1D3A;background:#0B1D3A;color:#fff;border-radius:6px;padding:4px 12px;cursor:pointer">조회</button>
     </span>
   </div>
-  <div class="kpi-grid">
-    <div class="kpi-card c-blue">  <div class="kpi-lbl">세션수</div>                                                      <div class="kpi-val" id="pd-sess">-</div>     <div class="kpi-sub" id="pd-sess-sub">-</div></div>
-    <div class="kpi-card c-blue">  <div class="kpi-lbl">APP 세션수</div>                                                  <div class="kpi-val" id="pd-sess-app">-</div> <div class="kpi-sub" id="pd-sess-app-sub">-</div></div>
-    <div class="kpi-card c-indigo"><div class="kpi-lbl">총수주 <span style="font-size:10px;color:#94a3b8">(백만)</span></div> <div class="kpi-val" id="pd-gmv">-</div>    <div class="kpi-sub" id="pd-gmv-sub">-</div></div>
-    <div class="kpi-card c-green"> <div class="kpi-lbl">순수주 <span style="font-size:10px;color:#94a3b8">(백만)</span></div> <div class="kpi-val" id="pd-net">-</div>    <div class="kpi-sub" id="pd-net-sub">-</div></div>
-    <div class="kpi-card c-orange"><div class="kpi-lbl">신규가입</div>                                                    <div class="kpi-val" id="pd-join">-</div>   <div class="kpi-sub" id="pd-join-sub">-</div></div>
-    <div class="kpi-card c-rose">  <div class="kpi-lbl">첫구매</div>                                                      <div class="kpi-val" id="pd-first">-</div>  <div class="kpi-sub" id="pd-first-sub">-</div></div>
+  <div id="pd-range-note" style="font-size:11.5px;color:#475569;margin:-4px 0 10px"></div>
+
+  <!-- ══ 블록 ① 핵심지표 — Weekly와 같은 구성(값 + YoY 배지 + 전년동기 sub + 스파크라인) ══ -->
+  <div class="sec-hd">
+    <h2 style="font-size:14px;--before-color:#6366f1">핵심지표</h2>
+    <span class="sec-note" id="pd-kpi-note">YoY=전년 동기간 대비 · 스파크라인=선택 기간 일별</span>
   </div>
-  <div class="card">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
-      <div class="card-title" style="margin-bottom:0">기간 내 일별 추이</div>
-      <select id="pd-trend-metric" onchange="renderPeriodTrendChart()"
-        style="font-size:12px;font-weight:600;border:1.5px solid #0B1D3A;border-radius:6px;padding:3px 8px;color:#0B1D3A;background:#fff;cursor:pointer;outline:none">
-        <option value="net" selected>순수주</option>
-        <option value="revenue">총수주</option>
-        <option value="orders">주문건수</option>
-        <option value="sess">세션수</option>
-        <option value="sessApp">APP 세션수</option>
-        <option value="join">신규가입</option>
-        <option value="first">첫구매</option>
-      </select>
+  <div class="kpi-grid" style="margin-bottom:14px">
+    <div class="kpi-card c-indigo"><div class="kpi-lbl">총수주 <span style="font-size:10px;color:#94a3b8">(억)</span></div><div class="kpi-val" id="pd-k-revenue">-</div><div class="kpi-sub" id="pd-k-revenue-sub">-</div><span class="yoy" id="pd-k-revenue-yoy">-</span><div id="pd-k-revenue-spark" style="margin-top:6px"></div></div>
+    <div class="kpi-card c-green"><div class="kpi-lbl">순수주 <span style="font-size:10px;color:#94a3b8">(억)</span></div><div class="kpi-val" id="pd-k-net">-</div><div class="kpi-sub" id="pd-k-net-sub">-</div><span class="yoy" id="pd-k-net-yoy">-</span><div id="pd-k-net-spark" style="margin-top:6px"></div></div>
+    <div class="kpi-card c-blue"><div class="kpi-lbl">주문건수</div><div class="kpi-val" id="pd-k-orders">-</div><div class="kpi-sub" id="pd-k-orders-sub">-</div><span class="yoy" id="pd-k-orders-yoy">-</span><div id="pd-k-orders-spark" style="margin-top:6px"></div></div>
+    <div class="kpi-card c-orange"><div class="kpi-lbl">신규가입</div><div class="kpi-val" id="pd-k-join">-</div><div class="kpi-sub" id="pd-k-join-sub">-</div><span class="yoy" id="pd-k-join-yoy">-</span><div id="pd-k-join-spark" style="margin-top:6px"></div></div>
+    <div class="kpi-card c-rose"><div class="kpi-lbl">첫구매</div><div class="kpi-val" id="pd-k-first">-</div><div class="kpi-sub" id="pd-k-first-sub">-</div><span class="yoy" id="pd-k-first-yoy">-</span><div id="pd-k-first-spark" style="margin-top:6px"></div></div>
+    <div class="kpi-card c-teal"><div class="kpi-lbl">세션수</div><div class="kpi-val" id="pd-k-sess">-</div><div class="kpi-sub" id="pd-k-sess-sub">-</div><span class="yoy" id="pd-k-sess-yoy">-</span><div id="pd-k-sess-spark" style="margin-top:6px"></div></div>
+  </div>
+
+  <!-- ══ 블록 ② APP 핵심지표 — Weekly와 동일 3종 ══ -->
+  <div class="sec-hd">
+    <h2 style="font-size:14px;--before-color:#8b5cf6">APP 핵심지표</h2>
+    <span class="sec-note">선택 기간 합계 · YoY=전년 동기간 대비</span>
+  </div>
+  <div class="grid-3" style="margin-bottom:14px">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span class="kpi-lbl">APP 세션</span><span class="yoy flat" id="pd-ap-sess-yoy">-</span>
+      </div>
+      <div class="kpi-val" id="pd-ap-sess-val">-</div>
+      <div class="kpi-sub" id="pd-ap-sess-sub">-</div>
+      <div id="pd-ap-sess-spark" style="margin-top:6px"></div>
     </div>
-    <div class="card-sub" id="pd-trend-sub">순수주 일별 추이 (억원)</div>
-    <div class="chart-box h260"><canvas id="chart-period-trend"></canvas></div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span class="kpi-lbl">APP 전환율 <span style="font-size:10px;color:#94a3b8">(APP구매/APP세션)</span></span><span class="yoy flat" id="pd-ap-cr-yoy">-</span>
+      </div>
+      <div class="kpi-val" id="pd-ap-cr-val">-</div>
+      <div class="kpi-sub" id="pd-ap-cr-sub">-</div>
+      <div id="pd-ap-cr-spark" style="margin-top:6px"></div>
+    </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span class="kpi-lbl">APP 비중 <span style="font-size:10px;color:#94a3b8">(APP세션/전체세션)</span></span><span class="yoy flat" id="pd-ap-share-yoy">-</span>
+      </div>
+      <div class="kpi-val" id="pd-ap-share-val">-</div>
+      <div class="kpi-sub" id="pd-ap-share-sub">-</div>
+      <div id="pd-ap-share-spark" style="margin-top:6px"></div>
+    </div>
+  </div>
+
+  <!-- ══ 블록 ③ 전환 효율 · 일별 추이 — Weekly의 '전환 효율·10주 추이'와 같은 좌우 대조 ══ -->
+  <div class="sec-hd">
+    <h2 style="font-size:14px;--before-color:#10b981">전환 효율 · 일별 추이</h2>
+    <span class="sec-note">얼마나 왔나(좌) vs 얼마나 잘 샀나(우) — 선택 기간</span>
+  </div>
+  <div class="grid-2" style="margin-bottom:14px">
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
+        <div class="card-title" style="margin-bottom:0">일별 추이</div>
+        <select id="pd-trend-metric" onchange="renderPeriodTrendChart()"
+          style="font-size:12px;font-weight:600;border:1.5px solid #0B1D3A;border-radius:6px;padding:3px 8px;color:#0B1D3A;background:#fff;cursor:pointer;outline:none">
+          <option value="net" selected>순수주</option>
+          <option value="revenue">총수주</option>
+          <option value="orders">주문건수</option>
+          <option value="sess">세션수</option>
+          <option value="sessApp">APP 세션수</option>
+          <option value="join">신규가입</option>
+          <option value="first">첫구매</option>
+        </select>
+      </div>
+      <div class="card-sub" id="pd-trend-sub">순수주 일별 추이 (억원)</div>
+      <div class="chart-box h240"><canvas id="chart-period-trend"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">전환율 추이</div>
+      <div class="card-sub">세션→구매 · 세션→신규가입 (좌축) · 신규가입→첫구매 (우축)</div>
+      <div class="chart-box h240"><canvas id="chart-period-cr"></canvas></div>
+    </div>
   </div>
 
   <!-- 채널별 비중 (기간 합산) -->
@@ -1475,9 +1537,10 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
   </div>
   <div class="card" style="margin-bottom:14px">
     <table class="dt">
-      <thead><tr><th>채널</th><th>총수주(백만)</th><th>세션</th><th>신규가입</th><th>첫구매</th></tr></thead>
-      <tbody id="pd-ch-matrix"><tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:12px">데이터 로딩 중...</td></tr></tbody>
+      <thead><tr><th>채널</th><th>세션</th><th>APP 세션</th><th>신규가입</th><th>첫구매</th><th>주문건수</th><th>총수주(백만)</th><th>세션→주문 CR</th></tr></thead>
+      <tbody id="pd-ch-matrix"><tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:12px">데이터 로딩 중...</td></tr></tbody>
     </table>
+    <div style="font-size:10px;color:#94a3b8;margin-top:6px">※ 주문건수·세션→주문 CR은 트래픽 시트 Purchase Cnt 기준 — 전환율 추이 카드(RAW 주문건수 기준)와 약 2% 차이가 납니다</div>
   </div>
 
   <!-- 광고 채널ID별 실적 (기간 합산) -->
@@ -2056,9 +2119,14 @@ function setAnnualView(el) {
 function setPeriodView(el) {
   showView('view-period', el);
   if (!document.getElementById('period-from').value) {
-    const monthStart = `${TODAY.getFullYear()}-${String(TODAY.getMonth() + 1).padStart(2, '0')}-01`;
-    document.getElementById('period-from').value = monthStart;
-    document.getElementById('period-to').value = getEffectiveDailyDate();
+    // 2026-07-27: 예전엔 from을 **오늘(TODAY)** 기준 당월 1일로 잡았는데 to는 실적 최종일이라,
+    // 매월 1일에 from(이번달 1일) > to(지난달 말일)가 되어 renderPeriodView가 통째로
+    // return → 탭 전체가 '-'로 남는 버그가 있었다. 둘 다 실적 최종일 기준으로 통일한다.
+    const ys = getEffectiveDailyDate();
+    if (ys) {
+      document.getElementById('period-from').value = `${ys.substring(0, 7)}-01`;
+      document.getElementById('period-to').value   = ys;
+    }
   }
   renderPeriodView();
 }
@@ -3205,35 +3273,73 @@ const PD_TREND_METRICS = {
 };
 let periodTrendSeries = null;
 
+// 프리셋 — 날짜 두 개를 손으로 찍는 대신 한 번에. 선택 즉시 조회까지 돌린다.
+function setPeriodPreset(kind) {
+  const ys = getEffectiveDailyDate();
+  if (!ys) return;
+  const end = parseLocalDate(ys);
+  let s, e = ys;
+  if (kind === '7d')        s = localDateToStr(new Date(end.getTime() - 6 * 864e5));
+  else if (kind === '30d')  s = localDateToStr(new Date(end.getTime() - 29 * 864e5));
+  else if (kind === 'mtd')  s = `${ys.substring(0, 7)}-01`;
+  else if (kind === 'lastmonth') {
+    const d = parseLocalDate(`${ys.substring(0, 7)}-01`);
+    const lastEnd = new Date(d.getTime() - 864e5);          // 전월 말일
+    s = `${localDateToStr(lastEnd).substring(0, 7)}-01`;
+    e = localDateToStr(lastEnd);
+  }
+  document.getElementById('period-from').value = s;
+  document.getElementById('period-to').value   = e;
+  renderPeriodView();
+}
+
+// 전년 동기간 — 문자열로 연도만 빼면 2/29 같은 날짜가 무효값이 돼 3/1로 롤오버된다.
+// Date 연산 후 말일 클램프.
+function pdLastYear(ds) {
+  const d = parseLocalDate(ds);
+  const y = d.getFullYear() - 1, m = d.getMonth();
+  const lastDay = new Date(y, m + 1, 0).getDate();
+  return localDateToStr(new Date(y, m, Math.min(d.getDate(), lastDay)));
+}
+
 function renderPeriodView() {
+  if (!Object.keys(RAW).length) return;   // 데이터 로드 전 빈 렌더 방지(Weekly와 동일 가드)
   const from = document.getElementById('period-from')?.value;
   const to   = document.getElementById('period-to')?.value;
-  if (!from || !to || from > to) return;
+  const note = document.getElementById('pd-range-note');
+  if (!from || !to) return;
+  if (from > to) {
+    if (note) note.innerHTML = `<span style="color:#ef4444">시작일이 종료일보다 뒤입니다 (${from} ~ ${to}) — 기간을 다시 선택해 주세요.</span>`;
+    return;
+  }
 
-  let gmv = 0, net = 0, join = 0, first = 0;
-  let sess = 0, sessApp = 0, sessDays = 0, totalDays = 0;
+  // 집계는 aggRangeFull에 위임 — 예전엔 여기서 거의 동일한 루프를 따로 돌려
+  // orders/ordersApp/missDaily를 버리고 있었다(R2: 검증된 함수 재사용).
+  const cur  = aggRangeFull(from, to);
+  const lyF  = pdLastYear(from), lyT = pdLastYear(to);
+  const ly   = aggRangeFull(lyF, lyT);
+
+  // 일별 시리즈 — 추이/전환율 차트가 공유. 매 호출마다 새로 만들어 캐시 불일치를 없앤다.
   const labels = [];
   const series = { net: [], revenue: [], orders: [], sess: [], sessApp: [], join: [], first: [] };
-  let cur = parseLocalDate(from);
+  const crS = { s2p: [], s2j: [], j2f: [] };
+  let sessDays = 0, totalDays = 0;
+  let d = parseLocalDate(from);
   const end = parseLocalDate(to);
-  while (cur <= end) {
-    const ds = localDateToStr(cur);
+  while (d <= end) {
+    const ds = localDateToStr(d);
     let dGmv = 0, dNet = 0, dOrders = 0;
     (RAW[ds] || []).forEach(h => { if (h) { if (h[0]) dOrders += h[0]; if (h[1]) dGmv += h[1]; if (h[2]) dNet += h[2]; } });
-    gmv += dGmv; net += dNet;
     const dd = DAILY[ds] || {};
-    if (dd.join) join += dd.join;
-    if (dd.first) first += dd.first;
-    // 세션: TRAFFIC 전체 합계 + APP 디바이스 합계 (트래픽 시트 보유일만 집계)
     totalDays++;
     let dSess = 0, dSessApp = 0;
     const td = (TRAFFIC[ds] || {}).__total__;
     if (td && td.s) {
-      dSess = td.s; sess += td.s; sessDays++;
+      dSess = td.s; sessDays++;
       const app = td.device && td.device.app;
-      if (app && app.s) { dSessApp = app.s; sessApp += app.s; }
+      if (app && app.s) dSessApp = app.s;
     }
-    labels.push(`${cur.getMonth() + 1}/${cur.getDate()}`);
+    labels.push(`${d.getMonth() + 1}/${d.getDate()}`);
     series.net.push(dNet > 0 ? +(dNet / 1e8).toFixed(1) : 0);
     series.revenue.push(dGmv > 0 ? +(dGmv / 1e8).toFixed(1) : 0);
     series.orders.push(dOrders || 0);
@@ -3241,34 +3347,113 @@ function renderPeriodView() {
     series.sessApp.push(dSessApp || null);
     series.join.push(dd.join || 0);
     series.first.push(dd.first || 0);
-    cur.setDate(cur.getDate() + 1);
+    crS.s2p.push(dSess ? +(dOrders / dSess * 100).toFixed(2) : null);
+    crS.s2j.push(dSess ? +((dd.join || 0) / dSess * 100).toFixed(2) : null);
+    crS.j2f.push(dd.join ? +((dd.first || 0) / dd.join * 100).toFixed(1) : null);
+    d.setDate(d.getDate() + 1);
   }
-  const f8 = v => v > 0 ? `${(v / 1e8).toFixed(1)}억` : '-';
-  // 트래픽 시트는 최근 기간만 보유 — 기간 중 일부만 집계된 경우 보유 일수를 명시
-  const sessSub = sess > 0
-    ? (sessDays < totalDays ? `트래픽 보유 ${sessDays}/${totalDays}일 합계` : `${from} ~ ${to}`)
-    : '트래픽 데이터 없음';
-  document.getElementById('pd-sess').textContent = sess > 0 ? sess.toLocaleString() : '-';
-  document.getElementById('pd-sess-sub').textContent = sessSub;
-  document.getElementById('pd-sess-app').textContent = sessApp > 0 ? sessApp.toLocaleString() : '-';
-  document.getElementById('pd-sess-app-sub').textContent = sess > 0 ? `전체 대비 ${Math.round(sessApp / sess * 100)}%` : '-';
-  document.getElementById('pd-gmv').textContent = gmv > 0 ? Math.round(gmv / 1e6).toLocaleString() : '-';
-  document.getElementById('pd-gmv-sub').textContent = f8(gmv);
-  document.getElementById('pd-net').textContent = net > 0 ? Math.round(net / 1e6).toLocaleString() : '-';
-  document.getElementById('pd-net-sub').textContent = f8(net);
-  document.getElementById('pd-join').textContent = join.toLocaleString();
-  document.getElementById('pd-join-sub').textContent = `${from} ~ ${to}`;
-  document.getElementById('pd-first').textContent = first.toLocaleString();
-  document.getElementById('pd-first-sub').textContent = `${from} ~ ${to}`;
 
-  periodTrendSeries = { labels, series, from, to };
+  if (note) {
+    // 소스별 보유 시작일이 달라 같은 기간이라도 지표마다 실제 커버 구간이 다르다.
+    // 세션이 부분 집계면 그 사실을 숨기지 않고 헤더에 명시한다.
+    const gap = sessDays < totalDays
+      ? ` <span style="color:#f59e0b">· 세션은 트래픽 보유 ${sessDays}/${totalDays}일만 집계</span>` : '';
+    note.innerHTML = `<b>${from} ~ ${to}</b> (${totalDays}일) · 전년 동기간 <b>${lyF} ~ ${lyT}</b> 대비${gap}`;
+  }
+
+  // ── 핵심지표 6장 (Weekly와 같은 구성) ────────────────────────────────
+  const CFG = {
+    revenue: { scale: 1e8, dec: 1, unit: '억', color: '#6366f1' },
+    net:     { scale: 1e8, dec: 1, unit: '억', color: '#10b981' },
+    orders:  { scale: 1,   dec: 0, unit: '',   color: '#3b82f6' },
+    join:    { scale: 1,   dec: 0, unit: '',   color: '#f59e0b' },
+    first:   { scale: 1,   dec: 0, unit: '',   color: '#f43f5e' },
+    sess:    { scale: 1,   dec: 0, unit: '',   color: '#14b8a6' },
+  };
+  const fmt = (v, c) => !v ? '-' : c.scale === 1 ? Math.round(v).toLocaleString() : (v / c.scale).toFixed(c.dec) + c.unit;
+  Object.keys(CFG).forEach(k => {
+    const c = CFG[k], a = cur[k], l = ly[k];
+    const v = document.getElementById(`pd-k-${k}`);       if (v) v.textContent = fmt(a, c);
+    const s = document.getElementById(`pd-k-${k}-sub`);   if (s) s.textContent = `전년 ${fmt(l, c)}`;
+    const y = document.getElementById(`pd-k-${k}-yoy`);
+    if (y) {
+      const p = yoyPct(a || null, l || null);
+      y.textContent = p == null ? 'YoY -' : `YoY ${p >= 0 ? '+' : ''}${p.toFixed(1)}%`;
+      y.className = 'yoy ' + (p == null ? 'flat' : p >= 0 ? 'up' : 'dn');
+    }
+    const sp = document.getElementById(`pd-k-${k}-spark`);
+    if (sp) sp.innerHTML = sparkSvg(series[k], c.color);
+  });
+
+  // ── APP 핵심지표 3종 ─────────────────────────────────────────────────
+  const appCr = a => a.sessApp ? a.ordersApp / a.sessApp * 100 : null;
+  const appSh = a => a.sess    ? a.sessApp   / a.sess    * 100 : null;
+  const putAp = (id, valTxt, subTxt, delta, isPp, sparkVals, color) => {
+    const v = document.getElementById(`pd-ap-${id}-val`); if (v) v.textContent = valTxt;
+    const s = document.getElementById(`pd-ap-${id}-sub`); if (s) s.textContent = subTxt;
+    const y = document.getElementById(`pd-ap-${id}-yoy`);
+    if (y) {
+      y.textContent = delta == null ? 'YoY -' : `YoY ${delta >= 0 ? '+' : ''}${delta.toFixed(isPp ? 2 : 1)}${isPp ? '%p' : '%'}`;
+      y.className = 'yoy ' + (delta == null ? 'flat' : Math.abs(delta) < (isPp ? 0.005 : 0.05) ? 'flat' : delta > 0 ? 'up' : 'dn');
+    }
+    const sp = document.getElementById(`pd-ap-${id}-spark`); if (sp) sp.innerHTML = sparkSvg(sparkVals, color);
+  };
+  putAp('sess', cur.sessApp ? Math.round(cur.sessApp).toLocaleString() : '-',
+    `전년 ${ly.sessApp ? Math.round(ly.sessApp).toLocaleString() : '-'}`,
+    yoyPct(cur.sessApp || null, ly.sessApp || null), false, series.sessApp, '#8b5cf6');
+  const crC = appCr(cur), crL = appCr(ly);
+  putAp('cr', crC == null ? '-' : crC.toFixed(2) + '%', `전년 ${crL == null ? '-' : crL.toFixed(2) + '%'}`,
+    (crC != null && crL != null) ? crC - crL : null, true,
+    series.sessApp.map((v, i) => v && series.sess[i] ? +(v / series.sess[i] * 100).toFixed(2) : null), '#10b981');
+  const shC = appSh(cur), shL = appSh(ly);
+  putAp('share', shC == null ? '-' : shC.toFixed(1) + '%', `전년 ${shL == null ? '-' : shL.toFixed(1) + '%'}`,
+    (shC != null && shL != null) ? shC - shL : null, true,
+    series.sessApp.map((v, i) => v && series.sess[i] ? +(v / series.sess[i] * 100).toFixed(1) : null), '#3b82f6');
+
+  periodTrendSeries = { labels, series, cr: crS, from, to };
   renderPeriodTrendChart();
+  renderPeriodCrTrend();
 
   renderPeriodChannelDonuts();
   renderPeriodChannelShare();
   renderPdChannelMatrix(from, to);
   renderPdChAd();
   renderPdChidDetail();
+}
+
+// 전환율 추이 — Weekly renderWeeklyCrTrend와 같은 3계열, 기간조회는 일 단위
+let periodCrChart = null;
+function renderPeriodCrTrend() {
+  const canvas = document.getElementById('chart-period-cr');
+  if (!canvas || !periodTrendSeries) return;
+  const { labels, cr } = periodTrendSeries;
+  if (periodCrChart) { periodCrChart.destroy(); periodCrChart = null; }
+  periodCrChart = new Chart(canvas, {
+    type: 'line',
+    data: { labels, datasets: [
+      { label: '세션→구매', data: cr.s2p, borderColor: '#10b981', backgroundColor: '#10b981',
+        borderWidth: 2, pointRadius: 1.5, tension: 0.3, spanGaps: true, datalabels: { display: false } },
+      { label: '세션→신규가입', data: cr.s2j, borderColor: '#6366f1', backgroundColor: '#6366f1',
+        borderWidth: 2, pointRadius: 1.5, tension: 0.3, spanGaps: true, datalabels: { display: false } },
+      { label: '신규가입→첫구매', data: cr.j2f, borderColor: '#f59e0b', backgroundColor: '#f59e0b',
+        borderWidth: 2, pointRadius: 1.5, tension: 0.3, spanGaps: true, datalabels: { display: false }, yAxisID: 'y1' },
+    ] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true, position: 'bottom', labels: { font: { size: 10 }, boxWidth: 10 } },
+        datalabels: { display: false },
+        tooltip: { mode: 'index', intersect: false, callbacks: { label: c => `${c.dataset.label}: ${c.parsed.y}%` } },
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 9 }, maxTicksLimit: 15 } },
+        y:  { position: 'left', grid: { color: '#f1f5f9' }, border: { display: false },
+              ticks: { color: '#94a3b8', font: { size: 10 }, callback: v => v + '%' } },
+        y1: { position: 'right', grid: { display: false }, border: { display: false },
+              ticks: { color: '#f59e0b', font: { size: 10 }, callback: v => v + '%' } },
+      },
+    },
+  });
 }
 
 function renderPeriodTrendChart() {
@@ -3808,11 +3993,30 @@ function renderPdChannelMatrix(from, to) {
     const pTxt = p == null ? '' : ` <span style="font-size:10px;font-weight:700;color:${p >= 0 ? '#10b981' : '#ef4444'}">${p >= 0 ? '+' : ''}${p.toFixed(0)}%</span>`;
     return `<td><b>${Math.round(a / 1e6).toLocaleString()}</b>${pTxt}</td>`;
   };
+  // 2026-07-27: Weekly 채널 성과 매트릭스와 같은 8컬럼으로 확장(APP 세션·주문건수·CR 추가).
+  // aggChannelRange가 이미 sessApp·orders를 주고 있어 집계 변경은 없다.
+  // 전체 행은 합산해서 맨 위에 — 채널별만 보면 규모 감이 안 잡힌다.
   const el = document.getElementById('pd-ch-matrix');
-  if (el) el.innerHTML = WK_CH_ORDER
-    .filter(b => cur[b].sess || cur[b].join || cur[b].first)
-    .map(b => `<tr><td style="font-weight:700">${b}</td>${revCell(cur[b].rev, ly[b].rev)}${cell(cur[b].sess, ly[b].sess)}${cell(cur[b].join, ly[b].join)}${cell(cur[b].first, ly[b].first)}</tr>`)
-    .join('');
+  if (!el) return;
+  const sumAll = (o) => WK_CH_ORDER.reduce((a, b) => {
+    ['sess', 'sessApp', 'orders', 'join', 'first', 'rev'].forEach(k => a[k] += o[b][k] || 0); return a;
+  }, { sess: 0, sessApp: 0, orders: 0, join: 0, first: 0, rev: 0 });
+  const tCur = sumAll(cur), tLy = sumAll(ly);
+  const row = (label, c, l, bold) => {
+    const appPct = c.sess && c.sessApp ? ` <span style="font-size:9.5px;color:#94a3b8">(${Math.round(c.sessApp / c.sess * 100)}%)</span>` : '';
+    return `<tr><td style="font-weight:${bold ? 800 : 700}">${label}</td>`
+      + cell(c.sess, l.sess)
+      + `<td>${(c.sessApp || 0).toLocaleString()}${appPct}</td>`
+      + cell(c.join, l.join) + cell(c.first, l.first) + cell(c.orders, l.orders)
+      + revCell(c.rev, l.rev)
+      + chCrCell(c, l)   // 세션→주문 CR, 증감은 %p (Daily·Weekly와 공유하는 헬퍼)
+      + '</tr>';
+  };
+  el.innerHTML = row('전체', tCur, tLy, true)
+    + WK_CH_ORDER
+      .filter(b => cur[b].sess || cur[b].join || cur[b].first)
+      .map(b => row(b, cur[b], ly[b], false))
+      .join('');
 }
 
 // 기간×채널ID(CH_AD) 합산 — 임의 기간 지원
@@ -3888,7 +4092,11 @@ function renderPdChAd() {
   }
   updatePdChAdHeaders();
   if (!rows.length) {
-    body.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:12px">해당 기간 광고 채널 데이터 없음 (CH_AD 보유: 최근 120일)</td></tr>';
+    // 2026-07-27: "최근 120일" 하드코딩 → 실제 보유 범위 런타임 산출(Weekly와 동일 처리).
+    // 롤링 창이라 시작일이 매일 바뀌므로 고정 문구는 곧 틀어진다.
+    const adDays = Object.keys(CH_AD).sort();
+    const adRange = adDays.length ? `${adDays[0]}~${adDays[adDays.length - 1]}` : '없음';
+    body.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:12px">해당 기간 광고 채널 데이터 없음 (CH_AD 보유: ${adRange})</td></tr>`;
     if (subEl) subEl.textContent = '';
     return;
   }
@@ -3961,9 +4169,18 @@ function renderPdChidDetail() {
   });
   const label = { join: '신규가입', first: '첫구매', rev: '총수주', sess: '세션' }[metric];
   const rangeTxt = from && to ? ` (${from}~${to})` : '';
-  const emptyNote = dates.length ? '' : ' · 선택 기간에 데이터 없음(CH_AD 보유: 최근 120일)';
+  // 2026-07-27: "최근 120일"·"최근 34일" 하드코딩 제거. 34일은 실측(482일)과 완전히
+  // 어긋난 오정보였다 — 실제 보유 범위를 런타임 산출한다.
+  const allAd = Object.keys(CH_AD).sort();
+  const emptyNote = dates.length ? ''
+    : ` · 선택 기간에 데이터 없음(CH_AD 보유: ${allAd.length ? `${allAd[0]}~${allAd[allAd.length - 1]}` : '없음'})`;
+  const sessDays = dates.filter(ds => { const r = CH_AD[ds][pdSelectedChid]; return r && r[3]; });
+  const sessNote = metric === 'sess'
+    ? (sessDays.length ? ` · 세션 보유 ${sessDays[0]}~${sessDays[sessDays.length - 1]} (${sessDays.length}일)`
+                       : ' · 이 채널ID는 선택 기간에 세션 보유 없음')
+    : '';
   if (sub) sub.textContent = `${pdSelectedChid}${m.ch ? ` (${m.ch})` : ''} ${m.label ? '· ' + m.label : ''} · ${label} 일별 추이${rangeTxt}`
-    + (metric === 'sess' ? ' · 세션은 트래픽 시트 보유기간(최근 34일)만 표시' : '') + emptyNote;
+    + sessNote + emptyNote;
 
   if (!dates.length) {
     if (pdChidDetailChart) { pdChidDetailChart.destroy(); pdChidDetailChart = null; }
@@ -6514,8 +6731,11 @@ document.addEventListener('DOMContentLoaded', () => {
       renderChannelStatusChart();
       renderChannelMtdMatrix();
       loadTrendComment();  // 시장 트렌드(외부 대시보드 AI 분석) — 독립 fetch, 데이터 있을 때만 표시
-      // 데이터 로드 전에 Weekly 탭에 진입해 있었으면 로드 완료 시점에 렌더
+      // 데이터 로드 전에 Weekly·기간조회 탭에 진입해 있었으면 로드 완료 시점에 렌더.
+      // 2026-07-27: 기간조회가 빠져 있어서, 로드 전에 그 탭에 들어가면 RAW가 비어
+      // 아무것도 안 그려진 채로 남고 사용자가 '조회'를 누르기 전까지 복구가 안 됐다.
       if (document.getElementById('view-weekly').style.display !== 'none') renderWeekly();
+      if (document.getElementById('view-period').style.display !== 'none') renderPeriodView();
       init();
     })
     .catch(err => {
