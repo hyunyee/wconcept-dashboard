@@ -764,7 +764,7 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
   <div class="card" style="margin-bottom:14px">
     <div class="card-title">전환 경로 <span style="font-size:10px;color:#94a3b8;font-weight:400">당월 1일~기준일 · 세션 기준 · 굵기 = 세션 수</span></div>
     <div class="card-sub" id="sankey-sub">-</div>
-    <div id="sankey-hint" style="font-size:10.5px;color:#94a3b8;margin:2px 0 4px">채널 이름을 클릭하면 그 채널의 경로만 강조되고, 위 숫자도 그 채널 기준으로 바뀝니다</div>
+    <div id="sankey-hint" style="font-size:10.5px;color:#94a3b8;margin:2px 0 4px">어느 노드든 클릭하면 그 경로만 강조되고, 위 숫자도 그 기준으로 바뀝니다</div>
     <div style="overflow-x:auto"><svg id="sankey-daily" style="width:100%;min-width:680px;height:400px" preserveAspectRatio="xMidYMid meet"></svg></div>
     <div style="font-size:10px;color:#94a3b8;margin-top:6px">※ 상품조회는 세션의 부분집합이 아니라(세션의 3.8배) 흐름으로 그릴 수 없어 단계에서 제외</div>
   </div>
@@ -3706,8 +3706,8 @@ function renderChannelMtdMatrix() {
 const SANKEY_DEV = ['app', 'mw', 'pc'];
 const SANKEY_DEV_LABEL = { app: 'APP', mw: 'MW', pc: 'PC' };
 const SANKEY_DEV_COLOR = { app: '#8b5cf6', mw: '#0ea5e9', pc: '#94a3b8' };
-let sankeyPickedCh = null;   // 클릭한 채널
-let sankeyData = null;       // 하이라이트 시 부제를 다시 계산하려고 렌더 결과를 들고 있는다
+let sankeyPick = null;   // {type:'ch'|'dev'|'out', key} — 노드 클릭 선택
+let sankeyData = null;   // 하이라이트 시 숫자를 다시 계산하려고 렌더 결과를 들고 있는다
 
 function aggChannelDeviceRange(from, to) {
   const out = {};   // {채널버킷: {app:{s,p}, mw:…, pc:…}}
@@ -3731,51 +3731,98 @@ function aggChannelDeviceRange(from, to) {
   return out;
 }
 
-function pickSankeyChannel(ch) {
-  sankeyPickedCh = (sankeyPickedCh === ch) ? null : ch;   // 같은 채널 다시 누르면 해제
+// 어느 열의 노드든 눌러서 스코프를 바꾼다. 같은 노드를 다시 누르면 해제.
+function pickSankeyNode(type, key) {
+  sankeyPick = (sankeyPick && sankeyPick.type === type && sankeyPick.key === key) ? null : { type, key };
   applySankeyHighlight();
 }
 
-// 하이라이트는 투명도만 바꾸는 게 아니라 **부제 숫자도 선택 채널 기준으로 다시 계산**한다.
-// 예전엔 부제가 항상 전체 합계라, Organic이 세션의 65%를 차지하는 탓에 어느 채널을 눌러도
+// 하이라이트는 투명도만 바꾸는 게 아니라 **숫자도 선택 스코프로 다시 계산**한다.
+// 예전엔 부제가 항상 전체 합계라, Organic이 세션의 65%를 차지하는 탓에 무엇을 눌러도
 // 사실상 Organic 수치가 그대로 보였다(사용자 지적).
 function applySankeyHighlight() {
   const svg = document.getElementById('sankey-daily');
   if (!svg || !sankeyData) return;
-  const { agg, devs, total, chTot } = sankeyData;
+  const { agg, devs, chs, total } = sankeyData;
+  const pk = sankeyPick;
 
-  svg.querySelectorAll('[data-ch]').forEach(el => {
-    el.style.opacity = (!sankeyPickedCh || el.getAttribute('data-ch') === sankeyPickedCh) ? '' : '0.1';
+  // 리본 — stage1(채널→디바이스)엔 data-out이 없다. 결과를 고르면 stage1은 전부
+  // 매칭에서 빠지는데, 완전히 지우면 왼쪽 절반이 빈 화면이 되므로 옅게만 남긴다.
+  svg.querySelectorAll('path[data-ch]').forEach(el => {
+    let on = true, ghost = false;
+    if (pk) {
+      if (pk.type === 'ch')  on = el.getAttribute('data-ch') === pk.key;
+      if (pk.type === 'dev') on = el.getAttribute('data-dev') === pk.key;
+      if (pk.type === 'out') {
+        const o = el.getAttribute('data-out');
+        on = o === pk.key;
+        ghost = !o;   // stage1 리본
+      }
+    }
+    el.style.opacity = on ? '' : (ghost ? '0.16' : '0.08');
   });
+  // 노드 — 선택한 열의 다른 노드만 흐리게. 다른 열은 흐름의 양 끝이라 유지한다.
   svg.querySelectorAll('[data-node]').forEach(el => {
-    const k = el.getAttribute('data-node');
-    // 중간·결과 노드(_로 시작)는 흐름의 도착점이라 항상 유지, 채널 노드만 흐리게
-    el.style.opacity = (!sankeyPickedCh || k === sankeyPickedCh || k.charAt(0) === '_') ? '' : '0.28';
+    const [t, k] = el.getAttribute('data-node').split(':');
+    el.style.opacity = (!pk || pk.type !== t || pk.key === k) ? '' : '0.28';
   });
 
   const nf = v => Math.round(v).toLocaleString();
+  const p1 = v => v.toFixed(1) + '%';
+  const p2 = v => v.toFixed(2) + '%';
+  // 선택 조건에 맞는 (채널,디바이스) 셀만 골라 합산 — 모든 스코프를 한 식으로 계산해
+  // 기준이 갈리지 않게 한다.
+  const cells = (chFilter, devFilter) => {
+    let s = 0, p = 0;
+    chs.forEach(c => devs.forEach(d => {
+      if (chFilter && c.key !== chFilter) return;
+      if (devFilter && d !== devFilter) return;
+      const v = (agg[c.key] || {})[d]; if (!v) return;
+      s += v.s; p += v.p;
+    }));
+    return { s, p };
+  };
+
   const sub = document.getElementById('sankey-sub');
   if (sub) {
-    // 선택이 있으면 그 채널만, 없으면 전체 — 같은 식으로 계산해 기준이 갈리지 않게 한다
-    const pick = sankeyPickedCh;
-    let s = 0, p = 0, per = [];
-    devs.forEach(k => {
-      const v = pick ? ((agg[pick] || {})[k] || { s: 0, p: 0 })
-                     : Object.keys(agg).reduce((a, c) => ({ s: a.s + agg[c][k].s, p: a.p + agg[c][k].p }), { s: 0, p: 0 });
-      s += v.s; p += v.p;
-      if (v.s) per.push(`${SANKEY_DEV_LABEL[k]} ${(v.p / v.s * 100).toFixed(2)}%`);
-    });
-    const scope = pick
-      ? `<b style="color:${CH_COLORS[pick] || '#475569'}">${pick}</b> · 세션 ${nf(s)} (전체의 ${(s / total * 100).toFixed(1)}%)`
-      : `전체 · 세션 ${nf(s)}`;
-    sub.innerHTML = `${scope} → 구매 ${nf(p)} (CR ${s ? (p / s * 100).toFixed(2) : '-'}%)`
-      + (per.length ? ` · ${per.join(' / ')}` : '');
+    let html;
+    if (!pk) {
+      const t = cells(null, null);
+      html = `전체 · 세션 ${nf(t.s)} → 구매 ${nf(t.p)} (CR ${p2(t.p / t.s * 100)}) · `
+        + devs.map(d => { const v = cells(null, d); return `${SANKEY_DEV_LABEL[d]} ${p2(v.p / v.s * 100)}`; }).join(' / ');
+    } else if (pk.type === 'ch') {
+      const t = cells(pk.key, null);
+      html = `<b style="color:${CH_COLORS[pk.key] || '#475569'}">${pk.key}</b> · 세션 ${nf(t.s)} (전체의 ${p1(t.s / total * 100)}) → 구매 ${nf(t.p)} (CR ${p2(t.p / t.s * 100)}) · `
+        + devs.map(d => { const v = cells(pk.key, d); return v.s ? `${SANKEY_DEV_LABEL[d]} ${p2(v.p / v.s * 100)}` : null; }).filter(Boolean).join(' / ');
+    } else if (pk.type === 'dev') {
+      const t = cells(null, pk.key);
+      // 디바이스를 고르면 "이 디바이스 안에서 어느 채널이 잘 되나"가 궁금해진다
+      const byCh = chs.map(c => ({ k: c.key, ...cells(c.key, pk.key) })).filter(x => x.s).sort((a, b) => b.p - a.p).slice(0, 4);
+      html = `<b style="color:${SANKEY_DEV_COLOR[pk.key]}">${SANKEY_DEV_LABEL[pk.key]}</b> · 세션 ${nf(t.s)} (전체의 ${p1(t.s / total * 100)}) → 구매 ${nf(t.p)} (CR ${p2(t.p / t.s * 100)}) · `
+        + byCh.map(x => `${x.k} ${p2(x.p / x.s * 100)}`).join(' / ');
+    } else {
+      // 구매/미구매를 고르면 총량보다 "무엇으로 이뤄져 있나"(구성비)가 정보다
+      const isBuy = pk.key === 'buy';
+      const val = c => { const v = cells(c, null); return isBuy ? v.p : v.s - v.p; };
+      const t = chs.reduce((a, c) => a + val(c.key), 0);
+      const byCh = chs.map(c => ({ k: c.key, v: val(c.key) })).filter(x => x.v > 0).sort((a, b) => b.v - a.v).slice(0, 4);
+      const byDev = devs.map(d => {
+        const v = cells(null, d); return { k: SANKEY_DEV_LABEL[d], v: isBuy ? v.p : v.s - v.p };
+      }).filter(x => x.v > 0).sort((a, b) => b.v - a.v);
+      html = `<b style="color:${isBuy ? '#10b981' : '#64748b'}">${isBuy ? '구매' : '미구매'}</b> ${nf(t)} (전체 세션의 ${p1(t / total * 100)}) · `
+        + `채널 ${byCh.map(x => `${x.k} ${p1(x.v / t * 100)}`).join(' / ')} · `
+        + `기기 ${byDev.map(x => `${x.k} ${p1(x.v / t * 100)}`).join(' / ')}`;
+    }
+    sub.innerHTML = html;
   }
 
   const hint = document.getElementById('sankey-hint');
-  if (hint) hint.textContent = sankeyPickedCh
-    ? `${sankeyPickedCh} 경로만 강조 중 — 같은 채널을 다시 누르면 해제 (위 숫자도 이 채널 기준)`
-    : '채널 이름을 클릭하면 그 채널의 경로만 강조되고, 위 숫자도 그 채널 기준으로 바뀝니다';
+  if (hint) {
+    const LBL = { ch: '채널', dev: '기기', out: '결과' };
+    hint.textContent = pk
+      ? `${LBL[pk.type]} 기준으로 보는 중 — 같은 노드를 다시 누르면 해제`
+      : '어느 노드든 클릭하면 그 경로만 강조되고, 위 숫자도 그 기준으로 바뀝니다';
+  }
 }
 
 // 인라인 SVG로 직접 그린다 — Chart.js엔 생키가 없고, 플러그인을 CDN으로 새로 물면
@@ -3811,15 +3858,15 @@ function renderFunnelSankey(svgId, subId, from, to) {
   const P1 = place(devs.map(k => ({ key: k, v: devTot[k].s })));
   const P2 = place([{ key: 'buy', v: buy }, { key: 'nobuy', v: nobuy }]);
 
-  const ribbon = (x0, y0, x1, y1, h, fill, op, ch, title) => {
+  const ribbon = (x0, y0, x1, y1, h, fill, op, attrs, title) => {
     const xm = (x0 + x1) / 2;
-    return `<path data-ch="${ch}" d="M${x0},${y0} C${xm},${y0} ${xm},${y1} ${x1},${y1} L${x1},${y1 + h} C${xm},${y1 + h} ${xm},${y0 + h} ${x0},${y0 + h} Z" fill="${fill}" fill-opacity="${op}"><title>${title}</title></path>`;
+    return `<path ${attrs} d="M${x0},${y0} C${xm},${y0} ${xm},${y1} ${x1},${y1} L${x1},${y1 + h} C${xm},${y1 + h} ${xm},${y0 + h} ${x0},${y0 + h} Z" fill="${fill}" fill-opacity="${op}"><title>${title}</title></path>`;
   };
   const nf = v => Math.round(v).toLocaleString();
   const pct = v => (v / total * 100).toFixed(1) + '%';
 
   // 리본은 (디바이스, 채널) 고정 순서로 그려야 층이 안 엉킨다.
-  // 디바이스 이후 구간도 채널별로 쪼개 그린다 — 합쳐 그리면 채널 하이라이트 추적이 불가능.
+  // 디바이스 이후 구간도 채널별로 쪼개 그린다 — 합쳐 그리면 채널 추적이 불가능.
   let s = '';
   const o0 = {}, o1i = {}, o1o = {}, o2 = { buy: P2.buy.y, nobuy: P2.nobuy.y };
   chs.forEach(c => o0[c.key] = P0[c.key].y);
@@ -3828,7 +3875,8 @@ function renderFunnelSankey(svgId, subId, from, to) {
   devs.forEach(k => chs.forEach(c => {
     const v = (agg[c.key] || {})[k]; if (!v || !v.s) return;
     const h = v.s * sc;
-    s += ribbon(X[0] + NW, o0[c.key], X[1], o1i[k], h, CH_COLORS[c.key] || '#cbd5e1', .3, c.key,
+    s += ribbon(X[0] + NW, o0[c.key], X[1], o1i[k], h, CH_COLORS[c.key] || '#cbd5e1', .3,
+      `data-ch="${c.key}" data-dev="${k}"`,
       `${c.key} → ${SANKEY_DEV_LABEL[k]} · 세션 ${nf(v.s)}`);
     o0[c.key] += h; o1i[k] += h;
   }));
@@ -3838,33 +3886,39 @@ function renderFunnelSankey(svgId, subId, from, to) {
       const tgt = pair[0], val = pair[1], col = pair[2], op = pair[3];
       if (val <= 0) return;
       const h = val * sc;
-      s += ribbon(X[1] + NW, o1o[k], X[2], o2[tgt], h, col, op, c.key,
+      s += ribbon(X[1] + NW, o1o[k], X[2], o2[tgt], h, col, op,
+        `data-ch="${c.key}" data-dev="${k}" data-out="${tgt}"`,
         `${c.key} · ${SANKEY_DEV_LABEL[k]} → ${tgt === 'buy' ? '구매' : '미구매'} ${nf(val)}`
         + (tgt === 'buy' ? ` (CR ${(v.p / v.s * 100).toFixed(2)}%)` : ''));
       o1o[k] += h; o2[tgt] += h;
     });
   }));
 
-  // 노드 — force=true면 얇아도 라벨을 단다(구매는 2%대라 가드에 걸려 사라졌었음)
-  const node = (x, y, h, col, label, val, anchor, tx, force, key, clickable) => {
-    const clk = clickable ? ` style="cursor:pointer" onclick="pickSankeyChannel('${label}')"` : '';
-    return `<rect data-node="${key}" x="${x}" y="${y}" width="${NW}" height="${h}" rx="2" fill="${col}"${clk}><title>${label} ${nf(val)} (${pct(val)})</title></rect>`
+  // 노드 — 전부 클릭 가능. force=true면 얇아도 라벨을 단다(구매는 2%대라 가드에 걸렸었음)
+  const node = (x, y, h, col, label, val, anchor, tx, force, type, key) => {
+    const clk = ` style="cursor:pointer" onclick="pickSankeyNode('${type}','${key}')"`;
+    return `<rect data-node="${type}:${key}" x="${x}" y="${y}" width="${NW}" height="${h}" rx="2" fill="${col}"${clk}><title>${label} ${nf(val)} (${pct(val)})</title></rect>`
       + ((force || h >= 11)
-        ? `<text x="${tx}" y="${y + h / 2 + 3.5}" text-anchor="${anchor}" font-size="10.5" fill="#475569"${clk}><tspan font-weight="700">${label}</tspan> <tspan fill="#94a3b8">${nf(val)} (${pct(val)})</tspan></text>`
+        ? `<text data-node="${type}:${key}" x="${tx}" y="${y + h / 2 + 3.5}" text-anchor="${anchor}" font-size="10.5" fill="#475569"${clk}><tspan font-weight="700">${label}</tspan> <tspan fill="#94a3b8">${nf(val)} (${pct(val)})</tspan></text>`
         : '');
   };
-  chs.forEach(c => s += node(X[0], P0[c.key].y, P0[c.key].h, CH_COLORS[c.key] || '#cbd5e1', c.key, c.s, 'start', X[0] + NW + 5, false, c.key, true));
-  devs.forEach(k => s += node(X[1], P1[k].y, P1[k].h, SANKEY_DEV_COLOR[k], SANKEY_DEV_LABEL[k], devTot[k].s, 'start', X[1] + NW + 5, false, '_' + k, false));
-  s += node(X[2], P2.buy.y,   P2.buy.h,   '#10b981', '구매',   buy,   'end', X[2] - 5, true,  '_buy',   false);
-  s += node(X[2], P2.nobuy.y, P2.nobuy.h, '#cbd5e1', '미구매', nobuy, 'end', X[2] - 5, false, '_nobuy', false);
+  chs.forEach(c => s += node(X[0], P0[c.key].y, P0[c.key].h, CH_COLORS[c.key] || '#cbd5e1', c.key, c.s, 'start', X[0] + NW + 5, false, 'ch', c.key));
+  devs.forEach(k => s += node(X[1], P1[k].y, P1[k].h, SANKEY_DEV_COLOR[k], SANKEY_DEV_LABEL[k], devTot[k].s, 'start', X[1] + NW + 5, false, 'dev', k));
+  s += node(X[2], P2.buy.y,   P2.buy.h,   '#10b981', '구매',   buy,   'end', X[2] - 5, true,  'out', 'buy');
+  s += node(X[2], P2.nobuy.y, P2.nobuy.h, '#cbd5e1', '미구매', nobuy, 'end', X[2] - 5, false, 'out', 'nobuy');
 
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
   svg.innerHTML = s;
 
-  // 선택한 채널이 이번 기간에 없으면 선택 해제(빈 하이라이트 방지)
-  if (sankeyPickedCh && !chs.some(c => c.key === sankeyPickedCh)) sankeyPickedCh = null;
-  sankeyData = { agg, devs, total, chTot: chs };
-  applySankeyHighlight();   // 부제도 여기서 채운다(전체/선택 채널 기준이 한 곳에서 갈림)
+  // 선택한 노드가 이번 기간에 없으면 해제(빈 하이라이트 방지)
+  if (sankeyPick) {
+    const alive = sankeyPick.type === 'ch'  ? chs.some(c => c.key === sankeyPick.key)
+                : sankeyPick.type === 'dev' ? devs.indexOf(sankeyPick.key) >= 0
+                : true;
+    if (!alive) sankeyPick = null;
+  }
+  sankeyData = { agg, devs, chs, total };
+  applySankeyHighlight();   // 숫자도 여기서 채운다(전체/선택 기준이 한 곳에서 갈림)
 }
 
 // ── ③-2 쿠폰·할인 효율 ────────────────────────────────────────────────────────
