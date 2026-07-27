@@ -766,7 +766,7 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
     <div class="card-sub" id="sankey-sub">-</div>
     <div id="sankey-hint" style="font-size:10.5px;color:#94a3b8;margin:2px 0 4px">채널·기기 노드를 클릭하면 그 기준으로, 구매 노드를 누르면 구매 기준 굵기로 바뀝니다</div>
     <div style="overflow-x:auto"><svg id="sankey-daily" style="width:100%;min-width:680px;height:400px" preserveAspectRatio="xMidYMid meet"></svg></div>
-    <div style="font-size:10px;color:#94a3b8;margin-top:6px">※ 구매는 전체 세션의 2.6%라 리본이 얇다 — 구매 구성은 구매 노드를 클릭해 확인 · 상품조회는 세션의 부분집합이 아니라(3.8배) 단계에서 제외 · APP 경로는 기본 강조</div>
+    <div style="font-size:10px;color:#94a3b8;margin-top:6px">※ 구매는 전체 세션의 2.6%라 리본이 얇다 — 구매 구성은 구매 노드를 클릭해 확인 · 상품조회는 세션의 부분집합이 아니라(3.8배) 단계에서 제외 · APP 경로는 기본 강조 · 기기 노드의 CR 막대는 스코프 내 최고 CR 기준 상대 길이</div>
   </div>
 
   <!-- ③-2 쿠폰·할인 효율 — 전환율에 영향을 주는 비용 레버라 전환 퍼널과 같은 섹션에 둔다.
@@ -3701,6 +3701,7 @@ function renderChannelMtdMatrix() {
 const SANKEY_DEV = ['app', 'mw', 'pc'];
 const SANKEY_DEV_LABEL = { app: 'APP', mw: 'MW', pc: 'PC' };
 const SANKEY_DEV_COLOR = { app: '#8b5cf6', mw: '#0ea5e9', pc: '#94a3b8' };
+const CRBAR_W = 62;   // CR 미니바 최대 길이(px) — 스코프 내 최고 CR이 이 길이
 let sankeyPick = null;          // {type:'ch'|'dev', key} — 노드 클릭 스코프
 let sankeyData = null;
 
@@ -3802,6 +3803,17 @@ function applySankeyHighlight() {
     }
     // 세션·구매 비중을 항상 병기 — 이 격차가 이 차트의 핵심 인사이트다
     box.textContent = `${nf(v.s)} (세션 ${ds ? p1(v.s / ds * 100) : '-'} · 구매 ${dp ? p1(v.p / dp * 100) : '-'})`;
+  });
+
+  // CR 미니바 — 채널을 고르면 그 채널 안에서의 기기별 CR로 바뀐다(기기·결과 선택은 전체 기준).
+  // 길이는 스코프 내 최고 CR을 기준으로 정규화 — 절대 수준은 옆 숫자가 알려준다.
+  const crOf = k => { const v = cells(cf, k); return v.s ? v.p / v.s * 100 : 0; };
+  const crMax = Math.max(...devs.map(crOf), 0.0001);
+  svg.querySelectorAll('g[data-crbar]').forEach(g => {
+    const k = g.getAttribute('data-crbar'), cr = crOf(k);
+    const fill = g.querySelector('.cr-fill'), txt = g.querySelector('.cr-txt');
+    if (fill) fill.setAttribute('width', (CRBAR_W * cr / crMax).toFixed(1));
+    if (txt) txt.textContent = `CR ${p2(cr)}`;
   });
 
   const sub = document.getElementById('sankey-sub');
@@ -3921,7 +3933,20 @@ function renderFunnelSankey(svgId, subId, from, to) {
         : '');
   };
   chs.forEach(c => s += node(X[0], P0[c.key].y, P0[c.key].h, CH_COLORS[c.key] || '#cbd5e1', c.key, 'start', X[0] + NW + 5, false, 'ch', c.key));
-  devs.forEach(k => s += node(X[1], P1[k].y, P1[k].h, SANKEY_DEV_COLOR[k], SANKEY_DEV_LABEL[k], 'start', X[1] + NW + 5, false, 'dev', k));
+  // 디바이스 노드 + CR 미니바.
+  // 이 데이터에서 APP의 가치는 '세션이 많다'가 아니라 '전환이 6배 좋다'인데(APP 3.73%
+  // vs PC 0.58%) 그게 부제 숫자로만 있어서 한 번 더 계산해야 보였다. 막대 길이로 바꾸면
+  // 읽지 않고도 격차가 들어온다. 라벨 아래 줄에 둬서 리본·다음 노드와 겹치지 않게 한다.
+  devs.forEach(k => {
+    s += node(X[1], P1[k].y, P1[k].h, SANKEY_DEV_COLOR[k], SANKEY_DEV_LABEL[k], 'start', X[1] + NW + 5, false, 'dev', k);
+    if (P1[k].h < 28) return;   // 두 줄이 안 들어가는 얇은 노드는 생략
+    const bx = X[1] + NW + 5, by = P1[k].y + P1[k].h / 2 + 10;
+    s += `<g data-crbar="${k}">`
+      + `<rect x="${bx}" y="${by}" width="${CRBAR_W}" height="5" rx="2.5" fill="#e2e8f0"/>`
+      + `<rect class="cr-fill" x="${bx}" y="${by}" width="0" height="5" rx="2.5" fill="${SANKEY_DEV_COLOR[k]}"/>`
+      + `<text class="cr-txt" x="${bx + CRBAR_W + 6}" y="${by + 4.8}" font-size="9.5" font-weight="700" fill="${SANKEY_DEV_COLOR[k]}"></text>`
+      + `</g>`;
+  });
   outs.forEach(o => s += node(X[2], P2[o.key].y, P2[o.key].h, o.key === 'buy' ? '#10b981' : '#cbd5e1',
     o.key === 'buy' ? '구매' : '미구매', 'end', X[2] - 5, true, 'out', o.key));
 
