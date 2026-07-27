@@ -762,17 +762,11 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
        단계 퍼널을 생키로 못 그리는 이유는 renderFunnelSankey 주석 참고(상품조회가 세션의
        부분집합이 아님). 세션 단위 채널→디바이스→구매/미구매는 보존이 정확히 맞는다. -->
   <div class="card" style="margin-bottom:14px">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
-      <div class="card-title" style="margin-bottom:0">전환 경로 <span style="font-size:10px;color:#94a3b8;font-weight:400">당월 1일~기준일</span></div>
-      <span id="sankey-metric" style="display:inline-flex;border:1px solid #e2e8f0;border-radius:6px;overflow:hidden">
-        <button type="button" class="ch-scope-btn active" data-m="sess" onclick="setSankeyMetric('sess')">세션 기준</button>
-        <button type="button" class="ch-scope-btn" data-m="buy" onclick="setSankeyMetric('buy')">구매 기준</button>
-      </span>
-    </div>
+    <div class="card-title">전환 경로 <span style="font-size:10px;color:#94a3b8;font-weight:400">당월 1일~기준일 · 굵기 = 세션 수</span></div>
     <div class="card-sub" id="sankey-sub">-</div>
     <div id="sankey-hint" style="font-size:10.5px;color:#94a3b8;margin:2px 0 4px">채널·기기 노드를 클릭하면 그 기준으로, 구매 노드를 누르면 구매 기준 굵기로 바뀝니다</div>
     <div style="overflow-x:auto"><svg id="sankey-daily" style="width:100%;min-width:680px;height:400px" preserveAspectRatio="xMidYMid meet"></svg></div>
-    <div style="font-size:10px;color:#94a3b8;margin-top:6px">※ 세션 기준에선 구매가 전체의 2.6%라 리본이 0.3~0.5px로 눌린다 — 구매 구성을 볼 땐 <b>구매 기준</b>으로 전환 · 상품조회는 세션의 부분집합이 아니라(3.8배) 단계에서 제외 · APP 경로는 기본 강조</div>
+    <div style="font-size:10px;color:#94a3b8;margin-top:6px">※ 구매는 전체 세션의 2.6%라 리본이 얇다 — 구매 구성은 구매 노드를 클릭해 확인 · 상품조회는 세션의 부분집합이 아니라(3.8배) 단계에서 제외 · APP 경로는 기본 강조</div>
   </div>
 
   <!-- ③-2 쿠폰·할인 효율 — 전환율에 영향을 주는 비용 레버라 전환 퍼널과 같은 섹션에 둔다.
@@ -3701,16 +3695,13 @@ function renderChannelMtdMatrix() {
 // 단계: 채널 → 디바이스 → 구매/미구매. 세션이 단위라 각 단계에서 보존이 성립한다.
 // 넣지 않은 단계: 상품조회(세션의 3.8배라 흐름 아님), 장바구니(바로구매 구분 불가).
 //
-// 지표 토글이 필요한 이유(실측): 세션 기준으로 그리면 구매가 전체의 2.6%뿐이라
-// 400px 중 8.6px에 리본 21개가 몰려 평균 0.4px — 구매 구성은 눈으로 읽는 게 불가능했다.
-// 구매 기준으로 스케일하면 같은 데이터가 그대로 읽힌다(Organic·APP 하나가 67%).
-// 그리고 이 데이터의 핵심은 세션과 구매의 '비중 격차'다 — APP은 세션 58%로 구매 84%,
-// PC는 세션 22%로 구매 5%. 그래서 노드 라벨에 두 비중을 항상 병기한다.
+// 굵기는 항상 세션 수. 이 데이터의 핵심은 세션과 구매의 '비중 격차'라 — APP은 세션 58%로
+// 구매 84%, PC는 세션 22%로 구매 5% — 노드 라벨에 두 비중을 항상 병기한다.
+// 구매는 전체의 2.6%뿐이라 리본이 얇다(구매 구성은 구매 노드를 클릭해 스코프로 확인).
 const SANKEY_DEV = ['app', 'mw', 'pc'];
 const SANKEY_DEV_LABEL = { app: 'APP', mw: 'MW', pc: 'PC' };
 const SANKEY_DEV_COLOR = { app: '#8b5cf6', mw: '#0ea5e9', pc: '#94a3b8' };
 let sankeyPick = null;          // {type:'ch'|'dev', key} — 노드 클릭 스코프
-let sankeyMetric = 'sess';      // 'sess' | 'buy' — 리본 굵기가 무엇을 뜻하는지
 let sankeyData = null;
 
 function aggChannelDeviceRange(from, to) {
@@ -3735,22 +3726,10 @@ function aggChannelDeviceRange(from, to) {
   return out;
 }
 
-function setSankeyMetric(m) {
-  sankeyMetric = m;
-  document.querySelectorAll('#sankey-metric .ch-scope-btn').forEach(b =>
-    b.classList.toggle('active', b.dataset.m === m));
-  redrawSankey();
-}
-// 채널·디바이스만 스코프 대상. 구매/미구매는 지표 토글과 의미가 겹쳐 노드 클릭을
-// 토글 전환에 연결했다(구매 노드 클릭 = 구매 기준으로 보기).
+// 어느 열의 노드든 눌러 스코프를 바꾼다. 같은 노드 재클릭으로 해제.
 function pickSankeyNode(type, key) {
-  if (type === 'out') { setSankeyMetric(key === 'buy' ? 'buy' : 'sess'); return; }
   sankeyPick = (sankeyPick && sankeyPick.type === type && sankeyPick.key === key) ? null : { type, key };
   applySankeyHighlight();
-}
-function redrawSankey() {
-  const ys = getEffectiveDailyDate();
-  if (ys) renderFunnelSankey('sankey-daily', 'sankey-sub', `${ys.substring(0, 7)}-01`, ys);
 }
 
 function applySankeyHighlight() {
@@ -3790,12 +3769,22 @@ function applySankeyHighlight() {
   const cf = pk && pk.type === 'ch'  ? pk.key : null;
   const df = pk && pk.type === 'dev' ? pk.key : null;
   const scope = cells(cf, df);
+  // 결과(구매/미구매)를 고르면 그 결과만으로 좁힌다 — 세션·구매 중 한쪽만 남는 셈
+  const isOut = pk && pk.type === 'out';
+  const outBuy = isOut && pk.key === 'buy';
   const denS = pk ? scope.s : totS, denP = pk ? scope.p : totP;
 
   svg.querySelectorAll('text[data-node]').forEach(el => {
     const [t, k] = el.getAttribute('data-node').split(':');
     const box = el.querySelector('.sk-v'); if (!box) return;
     if (t === 'out') {   // 결과 노드는 비중보다 CR이 정보다
+      // 결과를 고른 상태에서 반대쪽 결과 노드는 스코프 밖이라 전체값을 그대로 둔다
+      if (pk && pk.type === 'out' && pk.key !== k) {
+        const a = cells(null, null);
+        const ov = k === 'buy' ? a.p : a.s - a.p;
+        box.textContent = `${nf(ov)} (${p1(a.s ? ov / a.s * 100 : 0)})`;
+        return;
+      }
       const v = k === 'buy' ? scope.p : scope.s - scope.p;
       box.textContent = `${nf(v)} (${k === 'buy' ? 'CR ' + p2(scope.s ? scope.p / scope.s * 100 : 0) : p1(scope.s ? (scope.s - scope.p) / scope.s * 100 : 0)})`;
       return;
@@ -3804,17 +3793,43 @@ function applySankeyHighlight() {
     const v = outOfScope ? (t === 'ch' ? cells(k, null) : cells(null, k))
             : (t === 'ch' ? cells(k, df) : cells(cf, k));
     const ds = outOfScope ? totS : denS, dp = outOfScope ? totP : denP;
-    const cnt = sankeyMetric === 'buy' ? v.p : v.s;
+    if (isOut) {
+      // 결과를 고르면 '세션 몇 %'는 의미가 없다 — 그 결과 안에서의 구성비만 보여준다
+      const cnt = outBuy ? v.p : v.s - v.p;
+      const den = outBuy ? totP : (totS - totP);
+      box.textContent = `${nf(cnt)} (${outBuy ? '구매' : '미구매'}의 ${den ? p1(cnt / den * 100) : '-'})`;
+      return;
+    }
     // 세션·구매 비중을 항상 병기 — 이 격차가 이 차트의 핵심 인사이트다
-    box.textContent = `${nf(cnt)} (세션 ${ds ? p1(v.s / ds * 100) : '-'} · 구매 ${dp ? p1(v.p / dp * 100) : '-'})`;
+    box.textContent = `${nf(v.s)} (세션 ${ds ? p1(v.s / ds * 100) : '-'} · 구매 ${dp ? p1(v.p / dp * 100) : '-'})`;
   });
 
   const sub = document.getElementById('sankey-sub');
   if (sub) {
-    const M = sankeyMetric === 'buy' ? '구매' : '세션';
-    const head = pk
-      ? `<b style="color:${pk.type === 'ch' ? (CH_COLORS[pk.key] || '#475569') : SANKEY_DEV_COLOR[pk.key]}">${pk.type === 'ch' ? pk.key : SANKEY_DEV_LABEL[pk.key]}</b>`
-      : '전체';
+    const headTxt = !pk ? '전체'
+      : pk.type === 'ch'  ? pk.key
+      : pk.type === 'dev' ? SANKEY_DEV_LABEL[pk.key]
+      : (pk.key === 'buy' ? '구매' : '미구매');
+    const headCol = !pk ? '#475569'
+      : pk.type === 'ch'  ? (CH_COLORS[pk.key] || '#475569')
+      : pk.type === 'dev' ? SANKEY_DEV_COLOR[pk.key]
+      : (pk.key === 'buy' ? '#10b981' : '#64748b');
+    const head = pk ? `<b style="color:${headCol}">${headTxt}</b>` : '전체';
+
+    // 결과(구매/미구매)를 고르면 총량 반복이 아니라 "무엇으로 이뤄져 있나"가 정보다.
+    // 채널·기기 두 축의 구성비를 보여준다.
+    if (isOut) {
+      const pickVal = (cf2, df2) => { const a = cells(cf2, df2); return outBuy ? a.p : a.s - a.p; };
+      const tot = pickVal(null, null);
+      const byCh = chs.map(c => ({ k: c.key, v: pickVal(c.key, null) })).filter(x => x.v > 0)
+        .sort((a, b) => b.v - a.v).slice(0, 4);
+      const byDev = devs.map(d => ({ k: SANKEY_DEV_LABEL[d], v: pickVal(null, d) })).filter(x => x.v > 0)
+        .sort((a, b) => b.v - a.v);
+      sub.innerHTML = `${head} ${nf(tot)} (전체 세션의 ${p1(totS ? tot / totS * 100 : 0)})`
+        + ` · 채널 ${byCh.map(x => `${x.k} ${p1(x.v / tot * 100)}`).join(' / ')}`
+        + ` · 기기 ${byDev.map(x => `${x.k} ${p1(x.v / tot * 100)}`).join(' / ')}`;
+    } else {
+
     const detail = pk && pk.type === 'ch'
       ? devs.map(d => { const v = cells(pk.key, d); return v.s ? `${SANKEY_DEV_LABEL[d]} ${p2(v.p / v.s * 100)}` : null; }).filter(Boolean).join(' / ')
       : pk && pk.type === 'dev'
@@ -3823,14 +3838,14 @@ function applySankeyHighlight() {
         : devs.map(d => { const v = cells(null, d); return `${SANKEY_DEV_LABEL[d]} ${p2(v.p / v.s * 100)}`; }).join(' / ');
     sub.innerHTML = `${head} · 세션 ${nf(scope.s)}${pk ? ` (전체의 ${p1(scope.s / totS * 100)})` : ''}`
       + ` → 구매 ${nf(scope.p)}${pk ? ` (전체 구매의 ${p1(scope.p / totP * 100)})` : ''}`
-      + ` · CR ${p2(scope.s ? scope.p / scope.s * 100 : 0)} · ${detail}`
-      + ` <span style="color:#94a3b8">— 굵기는 ${M} 기준</span>`;
+      + ` · CR ${p2(scope.s ? scope.p / scope.s * 100 : 0)} · ${detail}`;
+    }
   }
 
   const hint = document.getElementById('sankey-hint');
   if (hint) hint.textContent = pk
-    ? `${pk.type === 'ch' ? '채널' : '기기'} 기준으로 보는 중 — 같은 노드를 다시 누르면 해제`
-    : '채널·기기 노드를 클릭하면 그 기준으로, 구매 노드를 누르면 구매 기준 굵기로 바뀝니다';
+    ? `${({ ch: '채널', dev: '기기', out: '결과' })[pk.type]} 기준으로 보는 중 — 같은 노드를 다시 누르면 해제`
+    : '어느 노드든 클릭하면 그 경로만 강조되고, 차트 위 숫자도 그 기준으로 바뀝니다';
 }
 
 function renderFunnelSankey(svgId, subId, from, to) {
@@ -3838,8 +3853,7 @@ function renderFunnelSankey(svgId, subId, from, to) {
   if (!svg) return;
   const agg = aggChannelDeviceRange(from, to);
   const sub = document.getElementById(subId);
-  const MB = sankeyMetric === 'buy';
-  const mv = v => MB ? v.p : v.s;          // 리본 굵기가 뜻하는 값
+  const mv = v => v.s;                     // 리본 굵기 = 세션 수
 
   const chs = WK_CH_ORDER
     .map(b => ({ key: b, v: SANKEY_DEV.reduce((a, k) => a + ((agg[b] && mv(agg[b][k])) || 0), 0) }))
@@ -3853,8 +3867,7 @@ function renderFunnelSankey(svgId, subId, from, to) {
   const buy = devs.reduce((a, k) => a + devTot[k].p, 0);
   const nobuy = devs.reduce((a, k) => a + devTot[k].s, 0) - buy;
 
-  // 구매 기준일 땐 미구매가 존재하지 않는다(구매만으로 스케일하므로)
-  const outs = MB ? [{ key: 'buy', v: buy }] : [{ key: 'buy', v: buy }, { key: 'nobuy', v: nobuy }];
+  const outs = [{ key: 'buy', v: buy }, { key: 'nobuy', v: nobuy }];
 
   const W = 940, H = 400, PAD = 12, NW = 12;
   const X = [PAD, W / 2 - NW / 2, W - PAD - NW];
@@ -3888,8 +3901,7 @@ function renderFunnelSankey(svgId, subId, from, to) {
   }));
   devs.forEach(k => chs.forEach(c => {
     const cell = (agg[c.key] || {})[k]; if (!cell || !mv(cell)) return;
-    const pairs = MB ? [['buy', cell.p, '#10b981', .7]]
-                     : [['buy', cell.p, '#10b981', .7], ['nobuy', cell.s - cell.p, '#cbd5e1', .22]];
+    const pairs = [['buy', cell.p, '#10b981', .7], ['nobuy', cell.s - cell.p, '#cbd5e1', .22]];
     pairs.forEach(pr => {
       const tgt = pr[0], val = pr[1], col = pr[2], op = pr[3];
       if (val <= 0) return;
