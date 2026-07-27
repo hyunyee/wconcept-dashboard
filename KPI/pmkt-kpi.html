@@ -30,6 +30,10 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
 .tab-sep{width:1px;height:18px;background:#e2e8f0;margin:0 4px}
 .tab-divider{width:1px;height:32px;background:#e2e8f0;margin:0 8px}
 .tab-note{margin-left:auto;font-size:11px;color:#94a3b8;padding:12px 0}
+/* 2026-07-27: 다른 대시보드(ad.html)로 나가는 링크. .tab-btn을 쓰면 showView()의
+   querySelectorAll('.tab-btn') active 토글에 잡혀 탭처럼 취급되므로 별도 클래스로 둔다. */
+.tab-link{padding:12px 18px;font-size:13px;font-weight:600;color:#94a3b8;text-decoration:none;border-bottom:3px solid transparent;transition:all .15s;position:relative;top:1px;display:inline-flex;align-items:center;gap:4px}
+.tab-link:hover{color:#2563eb;border-bottom-color:#bfdbfe}
 
 /* ─── Layout ─── */
 .main{padding:20px 28px;max-width:1500px;margin:0 auto}
@@ -42,7 +46,9 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
 /* ─── Section heading ─── */
 .sec-hd{display:flex;align-items:center;justify-content:space-between;margin:20px 0 10px}
 .sec-hd h2{font-size:14px;font-weight:800;color:#0f172a;display:flex;align-items:center;gap:6px}
-.sec-hd h2::before{content:'';width:3px;height:14px;background:#3b82f6;border-radius:2px;display:inline-block}
+/* 2026-07-27: 색을 하드코딩하고 있어서 HTML의 --before-color 지정이 6곳 전부 무시되고
+   있었다(전 섹션 컬러바가 파랑). 원저자 의도대로 변수를 읽게 하고 기본값만 남긴다. */
+.sec-hd h2::before{content:'';width:3px;height:14px;background:var(--before-color,#3b82f6);border-radius:2px;display:inline-block}
 .sec-note{font-size:11px;color:#94a3b8}
 
 /* ─── Card ─── */
@@ -207,7 +213,7 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
 
 /* ─── Responsive ─── */
 @media(max-width:1200px){.kpi-grid{grid-template-columns:repeat(3,1fr)}.kpi-grid.kpi-grid-7{grid-template-columns:repeat(4,1fr)}.grid-3{grid-template-columns:1fr 1fr}.grid-4{grid-template-columns:1fr 1fr}.mc-body{grid-template-columns:1fr}}
-@media(max-width:900px){.kpi-grid{grid-template-columns:repeat(2,1fr)}.grid-2,.grid-3,.grid-4,.grid-32{grid-template-columns:1fr}.main{padding:14px 16px}}
+@media(max-width:900px){.kpi-grid{grid-template-columns:repeat(2,1fr)}.kpi-grid.kpi-grid-7{grid-template-columns:repeat(2,1fr)}.grid-2,.grid-3,.grid-4,.grid-32{grid-template-columns:1fr}.main{padding:14px 16px}}
 
 /* ═══ 실시간 대시보드 (scoped: #view-realtime) ═══ */
 /* 탭 내부에서 wck 자체 헤더 숨김 (상위 헤더와 중복) */
@@ -494,6 +500,11 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
   <div class="tab-divider"></div>
   <button class="tab-btn realtime-tab" id="tab-realtime" onclick="setRealtimeView(this)">📊 실시간</button>
   <!-- 광고실적 탭: 별도 광고 대시보드로 재구성 예정이라 임시 숨김. setAdsView()/#view-ads는 코드에 유지 -->
+  <!-- 2026-07-27: 그 "별도 광고 대시보드"(ad.html)로 나가는 링크. 백데이터가 달라 통합은 못 하지만
+       오가는 일이 잦아 탭 자리에 링크로 연결. 상대경로 필수 — GitHub Pages가 프로젝트 경로
+       (/wconcept-dashboard/) 아래라서 절대경로 /ad.html은 404가 난다. -->
+  <div class="tab-divider"></div>
+  <a class="tab-link" href="../ad.html">📈 광고 성과 <span style="font-size:10px">↗</span></a>
   <span class="tab-note">* 채널ID 기준</span>
 </div>
 
@@ -741,6 +752,30 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
     </div>
   </div>
 
+  <!-- ③-2 쿠폰·할인 효율 — 전환율에 영향을 주는 비용 레버라 전환 퍼널과 같은 섹션에 둔다.
+       퍼널 카드(.grid-32)에 3번째 칼럼으로 끼우면 좁아져서 바로 아래 .grid-2로 배치.
+       기간 창은 퍼널과 동일(1일~기준일, 전월/전년 동기간)이라 같은 섹션 안 숫자 기준이 일치. -->
+  <div class="grid-2" id="coupon-section">
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
+        <div class="card-title" style="margin-bottom:0">쿠폰·할인 효율</div>
+        <span class="sec-note" id="coupon-range"></span>
+      </div>
+      <div class="card-sub">쿠폰율 = 쿠폰비_WCK ÷ 순수주 · 체감할인율 = 쿠폰비(전체) ÷ 쿠폰연관순수주</div>
+      <table class="achv-table" style="table-layout:fixed">
+        <colgroup><col style="width:28%"><col style="width:18%"><col style="width:18%"><col style="width:18%"><col style="width:18%"></colgroup>
+        <thead><tr><th>지표</th><th>MTD</th><th>전월</th><th>전년</th><th>MoM / YoY</th></tr></thead>
+        <tbody id="coupon-table-body"><tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:12px">데이터 로딩 중...</td></tr></tbody>
+      </table>
+      <div style="font-size:10px;color:#94a3b8;margin-top:6px">※ 이미 퍼센트인 지표라 증감은 %p · 비율은 원 단위 금액에서 계산</div>
+    </div>
+    <div class="card">
+      <div class="card-title">당월 일자별 추이</div>
+      <div class="card-sub">쿠폰율 · 체감할인율 (좌축) · 회색 막대: 쿠폰비(억, 우축)</div>
+      <div class="chart-box h220"><canvas id="chart-coupon-trend"></canvas></div>
+    </div>
+  </div>
+
   <!-- ④ 채널별 비중 파이차트 -->
   <div class="sec-hd">
     <h2>채널별 비중</h2>
@@ -883,28 +918,28 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
     <ul id="wk-notes" style="display:none;font-size:12px;line-height:1.5;padding:12px 20px 16px;margin:0;border-top:1px solid #f1f5f9;list-style:none"></ul>
   </div>
 
-  <!-- ② 핵심지표 스트립 (10주 스파크라인 포함) -->
-  <div class="sec-hd" style="margin-top:0;margin-bottom:8px">
-    <div class="card-title" style="margin-bottom:0">핵심지표 스트립</div>
+  <!-- ══ 블록 ② 주간 실적 요약 : 핵심지표 스트립 + 주간 타겟 진척현황 ══ -->
+  <div class="sec-hd">
+    <h2 style="font-size:14px;--before-color:#6366f1">주간 실적 요약</h2>
     <span class="sec-note" id="wk-kpi-period-label" style="font-size:10px;color:#94a3b8">WoW=직전 주比 · 스파크라인=최근 10주</span>
   </div>
-  <div class="kpi-grid" style="margin-bottom:14px">
+  <div class="kpi-grid kpi-grid-7" style="margin-bottom:14px">
     <div class="kpi-card c-indigo"><div class="kpi-lbl">총수주 <span style="font-size:10px;color:#94a3b8">(억)</span></div><div class="kpi-val" id="wk-k-revenue">-</div><div class="kpi-sub" id="wk-k-revenue-sub">-</div><span class="yoy" id="wk-k-revenue-yoy">-</span><div id="wk-k-revenue-spark" style="margin-top:6px"></div></div>
     <div class="kpi-card c-green"><div class="kpi-lbl">순수주 <span style="font-size:10px;color:#94a3b8">(억)</span></div><div class="kpi-val" id="wk-k-net">-</div><div class="kpi-sub" id="wk-k-net-sub">-</div><span class="yoy" id="wk-k-net-yoy">-</span><div id="wk-k-net-spark" style="margin-top:6px"></div></div>
     <div class="kpi-card c-blue"><div class="kpi-lbl">주문건수</div><div class="kpi-val" id="wk-k-orders">-</div><div class="kpi-sub" id="wk-k-orders-sub">-</div><span class="yoy" id="wk-k-orders-yoy">-</span><div id="wk-k-orders-spark" style="margin-top:6px"></div></div>
     <div class="kpi-card c-orange"><div class="kpi-lbl">신규가입</div><div class="kpi-val" id="wk-k-join">-</div><div class="kpi-sub" id="wk-k-join-sub">-</div><span class="yoy" id="wk-k-join-yoy">-</span><div id="wk-k-join-spark" style="margin-top:6px"></div></div>
     <div class="kpi-card c-rose"><div class="kpi-lbl">첫구매</div><div class="kpi-val" id="wk-k-first">-</div><div class="kpi-sub" id="wk-k-first-sub">-</div><span class="yoy" id="wk-k-first-yoy">-</span><div id="wk-k-first-spark" style="margin-top:6px"></div></div>
     <div class="kpi-card c-teal"><div class="kpi-lbl">세션수</div><div class="kpi-val" id="wk-k-sess">-</div><div class="kpi-sub" id="wk-k-sess-sub">-</div><span class="yoy" id="wk-k-sess-yoy">-</span><div id="wk-k-sess-spark" style="margin-top:6px"></div></div>
+    <div class="kpi-card c-purple"><div class="kpi-lbl">APP 세션수</div><div class="kpi-val" id="wk-k-sessApp">-</div><div class="kpi-sub" id="wk-k-sessApp-sub">-</div><span class="yoy" id="wk-k-sessApp-yoy">-</span><div id="wk-k-sessApp-spark" style="margin-top:6px"></div></div>
   </div>
 
-  <!-- ②-2 주간 목표 대비 페이스 (신규) -->
-  <div class="sec-hd">
-    <h2 style="font-size:14px;--before-color:#6366f1">주간 목표 대비 페이스</h2>
-    <span class="sec-note" id="wk-pace-period-label"></span>
-  </div>
-  <div class="grid-2">
+  <!-- ②-2 주간 타겟 진척현황 (블록 ② 안, 별도 헤더 없이 카드 제목으로 구분) -->
+  <div class="grid-2" style="margin-bottom:14px">
     <div class="card">
-      <div class="card-title">Target vs Actual</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
+        <div class="card-title" style="margin-bottom:0">주간 타겟 진척현황</div>
+        <span class="sec-note" id="wk-pace-period-label"></span>
+      </div>
       <div class="card-sub">주간 누적 목표 달성률 (DAILY_TGTS 주 합산)</div>
       <table class="achv-table" style="table-layout:fixed">
         <colgroup><col style="width:20%"><col style="width:20%"><col style="width:20%"><col style="width:20%"><col style="width:20%"></colgroup>
@@ -928,11 +963,16 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
     </div>
   </div>
 
-  <!-- ③ 10주 추이 -->
-  <div class="card" style="margin-bottom:14px">
+  <!-- ══ 블록 ③ 최근 10주 추이 : 볼륨(좌) vs 효율(우)을 같은 x축으로 좌우 대조 ══ -->
+  <div class="sec-hd">
+    <h2 style="font-size:14px;--before-color:#0ea5e9">최근 10주 추이</h2>
+    <span class="sec-note">볼륨과 전환 효율을 같은 10주 구간으로 나란히</span>
+  </div>
+  <div class="grid-2" style="margin-bottom:14px">
+  <div class="card">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
-      <div class="card-title" style="margin-bottom:0">10주 추이</div>
-      <select id="wk-trend-metric" onchange="renderWeekly()"
+      <div class="card-title" style="margin-bottom:0">최근 10주 추이</div>
+      <select id="wk-trend-metric" onchange="renderWeeklyTrend(weeklySelStart)"
         style="font-size:12px;font-weight:600;border:1.5px solid #0ea5e9;border-radius:6px;padding:3px 8px;color:#0B1D3A;background:#fff;cursor:pointer;outline:none">
         <option value="net" selected>순수주</option>
         <option value="revenue">총수주</option>
@@ -944,18 +984,27 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
       </select>
     </div>
     <div class="card-sub" id="wk-chart-sub">주간 합계 · 막대: 금년 / 라인: 전년동주(-364일)</div>
-    <div class="chart-box h260"><canvas id="chart-weekly-trend"></canvas></div>
+    <div class="chart-box h240"><canvas id="chart-weekly-trend"></canvas></div>
   </div>
 
-  <!-- ③-2 전환율 추이 (신규) — Daily 탭 "전환 퍼널"의 전환율(세션→구매/신규가입, 신규가입→첫구매)을
-       주간 시계열 라인차트로. Daily는 당월 스냅샷 게이지, Weekly는 10주 추이 라인으로 표현. -->
-  <div class="card" style="margin-bottom:14px">
-    <div class="card-title">전환율 추이 <span style="font-size:10px;color:#94a3b8;font-weight:400">최근 10주 · 세션/신규가입 대비</span></div>
-    <div class="card-sub">세션→구매 · 세션→신규가입 (좌축) · 신규가입→첫구매 (우축)</div>
-    <div class="chart-box h220"><canvas id="chart-weekly-cr"></canvas></div>
+  <!-- ③-2 전환율 추이 — Daily 탭 "전환 퍼널"의 전환율을 주간 시계열로.
+       Daily는 당월 스냅샷 게이지, Weekly는 10주 추이 라인으로 표현.
+       2026-07-27: 위 "최근 10주 추이"와 .grid-2로 좌우 병치 — 같은 10주 x축을 공유하는
+       볼륨/효율 대구라, 세로로 쌓으면 스크롤에 분리돼 "세션은 늘었는데 CR은 빠졌다"가 안 보임. -->
+  <div class="card">
+    <div class="card-title">최근 10주 전환율 추이 <span style="font-size:10px;color:#94a3b8;font-weight:400">세션/신규가입 대비</span></div>
+    <div class="card-sub">세션→구매 · APP 세션→구매 · 세션→신규가입 (좌축) · 신규가입→첫구매 (우축)</div>
+    <div class="chart-box h240"><canvas id="chart-weekly-cr"></canvas></div>
+  </div>
   </div>
 
-  <!-- ④ 채널별 비중 -->
+  <!-- ══ 블록 ④ 채널 기여 : 비중 → 성과 매트릭스 → 채널별 추이 ══ -->
+  <div class="sec-hd">
+    <h2 style="font-size:14px;--before-color:#10b981">채널 기여</h2>
+    <span class="sec-note">선택 주 기준 · 채널 태깅(2_raw_전환·트래픽)</span>
+  </div>
+
+  <!-- ④-1 채널별 비중 -->
   <div class="card" style="margin-bottom:14px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
       <div class="card-title" style="margin-bottom:0">채널별 비중</div>
@@ -970,31 +1019,40 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
     <div id="wk-share-legend" style="display:flex;flex-wrap:wrap;gap:10px;font-size:11px;color:#475569"></div>
   </div>
 
-  <!-- ⑤ 채널 성과 매트릭스 -->
+  <!-- ④-2 채널 성과 매트릭스 -->
   <div class="card" style="margin-bottom:14px">
-    <div class="card-title">채널 성과 매트릭스 <span style="font-size:10px;color:#94a3b8;font-weight:400">선택 주 합계 · %는 WoW · 채널 태깅(2_raw_전환·트래픽) 기준</span></div>
+    <div class="card-title">채널 성과 매트릭스 <span style="font-size:10px;color:#94a3b8;font-weight:400">선택 주 합계 · %는 WoW(CR은 %p) · 채널 태깅(2_raw_전환·트래픽) 기준</span></div>
     <table class="dt">
-      <thead><tr><th>채널</th><th>총수주(백만)</th><th>세션</th><th>신규가입</th><th>첫구매</th></tr></thead>
-      <tbody id="wk-ch-matrix"><tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:12px">데이터 로딩 중...</td></tr></tbody>
+      <thead><tr><th>채널</th><th>세션</th><th>APP 세션</th><th>신규가입</th><th>첫구매</th><th>주문건수</th><th>총수주(백만)</th><th>세션→주문 CR</th></tr></thead>
+      <tbody id="wk-ch-matrix"><tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:12px">데이터 로딩 중...</td></tr></tbody>
     </table>
+    <div style="font-size:10px;color:#94a3b8;margin-top:6px">※ 주문건수·세션→주문 CR은 트래픽 시트 Purchase Cnt 기준 — 전환율 추이 카드(RAW 주문건수 기준)와 약 2% 차이가 납니다</div>
   </div>
 
-  <!-- ⑥ 채널별 10주 추이 -->
+  <!-- ④-3 채널별 최근 10주 추이 -->
   <div class="card" style="margin-bottom:14px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
-      <div class="card-title" style="margin-bottom:0">채널별 10주 추이</div>
-      <select id="wk-ch-trend-metric" onchange="renderWeeklyChannelTrend()"
+      <div class="card-title" style="margin-bottom:0">채널별 최근 10주 추이</div>
+      <select id="wk-ch-trend-metric" onchange="renderWeeklyChannelTrend(weeklySelStart)"
         style="font-size:12px;font-weight:600;border:1.5px solid #0ea5e9;border-radius:6px;padding:3px 8px;color:#0B1D3A;background:#fff;cursor:pointer;outline:none">
         <option value="sess">세션</option>
+        <option value="sessApp">APP 세션</option>
         <option value="join" selected>신규가입</option>
         <option value="first">첫구매</option>
+        <option value="orders">주문건수</option>
       </select>
     </div>
     <div id="wk-ch-trend-toggles" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px"></div>
     <div class="chart-box h220"><canvas id="chart-weekly-ch-trend"></canvas></div>
   </div>
 
-  <!-- ⑤ 광고 채널ID별 실적 -->
+  <!-- ══ 블록 ⑤ 광고 채널ID 세부 : 지면 단위 드릴다운 ══ -->
+  <div class="sec-hd">
+    <h2 style="font-size:14px;--before-color:#f59e0b">광고 채널ID 세부</h2>
+    <span class="sec-note">DA·SA 지면 단위 · 표에서 행을 고르면 아래 추이에 표시</span>
+  </div>
+
+  <!-- ⑤-1 광고 채널ID별 실적 -->
   <div class="card" style="margin-bottom:14px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
       <div class="card-title" style="margin-bottom:0">광고 채널ID별 실적 <span style="font-size:10px;color:#94a3b8;font-weight:400">선택 주 합계 · 헤더 클릭 정렬</span></div>
@@ -1007,7 +1065,7 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
     <div class="card-sub" id="wk-chad-sub"></div>
     <table class="dt">
       <thead><tr>
-        <th style="cursor:pointer" onclick="setWkChAdSort('chid')">채널ID</th>
+        <th style="cursor:pointer" onclick="setWkChAdSort('chid')" id="wk-chad-th-chid">채널ID</th>
         <th>캠페인</th>
         <th style="cursor:pointer" onclick="setWkChAdSort('join')" id="wk-chad-th-join">신규가입 ▾</th>
         <th style="cursor:pointer" onclick="setWkChAdSort('first')" id="wk-chad-th-first">첫구매</th>
@@ -1019,10 +1077,12 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
     <div style="font-size:10px;color:#94a3b8;margin-top:6px">행 클릭 시 아래 상세 추이에 표시 · 정렬 기준 상위 15개 채널ID 표시</div>
   </div>
 
-  <!-- ⑥ 채널ID 상세 추이 -->
+  <!-- ⑤-2 채널ID 전체기간 일별 추이
+       주 이동(◀▶)과 무관하게 CH_AD 보유 전체 기간을 그린다 — 주 단위로 자르면 7포인트뿐이라
+       드릴다운 의미가 없어서 의도된 동작. 제목·서브텍스트에 범위를 명시해 오해를 없앤다. -->
   <div class="card">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:2px">
-      <div class="card-title" style="margin-bottom:0">채널ID 상세 추이</div>
+      <div class="card-title" style="margin-bottom:0">채널ID 전체기간 일별 추이</div>
       <div style="display:flex;align-items:center;gap:8px">
         <input type="text" id="wk-chid-search" placeholder="채널ID 또는 캠페인명 검색"
           oninput="searchWkChid(this.value)"
@@ -2223,7 +2283,7 @@ function moveWeek(delta) {
 
 // start(월요일)부터 7일 합산 — 총수주/순수주/주문건수=RAW, 신규가입/첫구매=DAILY, 세션=TRAFFIC
 function aggWeekFull(start) {
-  const agg = { revenue: 0, net: 0, orders: 0, join: 0, first: 0, sess: 0, sessApp: 0, missDaily: 0 };
+  const agg = { revenue: 0, net: 0, orders: 0, join: 0, first: 0, sess: 0, sessApp: 0, ordersApp: 0, missDaily: 0 };
   const cur = new Date(start);
   for (let i = 0; i < 7; i++) {
     const ds = localDateToStr(cur);
@@ -2243,6 +2303,9 @@ function aggWeekFull(start) {
       agg.sess += td.s;
       const app = td.device && td.device.app;
       if (app && app.s) agg.sessApp += app.s;
+      // 2026-07-27: APP 주문(app.p) 추가 — 전환율 추이의 "APP 세션→구매" 계열용.
+      // 데이터는 sessApp과 같은 2025-04-01부터 전량 보유. aggRangeFull에도 쌍둥이로 반영.
+      if (app && app.p) agg.ordersApp += app.p;
     }
     cur.setDate(cur.getDate() + 1);
   }
@@ -2251,7 +2314,7 @@ function aggWeekFull(start) {
 
 // aggWeekFull과 동일 집계를 임의 기간 [from,to]로 일반화 — 지원이 탭별 스코프 대응용
 function aggRangeFull(from, to) {
-  const agg = { revenue: 0, net: 0, orders: 0, join: 0, first: 0, sess: 0, sessApp: 0, missDaily: 0 };
+  const agg = { revenue: 0, net: 0, orders: 0, join: 0, first: 0, sess: 0, sessApp: 0, ordersApp: 0, missDaily: 0 };
   let cur = parseLocalDate(from);
   const end = parseLocalDate(to);
   while (cur <= end) {
@@ -2272,6 +2335,7 @@ function aggRangeFull(from, to) {
       agg.sess += td.s;
       const app = td.device && td.device.app;
       if (app && app.s) agg.sessApp += app.s;
+      if (app && app.p) agg.ordersApp += app.p;   // aggWeekFull과 쌍둥이 유지
     }
     cur.setDate(cur.getDate() + 1);
   }
@@ -2284,28 +2348,14 @@ WK_CH_TREND_ON = new Set(WK_CH_ORDER);
 function wkChannelBucket(ch) {
   return WK_CH_ORDER.includes(ch) ? ch : '기타';
 }
+// 2026-07-27: 자체 집계 루프를 걷어내고 Daily 탭이 쓰는 검증된 경로에 위임(R2).
+// aggRawChannelRange(TRAFFIC .s/.p/.device.app.s + CONV_CH join/first/rev) → foldChannelBuckets가
+// 같은 wkChannelBucket·WK_CH_ORDER로 접으므로 sess/join/first/rev는 구 로직과 완전 동일하고,
+// sessApp·orders가 추가로 딸려온다 — 채널별 APP세션·세션→주문 CR이 이걸로 가능해짐.
+// 시그니처(Date 1개)를 유지해서 호출부 6곳은 손대지 않는다.
+// 반환: {sess, sessApp, orders, join, first, rev} × WK_CH_ORDER (제로필)
 function aggWeekByChannel(start) {
-  const out = {};
-  WK_CH_ORDER.forEach(b => out[b] = { sess: 0, join: 0, first: 0, rev: 0 });
-  const cur = new Date(start);
-  for (let i = 0; i < 7; i++) {
-    const ds = localDateToStr(cur);
-    const t = TRAFFIC[ds] || {};
-    Object.keys(t).forEach(ch => {
-      if (ch === '__total__') return;
-      if (t[ch].s) out[wkChannelBucket(ch)].sess += t[ch].s;
-    });
-    const c = CONV_CH[ds] || {};
-    Object.keys(c).forEach(ch => {
-      if (ch === '__total__') return;
-      const b = out[wkChannelBucket(ch)];
-      if (c[ch].join)  b.join  += c[ch].join;
-      if (c[ch].first) b.first += c[ch].first;
-      if (c[ch].rev)   b.rev   += c[ch].rev;
-    });
-    cur.setDate(cur.getDate() + 1);
-  }
-  return out;
+  return aggChannelRange(localDateToStr(start), localDateToStr(wkOffset(start, 6)));
 }
 
 // 주간 광고 채널ID(CH_AD) 합산 — {chid: [join, first, rev, sess]}
@@ -2410,6 +2460,11 @@ const WK_KPI_CFG = {
   join:    { scale: 1,   dec: 0, unit: '',   color: '#f59e0b' },
   first:   { scale: 1,   dec: 0, unit: '',   color: '#f43f5e' },
   sess:    { scale: 1,   dec: 0, unit: '',   color: '#14b8a6' },
+  // 2026-07-27: APP 세션 추가. aggWeekFull이 이미 sessApp을 집계하고 있어서 데이터·렌더
+  // 경로 변경은 없고, 여기 한 줄과 HTML 카드 한 장이면 된다. 키 순서를 DOM 카드 순서와
+  // 맞춰야 함(renderWeeklyKpiStrip이 Object.keys 순회).
+  // 주의: TRAFFIC 최초일이 2025-04-01이라 그 이전 주는 전년비교(-364d)가 공백이 된다.
+  sessApp: { scale: 1,   dec: 0, unit: '',   color: '#8b5cf6' },
 };
 function renderWeeklyKpiStrip(wkStart) {
   // 최근 10주(과거→현재) aggWeekFull 결과 — 스파크라인과 현재/전주 값을 여기서 함께 뽑는다
@@ -2605,7 +2660,11 @@ function copyWeeklyComment() {
 }
 
 // ③ 10주 추이 — 지표 선택, 막대: 금년 / 라인: 전년동주(-364d)
-function renderWeeklyTrend(wkStart) {
+// 2026-07-27: 셀렉터 onchange가 renderWeekly() 전체를 다시 돌리고 있었다(차트 1개 지표를
+// 바꾸는데 aggWeekFull 55회 + aggWeekByChannel 15회 + Chart 5개 재생성). 이 함수는 셀렉터
+// 값·라벨·시리즈를 자체 계산하고 sub 텍스트까지 갱신해 자기완결적이라 부분 렌더로 충분.
+function renderWeeklyTrend(wkStart = weeklySelStart) {
+  if (!wkStart) return;
   const key = document.getElementById('wk-trend-metric')?.value || 'net';
   const m = WK_METRICS.find(x => x.key === key);
   const scale = m.kind === 'money' ? 1e8 : 1;
@@ -2655,8 +2714,9 @@ function renderWeeklyTrend(wkStart) {
 // ③-2 전환율 추이 (신규) — Daily 탭 "전환 퍼널"의 전환율 지표를 10주 시계열로.
 // aggWeekFull()이 이미 주는 sess/orders/join/first만으로 계산 가능(별도 데이터 조회 불필요).
 let weeklyCrChart = null;
-function renderWeeklyCrTrend(wkStart) {
-  const labels = [], s2p = [], s2j = [], j2f = [];
+function renderWeeklyCrTrend(wkStart = weeklySelStart) {
+  if (!wkStart) return;
+  const labels = [], s2p = [], s2j = [], j2f = [], a2p = [];
   for (let w = 9; w >= 0; w--) {
     const s = wkOffset(wkStart, -7 * w);
     const a = aggWeekFull(s);
@@ -2664,6 +2724,9 @@ function renderWeeklyCrTrend(wkStart) {
     s2p.push(a.sess ? +(a.orders / a.sess * 100).toFixed(2) : null);
     s2j.push(a.sess ? +(a.join / a.sess * 100).toFixed(2) : null);
     j2f.push(a.join ? +(a.first / a.join * 100).toFixed(1) : null);
+    // 2026-07-27: APP 세션→구매 추가. 분자·분모 모두 TRAFFIC __total__.device.app에서 나와
+    // 기준이 일관됨(전사 세션→구매는 분자가 RAW라 기준이 다름 — 두 계열을 직접 빼서 비교하지 말 것).
+    a2p.push(a.sessApp ? +(a.ordersApp / a.sessApp * 100).toFixed(2) : null);
   }
   const canvas = document.getElementById('chart-weekly-cr');
   if (!canvas) return;
@@ -2672,6 +2735,8 @@ function renderWeeklyCrTrend(wkStart) {
     type: 'line',
     data: { labels, datasets: [
       { label: '세션→구매', data: s2p, borderColor: '#10b981', backgroundColor: '#10b981',
+        borderWidth: 2, pointRadius: 2, tension: 0.3, spanGaps: true, datalabels: { display: false } },
+      { label: 'APP 세션→구매', data: a2p, borderColor: '#8b5cf6', backgroundColor: '#8b5cf6',
         borderWidth: 2, pointRadius: 2, tension: 0.3, spanGaps: true, datalabels: { display: false } },
       { label: '세션→신규가입', data: s2j, borderColor: '#6366f1', backgroundColor: '#6366f1',
         borderWidth: 2, pointRadius: 2, tension: 0.3, spanGaps: true, datalabels: { display: false } },
@@ -2740,21 +2805,34 @@ function renderWeeklyChannelMatrix(wkStart) {
     const pTxt = p == null ? '' : ` <span style="font-size:10px;font-weight:700;color:${p >= 0 ? '#10b981' : '#ef4444'}">${p >= 0 ? '+' : ''}${p.toFixed(0)}%</span>`;
     return `<td><b>${Math.round(a / 1e6).toLocaleString()}</b>${pTxt}</td>`;
   };
-  const add = (...xs) => xs.reduce((s, x) => ({
-    sess: s.sess + ((x && x.sess) || 0), join: s.join + ((x && x.join) || 0),
-    first: s.first + ((x && x.first) || 0), rev: s.rev + ((x && x.rev) || 0),
-  }), { sess: 0, join: 0, first: 0, rev: 0 });
-  const sumAll = agg => WK_CH_ORDER.reduce((s, b) => add(s, agg[b]), { sess: 0, join: 0, first: 0, rev: 0 });
+  // 2026-07-27: 필드를 명시 열거하던 방식 → Z 시드 기반 제네릭 합산(Daily 3212의 패턴과 동일).
+  // 예전 형태였다면 sessApp·orders 컬럼을 추가할 때 add/sumAll 확장을 빠뜨려 "전체"·"Ads"
+  // 롤업 행만 조용히 0이 되는 사고가 났을 것 — 필드가 늘어도 자동으로 따라오게 만든다.
+  const Z = { sess: 0, sessApp: 0, orders: 0, join: 0, first: 0, rev: 0 };
+  const add = (...xs) => xs.reduce((s, x) => {
+    Object.keys(Z).forEach(k => s[k] += ((x && x[k]) || 0));
+    return s;
+  }, { ...Z });
+  const sumAll = agg => add(...WK_CH_ORDER.map(b => agg[b]));
   const curTotal = sumAll(cur), prevTotal = sumAll(prev);
   const adsCur = add(cur.DA, cur.SA), adsPrev = add(prev.DA, prev.SA);
+
+  // APP 세션은 전체 세션 대비 비중을 괄호로 병기 (Daily 채널 매트릭스와 동일 표기)
+  const appCell = (a, b) => {
+    if (!a.sessApp) return '<td style="color:#cbd5e1">-</td>';
+    const p = yoyPct(a.sessApp || null, b.sessApp || null);
+    const pTxt = p == null ? '' : ` <span style="font-size:10px;font-weight:700;color:${p >= 0 ? '#10b981' : '#ef4444'}">${p >= 0 ? '+' : ''}${p.toFixed(0)}%</span>`;
+    const share = a.sess ? ` <span style="font-size:10px;color:#94a3b8">(${(a.sessApp / a.sess * 100).toFixed(0)}%)</span>` : '';
+    return `<td>${a.sessApp.toLocaleString()}${share}${pTxt}</td>`;
+  };
 
   const row = (label, a, b, opt = {}) => {
     const nameStyle = opt.indent ? 'color:#64748b;padding-left:18px' : (opt.bold ? 'font-weight:700' : '');
     const name = (opt.indent ? '<span style="color:#cbd5e1">└</span> ' : '') + label;
-    return `<tr><td style="${nameStyle}">${name}</td>${revCell(a.rev, b.rev)}${cell(a.sess, b.sess)}${cell(a.join, b.join)}${cell(a.first, b.first)}</tr>`;
+    return `<tr><td style="${nameStyle}">${name}</td>${cell(a.sess, b.sess)}${appCell(a, b)}${cell(a.join, b.join)}${cell(a.first, b.first)}${cell(a.orders, b.orders)}${revCell(a.rev, b.rev)}${chCrCell(a, b)}</tr>`;
   };
 
-  let html = `<tr style="background:#f8fafc"><td style="font-weight:700">전체</td>${revCell(curTotal.rev, prevTotal.rev)}${cell(curTotal.sess, prevTotal.sess)}${cell(curTotal.join, prevTotal.join)}${cell(curTotal.first, prevTotal.first)}</tr>`;
+  let html = `<tr style="background:#f8fafc"><td style="font-weight:700">전체</td>${cell(curTotal.sess, prevTotal.sess)}${appCell(curTotal, prevTotal)}${cell(curTotal.join, prevTotal.join)}${cell(curTotal.first, prevTotal.first)}${cell(curTotal.orders, prevTotal.orders)}${revCell(curTotal.rev, prevTotal.rev)}${chCrCell(curTotal, prevTotal)}</tr>`;
   html += row('Organic', cur.Organic, prev.Organic);
   html += row('Ads', adsCur, adsPrev, { bold: true });
   html += row('DA', cur.DA, prev.DA, { indent: true });
@@ -2776,7 +2854,12 @@ function toggleWkChTrendChannel(b, el) {
 }
 
 let weeklyChTrendChart = null;
-function renderWeeklyChannelTrend(wkStart) {
+// 2026-07-27: wkStart 기본값·가드 추가. 예전엔 셀렉터 onchange가 인자 없이 호출해
+// wkOffset(undefined,…) → Invalid Date → localDateToStr가 "NaN-NaN-NaN"을 반환하고,
+// TRAFFIC["NaN-NaN-NaN"]이 undefined라 전 계열이 null이 됐다. 예외를 안 던져서
+// 콘솔은 깨끗한 채 차트만 조용히 백지가 되는 무증상 실패였음.
+function renderWeeklyChannelTrend(wkStart = weeklySelStart) {
+  if (!wkStart) return;
   const metric = document.getElementById('wk-ch-trend-metric')?.value || 'join';
 
   const toggles = document.getElementById('wk-ch-trend-toggles');
@@ -2845,7 +2928,9 @@ function setWkChAdSort(key) {
 }
 
 function updateWkChAdHeaders() {
-  const labels = { join: '신규가입', first: '첫구매', rev: '총수주(백만)', wow: 'WoW' };
+  // 2026-07-27: chid 추가. 예전엔 채널ID로 정렬하면 다른 열 화살표는 지워지는데 채널ID엔
+  // 붙지 않아, 무엇을 기준으로 정렬됐는지 화면에서 알 수 없었다.
+  const labels = { chid: '채널ID', join: '신규가입', first: '첫구매', rev: '총수주(백만)', wow: 'WoW' };
   Object.keys(labels).forEach(key => {
     const th = document.getElementById(`wk-chad-th-${key}`);
     if (!th) return;
@@ -2875,7 +2960,10 @@ function renderWeeklyChAd(wkStart) {
   }
   updateWkChAdHeaders();
   if (!rows.length) {
-    body.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:12px">해당 주 광고 채널 데이터 없음 (CH_AD 보유: 최근 120일)</td></tr>';
+    // 2026-07-27: "최근 120일" 하드코딩 → 실제 CH_AD 보유 범위를 런타임 산출
+    const adDays = Object.keys(CH_AD).sort();
+    const adRange = adDays.length ? `${adDays[0]}~${adDays[adDays.length - 1]}, ${adDays.length}일` : '없음';
+    body.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:12px">해당 주 광고 채널 데이터 없음 (CH_AD 보유: ${adRange})</td></tr>`;
     if (subEl) subEl.textContent = '';
     return;
   }
@@ -2946,8 +3034,15 @@ function renderWkChidDetail() {
     series.push(v && v[idx] ? v[idx] : (metric === 'sess' ? null : (v ? 0 : null)));
   });
   const label = { join: '신규가입', first: '첫구매', rev: '총수주', sess: '세션' }[metric];
+  // 2026-07-27: "최근 34일"이 하드코딩돼 있었는데 실측 보유는 56일(2026-06-01~07-26)이라
+  // 사용자에게 틀린 정보를 노출 중이었다. 세션(idx 3)이 실제로 채워진 날짜에서 런타임 산출.
+  const sessDays = dates.filter(ds => { const r = CH_AD[ds][wkSelectedChid]; return r && r[3]; });
+  const sessNote = sessDays.length
+    ? ` · 세션은 트래픽 시트 보유기간(${sessDays[0]}~${sessDays[sessDays.length - 1]}, ${sessDays.length}일)만 표시`
+    : ' · 이 채널ID는 세션 보유 구간 없음';
   if (sub) sub.textContent = `${wkSelectedChid}${m.ch ? ` (${m.ch})` : ''} ${m.label ? '· ' + m.label : ''} · ${label} 일별 추이`
-    + (metric === 'sess' ? ' · 세션은 트래픽 시트 보유기간(최근 34일)만 표시' : '');
+    + (metric === 'sess' ? sessNote : '')
+    + ` · 전체기간 ${dates[0]}~${dates[dates.length - 1]}`;
 
   if (wkChidDetailChart) { wkChidDetailChart.destroy(); wkChidDetailChart = null; }
   wkChidDetailChart = new Chart(canvas, {
@@ -3159,6 +3254,24 @@ function aggChannelRange(from, to) {
   return foldChannelBuckets(aggRawChannelRange(from, to));
 }
 
+// 2026-07-27: 세션→주문 CR 셀을 Daily 채널 MTD 매트릭스에서 모듈 스코프로 승격 — Weekly
+// 채널 성과 매트릭스가 같은 구현을 쓰도록. 로직은 원본 그대로(비교 기준만 호출부가 정함:
+// Daily=YoY/MoM, Weekly=WoW).
+// R7: CR은 이미 퍼센트인 지표라 증감을 상대변화율이 아니라 두 값의 차(%p)로 표기한다.
+const CH_GREY = '#94a3b8';
+function chCrCell(c, m) {
+  const cr = c.sess ? c.orders / c.sess * 100 : null;
+  if (cr == null) return '<td style="color:#cbd5e1">—</td>';
+  const crM = m.sess ? m.orders / m.sess * 100 : null;
+  let d = '';
+  if (crM != null) {
+    const diff = cr - crM;
+    const color = Math.max(c.orders, m.orders) < 30 ? CH_GREY : (diff >= 0 ? '#10b981' : '#ef4444');
+    d = ` <span style="font-size:10px;font-weight:700;color:${color}">${diff >= 0 ? '+' : ''}${diff.toFixed(2)}%p</span>`;
+  }
+  return `<td>${cr.toFixed(2)}%${d}</td>`;
+}
+
 // ── Daily 탭: 채널별 MTD 성과 매트릭스 (YoY 기본 / MoM 토글, 기타 드릴다운) ──────
 // 창(window)은 getMtdChannelDiagnosis와 동일 조합: MTD = 1일~전일, 비교 = mtdRangeOffset(-1|-12)
 let chMtdBasis = 'yoy';
@@ -3205,18 +3318,7 @@ function renderChannelMtdMatrix() {
   const cell    = (a, b) => `<td>${(a || 0).toLocaleString()}${deltaHtml(a, b)}</td>`;
   const revCell = (a, b) => `<td><b>${Math.round((a || 0) / 1e6).toLocaleString()}</b>${deltaHtml(a, b)}</td>`;
   // 세션→주문 CR. 이미 %(비율)이므로 증감은 상대변화율이 아니라 두 값의 차(%p) — R7
-  const crCell = (c, m) => {
-    const cr = c.sess ? c.orders / c.sess * 100 : null;
-    if (cr == null) return '<td style="color:#cbd5e1">—</td>';
-    const crM = m.sess ? m.orders / m.sess * 100 : null;
-    let d = '';
-    if (crM != null) {
-      const diff = cr - crM;
-      const color = Math.max(c.orders, m.orders) < 30 ? GREY : (diff >= 0 ? '#10b981' : '#ef4444');
-      d = ` <span style="font-size:10px;font-weight:700;color:${color}">${diff >= 0 ? '+' : ''}${diff.toFixed(2)}%p</span>`;
-    }
-    return `<td>${cr.toFixed(2)}%${d}</td>`;
-  };
+  const crCell = chCrCell;   // 모듈 스코프로 승격(Weekly 매트릭스와 공유) — 동작 동일
   // 유입↑ 전환↓ 괴리 표식 (세션 증가 & 주문건수 감소, 부호만 판정)
   const warn = (c, m) => {
     const s = yoyPct(c.sess || null, m.sess || null), o = yoyPct(c.orders || null, m.orders || null);
@@ -3265,6 +3367,121 @@ function renderChannelMtdMatrix() {
 
   // ⑧ 광고비 효율 — 위에서 이미 집계한 bCur/bCmp(DA/SA)를 그대로 재사용(신규 채널 집계 없음)
   renderAdEfficiency(curFrom, curTo, cmpR.from, cmpR.to, bCur, bCmp);
+}
+
+// ── ③-2 쿠폰·할인 효율 ────────────────────────────────────────────────────────
+// 전환율에 영향을 주는 비용 레버(광고비와 나란한 축)라 전환 퍼널과 같은 섹션에 둔다.
+// 기간 창은 퍼널·채널 매트릭스와 동일하게 mtdRangeOffset을 재사용 — 같은 화면 안 기준 일치.
+// 정의: 쿠폰율 = 쿠폰비_WCK ÷ 순수주 / 체감할인율 = 쿠폰비(전체) ÷ 쿠폰연관순수주
+// R1: 비율은 억 단위로 반올림하기 전 원 단위 금액에서 계산한다.
+// R7: 둘 다 이미 퍼센트인 지표라 증감은 상대변화율이 아니라 두 값의 차(%p).
+let couponChart = null;
+function sumCouponRange(from, to) {
+  const acc = { cost: 0, wck: 0, cnet: 0, net: 0, days: 0 };
+  let cur = parseLocalDate(from);
+  const end = parseLocalDate(to);
+  while (cur <= end) {
+    const d = DAILY[localDateToStr(cur)] || {};
+    // gen 스크립트의 _num()이 0을 None으로 바꾸므로 ?? 0 으로 받는다
+    if (d.coupon_cost || d.coupon_wck || d.coupon_net) acc.days++;
+    acc.cost += d.coupon_cost ?? 0;
+    acc.wck  += d.coupon_wck  ?? 0;
+    acc.cnet += d.coupon_net  ?? 0;
+    acc.net  += d.net         ?? 0;
+    cur.setDate(cur.getDate() + 1);
+  }
+  return acc;
+}
+// a.days 가드: 해당 기간에 쿠폰 데이터가 아예 없으면 null(=화면에 '-'). 이게 없으면
+// 순수주만 있고 쿠폰비가 없는 기간이 "쿠폰율 0.00%"로 찍혀 실제 0%인 것처럼 오해된다.
+const couponRate   = a => (a.days && a.net)  ? a.wck  / a.net  * 100 : null;  // 쿠폰율
+const feltDiscount = a => (a.days && a.cnet) ? a.cost / a.cnet * 100 : null;  // 체감할인율
+
+function renderCouponEfficiency() {
+  const tbody = document.getElementById('coupon-table-body');
+  const section = document.getElementById('coupon-section');
+  if (!tbody || !section) return;
+  const ys = getEffectiveDailyDate();
+  if (!ys) return;
+
+  const curFrom = `${ys.substring(0, 7)}-01`, curTo = ys;
+  const pm = mtdRangeOffset(ys, -1), ly = mtdRangeOffset(ys, -12);
+  const aCur = sumCouponRange(curFrom, curTo);
+
+  // 쿠폰 데이터가 아직 JSON에 없으면(파이프라인 미반영) 섹션을 통째로 숨긴다 —
+  // 0%가 실적인 것처럼 보이는 오해를 막기 위함(시장 트렌드 섹션과 동일한 패턴).
+  if (!aCur.days) { section.style.display = 'none'; return; }
+  section.style.display = '';
+
+  const aPm = sumCouponRange(pm.from, pm.to), aLy = sumCouponRange(ly.from, ly.to);
+  const md = s => `${+s.substring(5, 7)}/${+s.substring(8, 10)}`;
+  const rangeEl = document.getElementById('coupon-range');
+  if (rangeEl) rangeEl.textContent = `MTD ${md(curFrom)}~${md(curTo)} · 전월/전년 동기간 대비`;
+
+  const pct = v => v == null ? '<span style="color:#cbd5e1">-</span>' : v.toFixed(2) + '%';
+  const ppCell = (c, base) => {
+    if (c == null || base == null) return '<span style="color:#cbd5e1">-</span>';
+    const d = c - base;   // %p (R7)
+    // 할인율은 낮을수록 좋은 지표 — 색을 매출 지표와 반대로 준다
+    const color = Math.abs(d) < 0.005 ? '#94a3b8' : (d <= 0 ? '#10b981' : '#ef4444');
+    return `<span style="color:${color};font-weight:700">${d >= 0 ? '+' : ''}${d.toFixed(2)}%p</span>`;
+  };
+  const rowFor = (label, fn, hint) => {
+    const c = fn(aCur), m = fn(aPm), l = fn(aLy);
+    return `<tr><td style="font-weight:600">${label}<div style="font-size:9.5px;color:#94a3b8;font-weight:400">${hint}</div></td>` +
+      `<td><b>${pct(c)}</b></td><td>${pct(m)}</td><td>${pct(l)}</td>` +
+      `<td>${ppCell(c, m)} / ${ppCell(c, l)}</td></tr>`;
+  };
+  tbody.innerHTML = rowFor('쿠폰율', couponRate, '쿠폰비_WCK ÷ 순수주')
+                  + rowFor('체감할인율', feltDiscount, '쿠폰비(전체) ÷ 쿠폰연관순수주');
+
+  // 당월 일자별 추이
+  const labels = [], rateS = [], feltS = [], costS = [];
+  let d = parseLocalDate(curFrom);
+  const end = parseLocalDate(curTo);
+  while (d <= end) {
+    const ds = localDateToStr(d), row = DAILY[ds] || {};
+    // days는 sumCouponRange와 동일한 의미(쿠폰 데이터 존재 여부) — 비율 함수의 가드에 쓰인다
+    const one = { cost: row.coupon_cost ?? 0, wck: row.coupon_wck ?? 0, cnet: row.coupon_net ?? 0, net: row.net ?? 0 };
+    one.days = (one.cost || one.wck || one.cnet) ? 1 : 0;
+    labels.push(`${+ds.substring(8, 10)}`);
+    const r = couponRate(one), f = feltDiscount(one);
+    rateS.push(r == null ? null : +r.toFixed(2));
+    feltS.push(f == null ? null : +f.toFixed(2));
+    costS.push(one.cost ? +(one.cost / 1e8).toFixed(2) : null);
+    d.setDate(d.getDate() + 1);
+  }
+  const canvas = document.getElementById('chart-coupon-trend');
+  if (!canvas) return;
+  if (couponChart) { couponChart.destroy(); couponChart = null; }
+  couponChart = new Chart(canvas, {
+    data: {
+      labels,
+      datasets: [
+        { type: 'bar', label: '쿠폰비(억)', data: costS, yAxisID: 'y1',
+          backgroundColor: 'rgba(148,163,184,0.35)', borderRadius: 2, datalabels: { display: false } },
+        { type: 'line', label: '쿠폰율', data: rateS, borderColor: '#6366f1', backgroundColor: '#6366f1',
+          borderWidth: 2, pointRadius: 2, tension: 0.3, spanGaps: true, datalabels: { display: false } },
+        { type: 'line', label: '체감할인율', data: feltS, borderColor: '#f43f5e', backgroundColor: '#f43f5e',
+          borderWidth: 2, pointRadius: 2, tension: 0.3, spanGaps: true, datalabels: { display: false } },
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true, position: 'bottom', labels: { font: { size: 10 }, boxWidth: 10 } },
+        datalabels: { display: false },
+        tooltip: { mode: 'index', intersect: false },
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 9 } } },
+        y: { position: 'left', grid: { color: '#f1f5f9' }, border: { display: false },
+          ticks: { color: '#94a3b8', font: { size: 10 }, callback: v => v + '%' } },
+        y1: { position: 'right', min: 0, grid: { display: false }, border: { display: false },
+          ticks: { color: '#cbd5e1', font: { size: 9 } } },
+      },
+    },
+  });
 }
 
 // 광고비 MTD 합산(DA/SA) — computeMtdCum()과 동일한 날짜 순회 패턴의 단순 합산 유틸(신규 계산 로직 아님)
@@ -6059,6 +6276,7 @@ document.addEventListener('DOMContentLoaded', () => {
       renderAppKpiStrip();
       buildMtdTable();
       buildFunnelFromTraffic();
+      renderCouponEfficiency();   // 전환 퍼널과 같은 섹션(쿠폰 데이터 없으면 자체적으로 숨김)
       renderChannelShare();
       renderChannelStatusChart();
       renderChannelMtdMatrix();

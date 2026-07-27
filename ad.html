@@ -39,6 +39,12 @@
     border:1px solid rgba(5,150,105,0.3);border-radius:20px;padding:5px 13px;
     font-size:11px;color:var(--green);font-weight:600;}
   .dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 1.6s infinite;}
+  /* 2026-07-27: 마케팅 KPI 대시보드로 돌아가는 링크. 백데이터가 달라 통합은 못 하지만
+     두 대시보드를 오가는 일이 잦아 헤더에 상호 링크를 둔다. */
+  .x-link{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;
+    color:var(--accent);text-decoration:none;background:var(--accent-glow);
+    border:1px solid rgba(37,99,235,0.28);border-radius:20px;padding:5px 13px;transition:all .15s;}
+  .x-link:hover{background:var(--accent);color:#fff;}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
   .tabs{display:flex;gap:4px;margin-bottom:18px;border-bottom:1px solid var(--border);}
   .tabs button{padding:11px 22px;border:none;background:transparent;color:var(--text-2);font-size:14px;
@@ -137,7 +143,11 @@
       <div class="h-sub" id="period">불러오는 중…</div>
     </div>
   </div>
-  <div class="live"><span class="dot"></span><span id="updated">LIVE</span></div>
+  <div style="display:flex;align-items:center;gap:10px">
+    <!-- 상대경로 필수 — Pages 프로젝트 경로(/wconcept-dashboard/) 아래라 절대경로는 404 -->
+    <a class="x-link" href="KPI/pmkt-kpi.html">📊 마케팅 KPI <span style="font-size:10px">↗</span></a>
+    <div class="live"><span class="dot"></span><span id="updated">LIVE</span></div>
+  </div>
 </div>
 
 <div class="wrap">
