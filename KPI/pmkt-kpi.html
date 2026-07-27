@@ -783,6 +783,7 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
           <!-- 기본값=90일 산점도. 당월(26일) 산점도는 뺐다 — 표본이 얇아 r이 뒤집히고
                (7월 실측 -0.28 vs 90일 +0.50) 그 자체로 오독을 만든다. -->
           <option value="scatter90" selected>상관 산점도 · 최근 90일</option>
+          <option value="delta">일자별 Δ 추이 · 당월</option>
           <option value="trend">일자별 추이 · 당월</option>
         </select>
       </div>
@@ -3545,6 +3546,73 @@ function renderCouponEfficiency() {
                 ticks: { color: '#94a3b8', font: { size: 10 }, callback: v => v + '%' } },
           y1: { position: 'right', beginAtZero: false, grid: { display: false }, border: { display: false },
                 ticks: { color: '#10b981', font: { size: 10 }, callback: v => v + '%' } },
+        },
+      },
+    });
+    return;
+  }
+
+  if (mode === 'delta') {
+    // 전일 대비 변화(Δ) — 값이 아니라 "움직임"을 본다.
+    // 왜 이 뷰가 따로 필요한가: 당월 수준 상관은 -0.28로 음수인데, 이건 7월 말 서머위크의
+    // 레벨 점프가 끌어내린 것이고 하루하루의 방향은 68%가 일치한다. 값 추이로는 그 점프가
+    // 축을 넓혀 일변동을 눌러버려서 안 보인다(축 시작점을 바꿔도 5.4%→5.2%로 효과 없음을 실측).
+    // 그래서 Δ로 바꿔 레벨 성분을 제거했다.
+    // 축 비교에 기대지 않는다: Δ 크기도 2.4배 차이 나고 서머위크 진입일(+4.82%p)이 축을
+    // 늘리므로, "같이 움직였나"는 눈대중이 아니라 막대 색으로 직접 인코딩한다.
+    const S = couponDailySeries(curFrom, curTo).filter(x => x.felt != null && x.cr != null);
+    const labels = [], dF = [], dC = [], colors = [];
+    let same = 0, tot = 0;
+    for (let i = 1; i < S.length; i++) {
+      const df = +(S[i].felt - S[i - 1].felt).toFixed(2);
+      const dc = +(S[i].cr   - S[i - 1].cr).toFixed(2);
+      labels.push(`${S[i].day}`);
+      dF.push(df); dC.push(dc);
+      const agree = df !== 0 && dc !== 0 && (df > 0) === (dc > 0);
+      if (df !== 0 && dc !== 0) { tot++; if (agree) same++; }
+      colors.push(agree ? 'rgba(16,185,129,0.55)' : 'rgba(148,163,184,0.40)');
+    }
+    const pctSame = tot ? Math.round(same / tot * 100) : null;
+    if (chartSub) {
+      chartSub.innerHTML = '전일 대비 변화 · 막대=체감할인율 Δ(좌축) · 선=세션전환율 Δ(우축) · '
+        + `<b style="color:${pctSame >= 60 ? '#10b981' : '#94a3b8'}">같은 방향 ${same}/${tot}일 (${pctSame}%)</b>`
+        + ' <span style="color:#94a3b8">— 무작위면 50%</span>';
+    }
+    couponChart = new Chart(canvas, {
+      data: {
+        labels,
+        datasets: [
+          { type: 'bar', label: 'Δ 체감할인율', data: dF, backgroundColor: colors,
+            borderRadius: 2, datalabels: { display: false } },
+          { type: 'line', label: 'Δ 세션전환율 (우축)', data: dC, yAxisID: 'y1',
+            borderColor: '#6366f1', backgroundColor: '#6366f1', borderWidth: 2,
+            pointRadius: 2, tension: 0.25, spanGaps: true, datalabels: { display: false } },
+        ],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: true, position: 'bottom', labels: { font: { size: 10 }, boxWidth: 10 } },
+          datalabels: { display: false },
+          tooltip: {
+            mode: 'index', intersect: false,
+            callbacks: {
+              label: c => `${c.dataset.label}: ${c.parsed.y >= 0 ? '+' : ''}${c.parsed.y}%p`,
+              afterBody: items => {
+                const i = items[0].dataIndex;
+                if (!dF[i] || !dC[i]) return '';
+                return (dF[i] > 0) === (dC[i] > 0) ? '같은 방향 ↗↗' : '반대 방향 ↗↘';
+              },
+            },
+          },
+        },
+        scales: {
+          x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 9 } } },
+          // Δ는 부호가 있는 값이라 0이 실제 기준선 — 막대의 위/아래가 곧 증감이다.
+          y:  { position: 'left', grid: { color: '#f1f5f9' }, border: { display: false },
+                ticks: { color: '#94a3b8', font: { size: 10 }, callback: v => v + '%p' } },
+          y1: { position: 'right', grid: { display: false }, border: { display: false },
+                ticks: { color: '#6366f1', font: { size: 10 }, callback: v => v + '%p' } },
         },
       },
     });
