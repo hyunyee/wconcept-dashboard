@@ -780,10 +780,9 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
         <div class="card-title" style="margin-bottom:0">할인 ↔ 전환</div>
         <select id="coupon-chart-mode" onchange="renderCouponEfficiency()"
           style="font-size:12px;font-weight:600;border:1.5px solid #6366f1;border-radius:6px;padding:3px 8px;color:#0B1D3A;background:#fff;cursor:pointer;outline:none">
-          <!-- 기본값=90일 산점도. 당월 26일은 표본이 얇아 r이 불안정하고(7월 실측 -0.28),
-               90일에서야 할인↔전환 관계가 안정적으로 보인다(r=0.50). -->
+          <!-- 기본값=90일 산점도. 당월(26일) 산점도는 뺐다 — 표본이 얇아 r이 뒤집히고
+               (7월 실측 -0.28 vs 90일 +0.50) 그 자체로 오독을 만든다. -->
           <option value="scatter90" selected>상관 산점도 · 최근 90일</option>
-          <option value="scatter30">상관 산점도 · 당월</option>
           <option value="trend">일자별 추이 · 당월</option>
         </select>
       </div>
@@ -3552,11 +3551,9 @@ function renderCouponEfficiency() {
     return;
   }
 
-  // 상관 산점도 — x: 체감할인율, y: 세션전환율, 점 하나 = 하루
-  const days = mode === 'scatter90' ? 90 : null;
-  const from = days
-    ? localDateToStr(new Date(parseLocalDate(curTo).getTime() - (days - 1) * 864e5))
-    : curFrom;
+  // 상관 산점도 — x: 체감할인율, y: 세션전환율, 점 하나 = 하루. 창은 90일 고정
+  // (당월 26일은 표본이 얇아 r 부호가 뒤집힐 정도로 불안정해서 옵션에서 뺐다.)
+  const from = localDateToStr(new Date(parseLocalDate(curTo).getTime() - 89 * 864e5));
   const pts = couponDailySeries(from, curTo).filter(x => x.felt != null && x.cr != null);
   const fit = linFit(pts.map(p => p.felt), pts.map(p => p.cr));
 
