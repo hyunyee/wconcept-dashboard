@@ -20,11 +20,17 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
 .badge-live{background:rgba(16,185,129,.18);color:#34d399;border:1px solid rgba(16,185,129,.25)}
 .pulse{display:inline-block;width:6px;height:6px;background:#34d399;border-radius:50%;margin-right:5px;animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+/* 2026-07-27: 다른 대시보드(ad.html)로 나가는 링크. 탭바에 두면 Daily/Weekly 같은
+   "이 대시보드 안의 뷰"처럼 보여서 헤더 우측 배지로 분리 — 나가는 링크임이 드러난다.
+   ad.html도 헤더에 같은 자리(라이브 배지 왼쪽)로 역링크를 두어 좌우가 대칭. */
+.hd-link{display:inline-flex;align-items:center;gap:5px;border-radius:20px;padding:4px 12px;font-size:11px;font-weight:600;
+  background:rgba(255,255,255,.08);color:#e2e8f0;border:1px solid rgba(255,255,255,.14);text-decoration:none;transition:all .15s}
+.hd-link:hover{background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.3)}
 
 /* ─── Tabs ─── */
-/* 2026-07-27: 창이 좁으면 탭바가 넘쳐 맨 끝 항목(광고 성과 링크)이 잘려 보이지 않았다.
-   원래도 넘치던 동작인데 링크를 추가하며 드러남 — 넘칠 때 가로 스크롤을 허용한다.
-   스크롤바는 숨겨 데스크톱 폭에서의 외형은 그대로. */
+/* 2026-07-27: 좁은 창에서 탭바가 넘칠 때(실측 372px: scrollWidth 496 > clientWidth 366)
+   맨 끝 항목이 화면 밖으로 밀려 접근 불가였다 — 가로 스크롤 허용, 스크롤바는 숨겨
+   데스크톱 폭에서의 외형은 그대로. */
 .tabs{background:#fff;border-bottom:1px solid #e2e8f0;padding:0 28px;display:flex;align-items:center;gap:0;overflow-x:auto;scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
 .tabs>*{flex:0 0 auto}
@@ -35,10 +41,6 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
 .tab-sep{width:1px;height:18px;background:#e2e8f0;margin:0 4px}
 .tab-divider{width:1px;height:32px;background:#e2e8f0;margin:0 8px}
 .tab-note{margin-left:auto;font-size:11px;color:#94a3b8;padding:12px 0}
-/* 2026-07-27: 다른 대시보드(ad.html)로 나가는 링크. .tab-btn을 쓰면 showView()의
-   querySelectorAll('.tab-btn') active 토글에 잡혀 탭처럼 취급되므로 별도 클래스로 둔다. */
-.tab-link{padding:12px 18px;font-size:13px;font-weight:600;color:#94a3b8;text-decoration:none;border-bottom:3px solid transparent;transition:all .15s;position:relative;top:1px;display:inline-flex;align-items:center;gap:4px}
-.tab-link:hover{color:#2563eb;border-bottom-color:#bfdbfe}
 
 /* ─── Layout ─── */
 .main{padding:20px 28px;max-width:1500px;margin:0 auto}
@@ -489,6 +491,8 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
     <span>W CONCEPT · Performance Marketing Team</span>
   </div>
   <div class="hd-r">
+    <!-- 상대경로 필수 — Pages 프로젝트 경로(/wconcept-dashboard/) 아래라 절대경로 /ad.html은 404 -->
+    <a class="hd-link" href="../ad.html">📈 광고 성과 대시보드 <span style="font-size:10px">↗</span></a>
     <div class="badge badge-live"><span class="pulse"></span>최종 업데이트: <span id="badge-date"></span></div>
   </div>
 </div>
@@ -505,11 +509,8 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
   <div class="tab-divider"></div>
   <button class="tab-btn realtime-tab" id="tab-realtime" onclick="setRealtimeView(this)">📊 실시간</button>
   <!-- 광고실적 탭: 별도 광고 대시보드로 재구성 예정이라 임시 숨김. setAdsView()/#view-ads는 코드에 유지 -->
-  <!-- 2026-07-27: 그 "별도 광고 대시보드"(ad.html)로 나가는 링크. 백데이터가 달라 통합은 못 하지만
-       오가는 일이 잦아 탭 자리에 링크로 연결. 상대경로 필수 — GitHub Pages가 프로젝트 경로
-       (/wconcept-dashboard/) 아래라서 절대경로 /ad.html은 404가 난다. -->
-  <div class="tab-divider"></div>
-  <a class="tab-link" href="../ad.html">📈 광고 성과 <span style="font-size:10px">↗</span></a>
+  <!-- 그 "별도 광고 대시보드"(ad.html)로 가는 링크는 탭이 아니라 헤더 우측 .hd-link에 있다
+       (2026-07-27) — 탭바에 두면 이 대시보드 안의 뷰처럼 보여서. -->
   <span class="tab-note">* 채널ID 기준</span>
 </div>
 
