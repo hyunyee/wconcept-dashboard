@@ -139,6 +139,8 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
 .dt th:first-child{text-align:left}.dt th:nth-child(2){text-align:left}
 .dt td{padding:8px 12px;border-bottom:1px solid #f8fafc;text-align:right;font-size:12px;color:#334155}
 .dt td:first-child{text-align:left;font-weight:700;color:#0f172a}
+/* APP 열 접기 — 표가 9열이 되어 한눈에 안 들어와서. 재렌더 없이 CSS로만 숨긴다. */
+.dt.hide-app .app-col{display:none}
 .dt td:nth-child(2){text-align:left;color:#64748b;font-size:11px}
 .dt tr:last-child td{border-bottom:none}
 .dt tr:hover td{background:#fafbfd}
@@ -886,6 +888,12 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
     <h2>채널별 MTD 성과</h2>
     <span class="sec-note" style="display:flex;align-items:center;gap:10px">
       <span id="ch-mtd-range"></span>
+      <!-- 2026-07-27: APP 열이 늘면서 9열이 되어 한눈에 안 들어와 토글로 접는다.
+           CSS로 숨기는 방식이라 재렌더가 없고 YoY/MoM·기타 드릴다운 상태도 안 건드린다. -->
+      <span style="display:inline-flex;border:1px solid #e2e8f0;border-radius:6px;overflow:hidden">
+        <button type="button" class="ch-scope-btn active" data-app="off" onclick="setChannelMtdApp(false,this)">전체</button>
+        <button type="button" class="ch-scope-btn" data-app="on" onclick="setChannelMtdApp(true,this)">APP 포함</button>
+      </span>
       <span style="display:inline-flex;border:1px solid #e2e8f0;border-radius:6px;overflow:hidden">
         <button type="button" class="ch-scope-btn active" data-basis="yoy" onclick="setChannelMtdBasis('yoy',this)">YoY</button>
         <button type="button" class="ch-scope-btn" data-basis="mom" onclick="setChannelMtdBasis('mom',this)">MoM</button>
@@ -893,9 +901,9 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
     </span>
   </div>
   <div class="card">
-    <table class="dt">
+    <table class="dt hide-app" id="ch-mtd-table">
       <thead><tr>
-        <th>채널</th><th>세션</th><th>APP 세션</th><th>신규가입</th><th>첫구매</th><th>주문건수</th><th>총수주(백만)</th><th>세션→주문 CR</th><th>APP세션→APP주문 CR</th>
+        <th>채널</th><th>세션</th><th class="app-col">APP 세션</th><th>신규가입</th><th>첫구매</th><th>주문건수</th><th>총수주(백만)</th><th>세션→주문 CR</th><th class="app-col">APP세션→APP주문 CR</th>
       </tr></thead>
       <tbody id="ch-mtd-matrix"><tr><td colspan="9" style="text-align:center;color:#94a3b8;padding:12px">데이터 로딩 중...</td></tr></tbody>
     </table>
@@ -3607,6 +3615,14 @@ const chAppCrCell = (c, m) => chCrCellOf(c, m, 'sessApp', 'ordersApp');
 let chMtdBasis = 'yoy';
 let chMtdEtcOpen = false;
 
+// APP 열 접기/펴기 — 표를 다시 그리지 않고 클래스만 토글한다(YoY/MoM·기타 드릴다운 상태 보존)
+function setChannelMtdApp(on, el) {
+  const t = document.getElementById('ch-mtd-table');
+  if (t) t.classList.toggle('hide-app', !on);
+  el.parentElement.querySelectorAll('.ch-scope-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+}
+
 function setChannelMtdBasis(basis, el) {
   chMtdBasis = basis;
   el.parentElement.querySelectorAll('.ch-scope-btn').forEach(b => b.classList.remove('active'));
@@ -3664,9 +3680,11 @@ function renderChannelMtdMatrix() {
     // 전체 행은 요약이라 괴리표식 제외(액션 대상 채널이 아님)
     const flag = o.noWarn ? '' : warn(c, m);
     const appPct = c.sess ? ` <span style="font-size:9.5px;color:#cbd5e1">(${Math.round(c.sessApp / c.sess * 100)}%)</span>` : '';
+    // app-col 클래스가 붙은 셀은 '전체' 보기에서 CSS로 숨겨진다(헤더 th와 짝을 맞출 것)
     return `<tr${attrs}><td style="${tdStyle}">${name}${flag}</td>${cell(c.sess, m.sess)}` +
-      `<td>${(c.sessApp || 0).toLocaleString()}${appPct}${deltaHtml(c.sessApp, m.sessApp)}</td>` +
-      `${cell(c.join, m.join)}${cell(c.first, m.first)}${cell(c.orders, m.orders)}${revCell(c.rev, m.rev)}${crCell(c, m)}${chAppCrCell(c, m)}</tr>`;
+      `<td class="app-col">${(c.sessApp || 0).toLocaleString()}${appPct}${deltaHtml(c.sessApp, m.sessApp)}</td>` +
+      `${cell(c.join, m.join)}${cell(c.first, m.first)}${cell(c.orders, m.orders)}${revCell(c.rev, m.rev)}${crCell(c, m)}` +
+      chAppCrCell(c, m).replace('<td>', '<td class="app-col">').replace('<td style=', '<td class="app-col" style=') + '</tr>';
   };
 
   const allCur = add(...WK_CH_ORDER.map(b => bCur[b]));
