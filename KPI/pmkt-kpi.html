@@ -3783,6 +3783,51 @@ function applySankeyHighlight() {
     return { s, p };
   };
 
+  // 노드 라벨 숫자도 선택 기준으로 바꾼다 — 예전엔 부제만 바뀌고 차트 위 숫자는 전체값
+  // 그대로라, SA를 골라도 APP·구매 노드엔 전 채널 합계가 찍혀 있었다(사용자 지적).
+  // 막대 굵기는 전체 기준을 유지한다: 선택할 때마다 레이아웃이 재배치되면 다른 채널과의
+  // 상대 크기를 잃어버려 생키를 보는 이유가 없어진다. 대신 힌트에 그 사실을 적는다.
+  // 선택 스코프의 총량 (부제·비율 분모·선택 노드 라벨이 공유)
+  const scopeTotOf = (q) => q.type === 'ch'  ? cells(q.key, null).s
+                          : q.type === 'dev' ? cells(null, q.key).s
+                          : (() => { const a = cells(null, null); return q.key === 'buy' ? a.p : a.s - a.p; })();
+  // 선택이 없을 때 각 노드의 전체값 — 스코프 밖 노드는 이 값을 그대로 유지한다
+  const fullVal = (t, k) => {
+    if (t === 'ch')  return cells(k, null).s;
+    if (t === 'dev') return cells(null, k).s;
+    const a = cells(null, null); return k === 'buy' ? a.p : a.s - a.p;
+  };
+  // 선택 스코프 안에서의 값
+  const scopeVal = (t, k) => {
+    // 선택한 노드 자신 = 스코프 총량. 이 가드가 없으면 아래 분기를 흘러내려가
+    // 'SA'를 buy가 아닌 값으로 처리해 미구매값이 찍히고, 결과 노드는 0이 된다.
+    if (t === pk.type && k === pk.key) return scopeTotOf(pk);
+    if (pk.type === 'ch') {
+      if (t === 'dev') return cells(pk.key, k).s;
+      const a = cells(pk.key, null); return k === 'buy' ? a.p : a.s - a.p;
+    }
+    if (pk.type === 'dev') {
+      if (t === 'ch')  return cells(k, pk.key).s;
+      const a = cells(null, pk.key); return k === 'buy' ? a.p : a.s - a.p;
+    }
+    const isBuy = pk.key === 'buy';
+    const g = (cf, df) => { const a = cells(cf, df); return isBuy ? a.p : a.s - a.p; };
+    if (t === 'ch')  return g(k, null);
+    return g(null, k);
+  };
+  const scopeTot = !pk ? total : scopeTotOf(pk);
+
+  svg.querySelectorAll('text[data-node]').forEach(el => {
+    const [t, k] = el.getAttribute('data-node').split(':');
+    // 선택한 열의 비선택 노드는 스코프 밖이다. 스코프 분모를 씌우면 Organic이 470%처럼
+    // 나오므로, 이 노드들은 원래 값·원래 비중을 그대로 둔다(어차피 흐려져 배경 역할).
+    const outOfScope = pk && t === pk.type && k !== pk.key;
+    const v = (!pk || outOfScope) ? fullVal(t, k) : scopeVal(t, k);
+    const den = (!pk || outOfScope) ? total : scopeTot;
+    const box = el.querySelector('.sk-v');
+    if (box) box.textContent = `${nf(v)} (${den ? p1(v / den * 100) : '-'})`;
+  });
+
   const sub = document.getElementById('sankey-sub');
   if (sub) {
     let html;
@@ -3820,8 +3865,8 @@ function applySankeyHighlight() {
   if (hint) {
     const LBL = { ch: '채널', dev: '기기', out: '결과' };
     hint.textContent = pk
-      ? `${LBL[pk.type]} 기준으로 보는 중 — 같은 노드를 다시 누르면 해제`
-      : '어느 노드든 클릭하면 그 경로만 강조되고, 위 숫자도 그 기준으로 바뀝니다';
+      ? `${LBL[pk.type]} 기준으로 보는 중 — 차트 위 숫자도 이 기준 (막대 굵기는 전체 기준 유지) · 같은 노드를 다시 누르면 해제`
+      : '어느 노드든 클릭하면 그 경로만 강조되고, 차트 위 숫자와 요약이 그 기준으로 바뀝니다';
   }
 }
 
@@ -3899,7 +3944,7 @@ function renderFunnelSankey(svgId, subId, from, to) {
     const clk = ` style="cursor:pointer" onclick="pickSankeyNode('${type}','${key}')"`;
     return `<rect data-node="${type}:${key}" x="${x}" y="${y}" width="${NW}" height="${h}" rx="2" fill="${col}"${clk}><title>${label} ${nf(val)} (${pct(val)})</title></rect>`
       + ((force || h >= 11)
-        ? `<text data-node="${type}:${key}" x="${tx}" y="${y + h / 2 + 3.5}" text-anchor="${anchor}" font-size="10.5" fill="#475569"${clk}><tspan font-weight="700">${label}</tspan> <tspan fill="#94a3b8">${nf(val)} (${pct(val)})</tspan></text>`
+        ? `<text data-node="${type}:${key}" data-label="${label}" x="${tx}" y="${y + h / 2 + 3.5}" text-anchor="${anchor}" font-size="10.5" fill="#475569"${clk}><tspan font-weight="700">${label}</tspan> <tspan class="sk-v" fill="#94a3b8">${nf(val)} (${pct(val)})</tspan></text>`
         : '');
   };
   chs.forEach(c => s += node(X[0], P0[c.key].y, P0[c.key].h, CH_COLORS[c.key] || '#cbd5e1', c.key, c.s, 'start', X[0] + NW + 5, false, 'ch', c.key));
