@@ -933,28 +933,64 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
     <ul id="wk-notes" style="display:none;font-size:12px;line-height:1.5;padding:12px 20px 16px;margin:0;border-top:1px solid #f1f5f9;list-style:none"></ul>
   </div>
 
-  <!-- ══ 블록 ② 주간 실적 요약 : 핵심지표 스트립 + 주간 타겟 진척현황 ══ -->
+  <!-- ══ 블록 ① 핵심지표 — Daily '핵심지표 달성 현황'과 대칭 ══ -->
   <div class="sec-hd">
-    <h2 style="font-size:14px;--before-color:#6366f1">주간 실적 요약</h2>
+    <h2 style="font-size:14px;--before-color:#6366f1">핵심지표</h2>
     <span class="sec-note" id="wk-kpi-period-label" style="font-size:10px;color:#94a3b8">WoW=직전 주比 · 스파크라인=최근 10주</span>
   </div>
-  <div class="kpi-grid kpi-grid-7" style="margin-bottom:14px">
-    <div class="kpi-card c-indigo"><div class="kpi-lbl">총수주 <span style="font-size:10px;color:#94a3b8">(억)</span></div><div class="kpi-val" id="wk-k-revenue">-</div><div class="kpi-sub" id="wk-k-revenue-sub">-</div><span class="yoy" id="wk-k-revenue-yoy">-</span><div id="wk-k-revenue-spark" style="margin-top:6px"></div></div>
-    <div class="kpi-card c-green"><div class="kpi-lbl">순수주 <span style="font-size:10px;color:#94a3b8">(억)</span></div><div class="kpi-val" id="wk-k-net">-</div><div class="kpi-sub" id="wk-k-net-sub">-</div><span class="yoy" id="wk-k-net-yoy">-</span><div id="wk-k-net-spark" style="margin-top:6px"></div></div>
-    <div class="kpi-card c-blue"><div class="kpi-lbl">주문건수</div><div class="kpi-val" id="wk-k-orders">-</div><div class="kpi-sub" id="wk-k-orders-sub">-</div><span class="yoy" id="wk-k-orders-yoy">-</span><div id="wk-k-orders-spark" style="margin-top:6px"></div></div>
-    <div class="kpi-card c-orange"><div class="kpi-lbl">신규가입</div><div class="kpi-val" id="wk-k-join">-</div><div class="kpi-sub" id="wk-k-join-sub">-</div><span class="yoy" id="wk-k-join-yoy">-</span><div id="wk-k-join-spark" style="margin-top:6px"></div></div>
-    <div class="kpi-card c-rose"><div class="kpi-lbl">첫구매</div><div class="kpi-val" id="wk-k-first">-</div><div class="kpi-sub" id="wk-k-first-sub">-</div><span class="yoy" id="wk-k-first-yoy">-</span><div id="wk-k-first-spark" style="margin-top:6px"></div></div>
-    <div class="kpi-card c-teal"><div class="kpi-lbl">세션수</div><div class="kpi-val" id="wk-k-sess">-</div><div class="kpi-sub" id="wk-k-sess-sub">-</div><span class="yoy" id="wk-k-sess-yoy">-</span><div id="wk-k-sess-spark" style="margin-top:6px"></div></div>
-    <div class="kpi-card c-purple"><div class="kpi-lbl">APP 세션수</div><div class="kpi-val" id="wk-k-sessApp">-</div><div class="kpi-sub" id="wk-k-sessApp-sub">-</div><span class="yoy" id="wk-k-sessApp-yoy">-</span><div id="wk-k-sessApp-spark" style="margin-top:6px"></div></div>
+  <!-- 2026-07-27: APP 세션은 아래 'APP 핵심지표' 블록으로 옮겨 6장으로 되돌림(같은 숫자를
+       두 곳에 두지 않기 위해). 카드 하단 .kpi-mtd에 주간 목표 달성률을 넣어 Daily처럼
+       "얼마 팔았고 목표 대비 어디쯤"이 카드 하나에서 끝나게 함 — 예전엔 규모만 보고
+       달성률은 아래 표까지 내려가야 해서 같은 질문에 시선이 왕복했다. -->
+  <div class="kpi-grid" style="margin-bottom:14px">
+    <div class="kpi-card c-indigo"><div class="kpi-lbl">총수주 <span style="font-size:10px;color:#94a3b8">(억)</span></div><div class="kpi-val" id="wk-k-revenue">-</div><div class="kpi-sub" id="wk-k-revenue-sub">-</div><span class="yoy" id="wk-k-revenue-yoy">-</span><div class="kpi-mtd" id="wk-k-revenue-mtd"></div><div id="wk-k-revenue-spark" style="margin-top:6px"></div></div>
+    <div class="kpi-card c-green"><div class="kpi-lbl">순수주 <span style="font-size:10px;color:#94a3b8">(억)</span></div><div class="kpi-val" id="wk-k-net">-</div><div class="kpi-sub" id="wk-k-net-sub">-</div><span class="yoy" id="wk-k-net-yoy">-</span><div class="kpi-mtd" id="wk-k-net-mtd"></div><div id="wk-k-net-spark" style="margin-top:6px"></div></div>
+    <div class="kpi-card c-blue"><div class="kpi-lbl">주문건수</div><div class="kpi-val" id="wk-k-orders">-</div><div class="kpi-sub" id="wk-k-orders-sub">-</div><span class="yoy" id="wk-k-orders-yoy">-</span><div class="kpi-mtd" id="wk-k-orders-mtd"></div><div id="wk-k-orders-spark" style="margin-top:6px"></div></div>
+    <div class="kpi-card c-orange"><div class="kpi-lbl">신규가입</div><div class="kpi-val" id="wk-k-join">-</div><div class="kpi-sub" id="wk-k-join-sub">-</div><span class="yoy" id="wk-k-join-yoy">-</span><div class="kpi-mtd" id="wk-k-join-mtd"></div><div id="wk-k-join-spark" style="margin-top:6px"></div></div>
+    <div class="kpi-card c-rose"><div class="kpi-lbl">첫구매</div><div class="kpi-val" id="wk-k-first">-</div><div class="kpi-sub" id="wk-k-first-sub">-</div><span class="yoy" id="wk-k-first-yoy">-</span><div class="kpi-mtd" id="wk-k-first-mtd"></div><div id="wk-k-first-spark" style="margin-top:6px"></div></div>
+    <div class="kpi-card c-teal"><div class="kpi-lbl">세션수</div><div class="kpi-val" id="wk-k-sess">-</div><div class="kpi-sub" id="wk-k-sess-sub">-</div><span class="yoy" id="wk-k-sess-yoy">-</span><div class="kpi-mtd" id="wk-k-sess-mtd"></div><div id="wk-k-sess-spark" style="margin-top:6px"></div></div>
   </div>
 
-  <!-- ②-2 주간 타겟 진척현황 (블록 ② 안, 별도 헤더 없이 카드 제목으로 구분) -->
+  <!-- ══ 블록 ② APP 핵심지표 — 하반기 전사 중점. Daily의 같은 이름 블록과 대칭 ══ -->
+  <div class="sec-hd">
+    <h2 style="font-size:14px;--before-color:#8b5cf6">APP 핵심지표</h2>
+    <span class="sec-note">선택 주 합계 · WoW=직전 주比 · 스파크라인=최근 10주</span>
+  </div>
+  <div class="grid-3" style="margin-bottom:14px">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span class="kpi-lbl">APP 세션</span><span class="yoy flat" id="wk-ap-sess-yoy">-</span>
+      </div>
+      <div class="kpi-val" id="wk-ap-sess-val">-</div>
+      <div class="kpi-sub" id="wk-ap-sess-sub">-</div>
+      <div id="wk-ap-sess-spark" style="margin-top:6px"></div>
+    </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span class="kpi-lbl">APP 전환율 <span style="font-size:10px;color:#94a3b8">(APP구매/APP세션)</span></span><span class="yoy flat" id="wk-ap-cr-yoy">-</span>
+      </div>
+      <div class="kpi-val" id="wk-ap-cr-val">-</div>
+      <div class="kpi-sub" id="wk-ap-cr-sub">-</div>
+      <div id="wk-ap-cr-spark" style="margin-top:6px"></div>
+    </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span class="kpi-lbl">APP 비중 <span style="font-size:10px;color:#94a3b8">(APP세션/전체세션)</span></span><span class="yoy flat" id="wk-ap-share-yoy">-</span>
+      </div>
+      <div class="kpi-val" id="wk-ap-share-val">-</div>
+      <div class="kpi-sub" id="wk-ap-share-sub">-</div>
+      <div id="wk-ap-share-spark" style="margin-top:6px"></div>
+    </div>
+  </div>
+
+  <!-- ══ 블록 ③ 주간 타겟 진척현황 — Daily 'MTD 달성현황' 자리 ══ -->
+  <div class="sec-hd">
+    <h2 style="font-size:14px;--before-color:#6366f1">주간 타겟 진척현황</h2>
+    <span class="sec-note" id="wk-pace-period-label"></span>
+  </div>
   <div class="grid-2" style="margin-bottom:14px">
     <div class="card">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
-        <div class="card-title" style="margin-bottom:0">주간 타겟 진척현황</div>
-        <span class="sec-note" id="wk-pace-period-label"></span>
-      </div>
+      <div class="card-title">Target vs Actual</div>
       <div class="card-sub">주간 누적 목표 달성률 (DAILY_TGTS 주 합산)</div>
       <table class="achv-table" style="table-layout:fixed">
         <colgroup><col style="width:20%"><col style="width:20%"><col style="width:20%"><col style="width:20%"><col style="width:20%"></colgroup>
@@ -978,10 +1014,11 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
     </div>
   </div>
 
-  <!-- ══ 블록 ③ 최근 10주 추이 : 볼륨(좌) vs 효율(우)을 같은 x축으로 좌우 대조 ══ -->
+  <!-- ══ 블록 ④ 전환 효율 · 추이 — Daily '전환 퍼널' 자리.
+       볼륨(좌)과 전환 효율(우)을 같은 10주 x축으로 좌우 대조 ══ -->
   <div class="sec-hd">
-    <h2 style="font-size:14px;--before-color:#0ea5e9">최근 10주 추이</h2>
-    <span class="sec-note">볼륨과 전환 효율을 같은 10주 구간으로 나란히</span>
+    <h2 style="font-size:14px;--before-color:#10b981">전환 효율 · 최근 10주 추이</h2>
+    <span class="sec-note">얼마나 왔나(좌) vs 얼마나 잘 샀나(우) — 같은 10주 구간</span>
   </div>
   <div class="grid-2" style="margin-bottom:14px">
   <div class="card">
@@ -1034,17 +1071,10 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
     <div id="wk-share-legend" style="display:flex;flex-wrap:wrap;gap:10px;font-size:11px;color:#475569"></div>
   </div>
 
-  <!-- ④-2 채널 성과 매트릭스 -->
-  <div class="card" style="margin-bottom:14px">
-    <div class="card-title">채널 성과 매트릭스 <span style="font-size:10px;color:#94a3b8;font-weight:400">선택 주 합계 · %는 WoW(CR은 %p) · 채널 태깅(2_raw_전환·트래픽) 기준</span></div>
-    <table class="dt">
-      <thead><tr><th>채널</th><th>세션</th><th>APP 세션</th><th>신규가입</th><th>첫구매</th><th>주문건수</th><th>총수주(백만)</th><th>세션→주문 CR</th></tr></thead>
-      <tbody id="wk-ch-matrix"><tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:12px">데이터 로딩 중...</td></tr></tbody>
-    </table>
-    <div style="font-size:10px;color:#94a3b8;margin-top:6px">※ 주문건수·세션→주문 CR은 트래픽 시트 Purchase Cnt 기준 — 전환율 추이 카드(RAW 주문건수 기준)와 약 2% 차이가 납니다</div>
-  </div>
-
-  <!-- ④-3 채널별 최근 10주 추이 -->
+  <!-- ④-2 채널별 최근 10주 추이
+       2026-07-27: 매트릭스(표)보다 앞으로 옮김 — Daily가 '채널별 비중 → 채널별 현황(추세)
+       → 채널별 MTD 성과(표)' 순서라 두 탭을 맞췄다. 구성을 보고 → 어떻게 움직였나를 보고 →
+       숫자로 확인, 이 순서가 자연스럽다. -->
   <div class="card" style="margin-bottom:14px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
       <div class="card-title" style="margin-bottom:0">채널별 최근 10주 추이</div>
@@ -1059,6 +1089,16 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
     </div>
     <div id="wk-ch-trend-toggles" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px"></div>
     <div class="chart-box h220"><canvas id="chart-weekly-ch-trend"></canvas></div>
+  </div>
+
+  <!-- ④-3 채널 성과 매트릭스 -->
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-title">채널 성과 매트릭스 <span style="font-size:10px;color:#94a3b8;font-weight:400">선택 주 합계 · %는 WoW(CR은 %p) · 채널 태깅(2_raw_전환·트래픽) 기준</span></div>
+    <table class="dt">
+      <thead><tr><th>채널</th><th>세션</th><th>APP 세션</th><th>신규가입</th><th>첫구매</th><th>주문건수</th><th>총수주(백만)</th><th>세션→주문 CR</th></tr></thead>
+      <tbody id="wk-ch-matrix"><tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:12px">데이터 로딩 중...</td></tr></tbody>
+    </table>
+    <div style="font-size:10px;color:#94a3b8;margin-top:6px">※ 주문건수·세션→주문 CR은 트래픽 시트 Purchase Cnt 기준 — 전환율 추이 카드(RAW 주문건수 기준)와 약 2% 차이가 납니다</div>
   </div>
 
   <!-- ══ 블록 ⑤ 광고 채널ID 세부 : 지면 단위 드릴다운 ══ -->
@@ -2474,12 +2514,10 @@ const WK_KPI_CFG = {
   orders:  { scale: 1,   dec: 0, unit: '',   color: '#3b82f6' },
   join:    { scale: 1,   dec: 0, unit: '',   color: '#f59e0b' },
   first:   { scale: 1,   dec: 0, unit: '',   color: '#f43f5e' },
+  // 키 순서 = DOM 카드 순서 (renderWeeklyKpiStrip이 Object.keys로 순회).
+  // APP 세션은 2026-07-27에 전용 'APP 핵심지표' 블록으로 옮겼다 — 같은 숫자를 두 곳에
+  // 두지 않기 위해서. Daily도 핵심지표 6장 + APP 블록 별도 구성이라 대칭이 맞는다.
   sess:    { scale: 1,   dec: 0, unit: '',   color: '#14b8a6' },
-  // 2026-07-27: APP 세션 추가. aggWeekFull이 이미 sessApp을 집계하고 있어서 데이터·렌더
-  // 경로 변경은 없고, 여기 한 줄과 HTML 카드 한 장이면 된다. 키 순서를 DOM 카드 순서와
-  // 맞춰야 함(renderWeeklyKpiStrip이 Object.keys 순회).
-  // 주의: TRAFFIC 최초일이 2025-04-01이라 그 이전 주는 전년비교(-364d)가 공백이 된다.
-  sessApp: { scale: 1,   dec: 0, unit: '',   color: '#8b5cf6' },
 };
 function renderWeeklyKpiStrip(wkStart) {
   // 최근 10주(과거→현재) aggWeekFull 결과 — 스파크라인과 현재/전주 값을 여기서 함께 뽑는다
@@ -2508,6 +2546,79 @@ function renderWeeklyKpiStrip(wkStart) {
     const sparkEl = document.getElementById(`wk-k-${key}-spark`);
     if (sparkEl) sparkEl.innerHTML = sparkSvg(series.map(s => s[key] || null), cfg.color);
   });
+
+  // 2026-07-27: 카드 하단 주간 목표 달성률. Daily 핵심지표의 .kpi-mtd와 같은 색상 규칙
+  // (100↑ over / 85↑ warn / 미만 low). 목표가 없는 지표(주문건수·세션수)는 빈 칸으로 둔다
+  // — DAILY_TGTS에 해당 타겟이 없기 때문(WK_PACE_METRICS가 4종뿐인 것과 같은 이유).
+  const wt = weekTargetAgg(wkStart);
+  const setWkTgt = (key, actVal, tgtVal) => {
+    const el = document.getElementById(`wk-k-${key}-mtd`);
+    if (!el) return;
+    if (!actVal || !tgtVal) { el.textContent = ''; el.className = 'kpi-mtd na'; return; }
+    const p = Math.round(actVal / tgtVal * 100);
+    el.textContent = `주간 목표 ${p}%`;
+    el.className = 'kpi-mtd ' + (p >= 100 ? 'over' : p >= 85 ? 'warn' : 'low');
+  };
+  setWkTgt('revenue', cur.revenue, wt.revenue);
+  setWkTgt('net',     cur.net,     wt.net);
+  setWkTgt('join',    cur.join,    wt.join);
+  setWkTgt('first',   cur.first,   wt.first);
+  setWkTgt('orders',  null, null);   // 주간 타겟 없음 — 빈 칸
+  setWkTgt('sess',    null, null);
+
+  renderWeeklyAppStrip(wkStart, series, prev, ly);
+}
+
+// ── 블록 ② APP 핵심지표 — 하반기 전사 중점. Daily renderAppKpiStrip과 같은 형태를
+// 주간 합계 기준으로. 데이터는 aggWeekFull이 이미 주는 sessApp/ordersApp/sess로 충분해
+// 별도 조회가 없다(R2). 지표 3종: APP 세션 / APP 전환율 / APP 비중.
+// R7: 전환율·비중은 이미 퍼센트라 전년·전주 대비를 %p 차로 표기한다.
+function renderWeeklyAppStrip(wkStart, series, prev, ly) {
+  const cur = series[series.length - 1];
+  const appCr    = a => a.sessApp ? a.ordersApp / a.sessApp * 100 : null;
+  const appShare = a => a.sess    ? a.sessApp   / a.sess    * 100 : null;
+
+  const put = (id, valTxt, subTxt, delta, isPp, sparkVals, color) => {
+    const v = document.getElementById(`wk-ap-${id}-val`); if (v) v.textContent = valTxt;
+    const s = document.getElementById(`wk-ap-${id}-sub`); if (s) s.textContent = subTxt;
+    const y = document.getElementById(`wk-ap-${id}-yoy`);
+    if (y) {
+      y.textContent = delta == null ? '-' : `WoW ${delta >= 0 ? '+' : ''}${delta.toFixed(isPp ? 2 : 1)}${isPp ? '%p' : '%'}`;
+      y.className = 'yoy ' + (delta == null ? 'flat' : Math.abs(delta) < (isPp ? 0.005 : 0.05) ? 'flat' : delta > 0 ? 'up' : 'dn');
+    }
+    const sp = document.getElementById(`wk-ap-${id}-spark`);
+    if (sp) sp.innerHTML = sparkSvg(sparkVals, color);
+  };
+
+  const yoyTxt = (c, l, isPp) => {
+    if (c == null || l == null) return 'YoY -';
+    const d = isPp ? c - l : (l ? (c - l) / l * 100 : null);
+    if (d == null) return 'YoY -';
+    return `YoY ${d >= 0 ? '+' : ''}${d.toFixed(isPp ? 2 : 1)}${isPp ? '%p' : '%'}`;
+  };
+
+  // APP 세션 — 상대 증감(%)
+  put('sess',
+    cur.sessApp ? Math.round(cur.sessApp).toLocaleString() : '-',
+    `전주 ${prev.sessApp ? Math.round(prev.sessApp).toLocaleString() : '-'} · ${yoyTxt(cur.sessApp, ly.sessApp, false)}`,
+    yoyPct(cur.sessApp || null, prev.sessApp || null), false,
+    series.map(s => s.sessApp || null), '#8b5cf6');
+
+  // APP 전환율 — %p
+  const crC = appCr(cur), crP = appCr(prev), crL = appCr(ly);
+  put('cr',
+    crC == null ? '-' : crC.toFixed(2) + '%',
+    `전주 ${crP == null ? '-' : crP.toFixed(2) + '%'} · ${yoyTxt(crC, crL, true)}`,
+    (crC != null && crP != null) ? crC - crP : null, true,
+    series.map(s => appCr(s)), '#10b981');
+
+  // APP 비중 — %p
+  const shC = appShare(cur), shP = appShare(prev), shL = appShare(ly);
+  put('share',
+    shC == null ? '-' : shC.toFixed(1) + '%',
+    `전주 ${shP == null ? '-' : shP.toFixed(1) + '%'} · ${yoyTxt(shC, shL, true)}`,
+    (shC != null && shP != null) ? shC - shP : null, true,
+    series.map(s => appShare(s)), '#3b82f6');
 }
 
 // ①-3 주간 목표 대비 페이스 (신규) — 좌: 핵심지표 4종 목표/실적 표, 우: 8주 목표 vs 실적 막대(선택 지표)
