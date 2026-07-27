@@ -758,6 +758,15 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
     </div>
   </div>
 
+  <!-- ③-1b 전환 경로 (생키) — 막대 퍼널이 "어느 단계에서 새나"라면 이건 "어느 경로가 새나".
+       단계 퍼널을 생키로 못 그리는 이유는 renderFunnelSankey 주석 참고(상품조회가 세션의
+       부분집합이 아님). 세션 단위 채널→디바이스→구매/미구매는 보존이 정확히 맞는다. -->
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-title">전환 경로 <span style="font-size:10px;color:#94a3b8;font-weight:400">당월 1일~기준일 · 세션 기준 · 굵기 = 세션 수</span></div>
+    <div class="card-sub" id="sankey-sub">-</div>
+    <div style="overflow-x:auto"><svg id="sankey-daily" style="width:100%;min-width:640px;height:380px" preserveAspectRatio="xMidYMid meet"></svg></div>
+  </div>
+
   <!-- ③-2 쿠폰·할인 효율 — 전환율에 영향을 주는 비용 레버라 전환 퍼널과 같은 섹션에 둔다.
        퍼널 카드(.grid-32)에 3번째 칼럼으로 끼우면 좁아져서 바로 아래 .grid-2로 배치.
        기간 창은 퍼널과 동일(1일~기준일, 전월/전년 동기간)이라 같은 섹션 안 숫자 기준이 일치. -->
@@ -1048,6 +1057,13 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
     <div class="card-sub">세션→구매 · APP 세션→구매 · 세션→신규가입 (좌축) · 신규가입→첫구매 (우축)</div>
     <div class="chart-box h240"><canvas id="chart-weekly-cr"></canvas></div>
   </div>
+  </div>
+
+  <!-- 전환 경로 (생키) — Daily와 같은 함수·같은 축, 창만 선택 주로 -->
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-title">전환 경로 <span style="font-size:10px;color:#94a3b8;font-weight:400">선택 주 합계 · 세션 기준 · 굵기 = 세션 수</span></div>
+    <div class="card-sub" id="wk-sankey-sub">-</div>
+    <div style="overflow-x:auto"><svg id="sankey-weekly" style="width:100%;min-width:640px;height:380px" preserveAspectRatio="xMidYMid meet"></svg></div>
   </div>
 
   <!-- ══ 블록 ④ 채널 기여 : 비중 → 성과 매트릭스 → 채널별 추이 ══ -->
@@ -2552,6 +2568,7 @@ function renderWeekly() {
   renderWeeklyChannelTrend(wkStart);
   renderWeeklyChAd(wkStart);
   renderWkChidDetail();
+  renderFunnelSankey('sankey-weekly', 'wk-sankey-sub', localDateToStr(wkStart), localDateToStr(wkOffset(wkStart, 6)));
 }
 
 // 주간(월~일) 목표 합산 — DAILY_TGTS를 7일치 더함. 코멘트/목표대비 페이스 카드가 공용으로 사용.
@@ -3678,6 +3695,147 @@ function renderChannelMtdMatrix() {
 
   // ⑧ 광고비 효율 — 위에서 이미 집계한 bCur/bCmp(DA/SA)를 그대로 재사용(신규 채널 집계 없음)
   renderAdEfficiency(curFrom, curTo, cmpR.from, cmpR.to, bCur, bCmp);
+}
+
+// ── 전환 경로 생키 (Daily·Weekly 공용) ──────────────────────────────────────
+// 왜 단계 퍼널(세션→조회→장바구니→구매)을 생키로 안 그리는가:
+//   생키는 흐름이라 "들어온 양 = 나간 양"이 성립해야 하는데, 상품조회는 세션의
+//   부분집합이 아니라 이벤트 카운트라 세션의 4.4배다(2026-07-26 실측 2,805,049 vs
+//   634,937). 그대로 생키로 그리면 유입보다 유출이 많은 그림이 되어 오독을 부른다.
+//   대신 세션을 단위로 채널→디바이스→구매/미구매를 그리면 보존이 정확히 맞는다
+//   (채널 세션합 = __total__ = 디바이스 세션합, 모든 채널에서 구매 ≤ 세션 확인).
+//
+// 채널×디바이스 세션·구매 합산 — 기존 집계는 채널×디바이스를 동시에 안 갖고 있어
+// (aggRawChannelRange는 app 세션만) 이 조합만 여기서 만든다. 버킷 기준은
+// wkChannelBucket을 그대로 써서 다른 채널 표와 분류가 어긋나지 않게 한다.
+const SANKEY_DEV = ['app', 'mw', 'pc'];
+const SANKEY_DEV_LABEL = { app: 'APP', mw: 'MW', pc: 'PC' };
+const SANKEY_DEV_COLOR = { app: '#8b5cf6', mw: '#0ea5e9', pc: '#94a3b8' };
+
+function aggChannelDeviceRange(from, to) {
+  const out = {};   // {채널버킷: {app:{s,p}, mw:{...}, pc:{...}}}
+  let cur = parseLocalDate(from);
+  const end = parseLocalDate(to);
+  while (cur <= end) {
+    const day = TRAFFIC[localDateToStr(cur)] || {};
+    Object.keys(day).forEach(ch => {
+      if (ch === '__total__') return;
+      const b = wkChannelBucket(ch);
+      const slot = out[b] || (out[b] = { app: { s: 0, p: 0 }, mw: { s: 0, p: 0 }, pc: { s: 0, p: 0 } });
+      const dev = day[ch].device || {};
+      SANKEY_DEV.forEach(k => {
+        const v = dev[k];
+        if (!v) return;
+        slot[k].s += v.s || 0;
+        slot[k].p += v.p || 0;
+      });
+    });
+    cur.setDate(cur.getDate() + 1);
+  }
+  return out;
+}
+
+// 인라인 SVG로 직접 그린다 — Chart.js엔 생키가 없고, 플러그인을 CDN으로 새로 물면
+// 사내망·오프라인에서 깨질 수 있다. 노드 10여 개라 직접 그리는 편이 가볍고,
+// 스파크라인도 이미 인라인 SVG라 방식이 일관된다.
+function renderFunnelSankey(svgId, subId, from, to) {
+  const svg = document.getElementById(svgId);
+  if (!svg) return;
+  const agg = aggChannelDeviceRange(from, to);
+
+  const chs = WK_CH_ORDER
+    .map(b => ({ key: b, s: SANKEY_DEV.reduce((a, k) => a + ((agg[b] && agg[b][k].s) || 0), 0) }))
+    .filter(c => c.s > 0).sort((a, b) => b.s - a.s);
+  const total = chs.reduce((a, c) => a + c.s, 0);
+  const sub = document.getElementById(subId);
+  if (!total) {
+    svg.innerHTML = '';
+    if (sub) sub.textContent = '해당 기간 트래픽 데이터 없음';
+    return;
+  }
+  const devTot = {}; SANKEY_DEV.forEach(k => devTot[k] = { s: 0, p: 0 });
+  chs.forEach(c => SANKEY_DEV.forEach(k => {
+    const v = (agg[c.key] || {})[k]; if (!v) return;
+    devTot[k].s += v.s; devTot[k].p += v.p;
+  }));
+  const devs = SANKEY_DEV.filter(k => devTot[k].s > 0);
+  const buy = devs.reduce((a, k) => a + devTot[k].p, 0);
+  const nobuy = total - buy;
+
+  const W = 900, H = 380, PAD = 12, NW = 13;          // NW = 노드 막대 폭
+  const X = [PAD, W / 2 - NW / 2, W - PAD - NW];
+  const GAP = 7;
+  const colH = (n) => H - 24 - GAP * Math.max(0, n - 1);
+  const sc = Math.min(colH(chs.length), colH(devs.length), colH(2)) / total;
+
+  // 각 컬럼의 노드 y좌표 배치
+  const place = (items) => {
+    let y = 14, out = {};
+    items.forEach(it => { const h = Math.max(1.5, it.v * sc); out[it.key] = { y, h }; y += h + GAP; });
+    return out;
+  };
+  const P0 = place(chs.map(c => ({ key: c.key, v: c.s })));
+  const P1 = place(devs.map(k => ({ key: k, v: devTot[k].s })));
+  const P2 = place([{ key: 'buy', v: buy }, { key: 'nobuy', v: nobuy }]);
+
+  // 리본 — 소스/타깃 슬라이스를 3차 베지어로 잇는다
+  const ribbon = (x0, y0, x1, y1, h0, h1, fill, op, title) => {
+    const xm = (x0 + x1) / 2;
+    return `<path d="M${x0},${y0} C${xm},${y0} ${xm},${y1} ${x1},${y1} L${x1},${y1 + h1} C${xm},${y1 + h1} ${xm},${y0 + h0} ${x0},${y0 + h0} Z"
+      fill="${fill}" fill-opacity="${op}"><title>${title}</title></path>`;
+  };
+  const nf = v => Math.round(v).toLocaleString();
+  const pct = v => (v / total * 100).toFixed(1) + '%';
+
+  let s = '';
+  // 채널 → 디바이스
+  const off0 = {}, off1 = {};
+  chs.forEach(c => off0[c.key] = P0[c.key].y);
+  devs.forEach(k => off1[k] = P1[k].y);
+  chs.forEach(c => {
+    const col = CH_COLORS[c.key] || '#cbd5e1';
+    devs.forEach(k => {
+      const v = (agg[c.key] || {})[k]; if (!v || !v.s) return;
+      const h = v.s * sc;
+      s += ribbon(X[0] + NW, off0[c.key], X[1], off1[k], h, h, col, .32,
+        `${c.key} → ${SANKEY_DEV_LABEL[k]} · 세션 ${nf(v.s)}`);
+      off0[c.key] += h; off1[k] += h;
+    });
+  });
+  // 디바이스 → 구매/미구매
+  const off2 = { buy: P2.buy.y, nobuy: P2.nobuy.y };
+  const off1b = {}; devs.forEach(k => off1b[k] = P1[k].y);
+  devs.forEach(k => {
+    const d = devTot[k], cr = d.s ? d.p / d.s * 100 : 0;
+    [['buy', d.p, '#10b981'], ['nobuy', d.s - d.p, '#cbd5e1']].forEach(([tgt, val, col]) => {
+      if (!val) return;
+      const h = val * sc;
+      s += ribbon(X[1] + NW, off1b[k], X[2], off2[tgt], h, h, col, tgt === 'buy' ? .55 : .3,
+        `${SANKEY_DEV_LABEL[k]} → ${tgt === 'buy' ? '구매' : '미구매'} · ${nf(val)} (${SANKEY_DEV_LABEL[k]} CR ${cr.toFixed(2)}%)`);
+      off1b[k] += h; off2[tgt] += h;
+    });
+  });
+  // 노드 막대 + 라벨
+  // force=true면 노드가 얇아도 라벨을 단다. 결과 컬럼(구매/미구매)은 노드가 2개뿐이라
+  // 겹칠 일이 없는데, 정작 제일 중요한 '구매'가 얇아서(전체의 2%대) 가드에 걸려
+  // 라벨이 사라지고 있었다. 채널 컬럼은 얇은 노드가 여럿 붙어 있어 가드를 유지한다.
+  const node = (x, y, h, col, label, val, anchor, tx, force) =>
+    `<rect x="${x}" y="${y}" width="${NW}" height="${h}" rx="2" fill="${col}"><title>${label} ${nf(val)} (${pct(val)})</title></rect>`
+    + ((force || h >= 11) ? `<text x="${tx}" y="${y + h / 2 + 3.5}" text-anchor="${anchor}" font-size="10.5" fill="#475569">
+        <tspan font-weight="700">${label}</tspan> <tspan fill="#94a3b8">${nf(val)} (${pct(val)})</tspan></text>` : '');
+  chs.forEach(c => s += node(X[0], P0[c.key].y, P0[c.key].h, CH_COLORS[c.key] || '#cbd5e1', c.key, c.s, 'start', X[0] + NW + 5, false));
+  devs.forEach(k => s += node(X[1], P1[k].y, P1[k].h, SANKEY_DEV_COLOR[k], SANKEY_DEV_LABEL[k], devTot[k].s, 'start', X[1] + NW + 5, false));
+  s += node(X[2], P2.buy.y,   P2.buy.h,   '#10b981', '구매',   buy,   'end', X[2] - 5, true);
+  s += node(X[2], P2.nobuy.y, P2.nobuy.h, '#cbd5e1', '미구매', nobuy, 'end', X[2] - 5, true);
+
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.innerHTML = s;
+  if (sub) {
+    const worst = devs.slice().sort((a, b) => (devTot[a].p / devTot[a].s) - (devTot[b].p / devTot[b].s))[0];
+    sub.innerHTML = `세션 ${nf(total)} → 구매 ${nf(buy)} (전체 CR ${(buy / total * 100).toFixed(2)}%) · `
+      + devs.map(k => `${SANKEY_DEV_LABEL[k]} ${(devTot[k].p / devTot[k].s * 100).toFixed(2)}%`).join(' / ')
+      + (worst ? ` <span style="color:#f59e0b">· ${SANKEY_DEV_LABEL[worst]}가 가장 낮음</span>` : '');
+  }
 }
 
 // ── ③-2 쿠폰·할인 효율 ────────────────────────────────────────────────────────
@@ -6727,6 +6885,11 @@ document.addEventListener('DOMContentLoaded', () => {
       buildMtdTable();
       buildFunnelFromTraffic();
       renderCouponEfficiency();   // 전환 퍼널과 같은 섹션(쿠폰 데이터 없으면 자체적으로 숨김)
+      // 전환 경로 생키 — 퍼널과 같은 창(당월 1일~기준일)
+      (function () {
+        const ys = getEffectiveDailyDate();
+        if (ys) renderFunnelSankey('sankey-daily', 'sankey-sub', `${ys.substring(0, 7)}-01`, ys);
+      })();
       renderChannelShare();
       renderChannelStatusChart();
       renderChannelMtdMatrix();
