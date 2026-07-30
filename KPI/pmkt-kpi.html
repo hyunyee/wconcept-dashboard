@@ -1562,7 +1562,7 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
     </div>
     <div class="card">
       <div class="card-title">전환율</div>
-      <div class="card-sub">선택 기간 vs 전주 동기간(WoW) · 전년 동기간</div>
+      <div class="card-sub">선택 기간 vs 전주 동기간 · 전년 동기간</div>
       <div class="fi">
         <div class="fi-head"><span class="fi-lbl">세션→구매</span><span class="fi-val" id="pdfx-s2p-disp">-</span></div>
         <div class="fi-gauge-wrap">
@@ -1590,7 +1590,7 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif
         </div>
         <div class="fi-legend" id="pdfx-j2f-leg" style="font-size:10px;color:#94a3b8">-</div>
       </div>
-      <div style="margin-top:10px;font-size:10px;color:#94a3b8">막대 = 선택 기간 · <span style="color:#f59e0b;font-weight:700">┃</span> 전주 동기간(-7일) · <span style="font-weight:700">┊</span> 전년 동기간 · 증감은 %p</div>
+      <div style="margin-top:10px;font-size:10px;color:#94a3b8">막대 = 선택 기간 · <span style="color:#f59e0b;font-weight:700">┃</span> 전주 동기간 · <span style="font-weight:700">┊</span> 전년 동기간 · 증감은 %p</div>
     </div>
   </div>
 
@@ -6899,7 +6899,7 @@ function renderFunnelBlock(cfg) {
 
 // ── 기간조회 전환 퍼널 ────────────────────────────────────────────────────
 // Daily와 같은 renderFunnelBlock을 쓰고 비교 기간만 다르게 준다.
-//   전주 동기간(WoW) = 양 끝점을 7일 앞으로
+//   전주 동기간 = 양 끝점을 7일 앞으로
 //   전년 동기간      = pdLastYear (2/29 롤오버를 막는 기존 함수 재사용)
 //
 // 2026-07-30 두 번 바꿨다. 처음엔 '직전 동기간'(같은 길이로 바로 앞 구간)이었는데
@@ -6936,7 +6936,7 @@ function renderPeriodFunnel() {
   });
 
   const note = document.getElementById('pdfn-period-note');
-  if (note) note.innerHTML = `· ${days}일 일평균 · <span style="color:#f59e0b;font-weight:700">┃</span> 전주 ${prevFrom.slice(5)}~${prevTo.slice(5)} <span style="color:#94a3b8;font-weight:700">┊</span> 전년 동기간`;
+  if (note) note.innerHTML = `· ${days}일 일평균 · <span style="color:#f59e0b;font-weight:700">┃</span> 전주 동기간 ${prevFrom.slice(5)}~${prevTo.slice(5)} <span style="color:#94a3b8;font-weight:700">┊</span> 전년 동기간`;
   const sub = document.getElementById('pdfn-flow-sub');
   if (sub) sub.textContent = `세션 → 상품조회 → 장바구니 → 구매완료 · ${from} ~ ${to} 일평균 (막대 = 단계별 선택기간 vs 전주·전년 비교)`;
 }
